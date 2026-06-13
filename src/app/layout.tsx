@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { I18nProvider } from "@/lib/i18n";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -37,16 +38,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${instrumentSerif.variable} h-full antialiased`}
+      className={`${plusJakarta.variable} ${instrumentSerif.variable} h-full antialiased overflow-hidden`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col font-sans">
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
-        {children}
+      <body className="h-full overflow-hidden font-sans" suppressHydrationWarning>
+        <I18nProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg"
+          >
+            Skip to main content
+          </a>
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );

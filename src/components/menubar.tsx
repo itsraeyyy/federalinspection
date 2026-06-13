@@ -72,14 +72,14 @@ export function Menubar() {
       )}
     >
       <nav
-        className="container-site flex h-16 items-center justify-between md:justify-center"
+        className="container-site flex h-16 items-center justify-between"
         aria-label="Main navigation"
       >
-        {/* Mobile: logo left */}
+        {/* Logo Left (Desktop & Mobile) */}
         <Link
           href="#home"
-          className="md:hidden"
           onClick={() => handleNavClick("#home")}
+          className="flex items-center gap-2"
           aria-label="Home"
         >
           <span
@@ -91,6 +91,14 @@ export function Menubar() {
             )}
           >
             <ShieldCheck className="size-5" aria-hidden="true" />
+          </span>
+          <span
+            className={cn(
+              "hidden text-sm font-semibold tracking-wide sm:block",
+              onHero && !isScrolled ? "text-white" : "text-foreground"
+            )}
+          >
+            PP Inspection
           </span>
         </Link>
 
@@ -112,56 +120,77 @@ export function Menubar() {
           })}
         </ul>
 
-        {/* Mobile: hamburger */}
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "rounded-lg md:hidden",
-                onHero && !isScrolled && "text-white hover:bg-white/10 hover:text-white"
-              )}
-              aria-label="Open navigation menu"
-            >
-              <Menu className="size-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[min(100%,20rem)] border-l-0 p-0">
-            <div className="border-b border-border bg-primary px-6 py-7 text-primary-foreground">
-              <SheetHeader>
-                <SheetTitle className="text-left text-primary-foreground">
-                  Navigation
-                </SheetTitle>
-              </SheetHeader>
-            </div>
-            <ul className="flex flex-col gap-1 p-4" role="list">
-              {navLinks.map((link) => {
-                const isActive = activeSection === link.href;
-                return (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      onClick={() => handleNavClick(link.href)}
-                      className={cn(
-                        "block rounded-xl px-4 py-3 text-[0.9375rem] font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-muted"
-                      )}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </SheetContent>
-        </Sheet>
+        {/* Right Action: Dashboard Button (Desktop) / Hamburger (Mobile) */}
+        <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard"
+            className={cn(
+              "hidden rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 md:inline-flex items-center gap-1.5",
+              onHero && !isScrolled
+                ? "bg-white/15 text-white ring-1 ring-white/20 hover:bg-white/25"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
+          >
+            Dashboard
+          </Link>
 
-        {/* Spacer for mobile layout balance */}
-        <div className="size-9 md:hidden" aria-hidden="true" />
+          {/* Mobile: hamburger */}
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "rounded-lg md:hidden",
+                  onHero && !isScrolled && "text-white hover:bg-white/10 hover:text-white"
+                )}
+                aria-label="Open navigation menu"
+              >
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[min(100%,20rem)] border-l-0 p-0">
+              <div className="border-b border-border bg-primary px-6 py-7 text-primary-foreground">
+                <SheetHeader>
+                  <SheetTitle className="text-left text-primary-foreground">
+                    Navigation
+                  </SheetTitle>
+                </SheetHeader>
+              </div>
+              <ul className="flex flex-col gap-1 p-4" role="list">
+                {navLinks.map((link) => {
+                  const isActive = activeSection === link.href;
+                  return (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={() => handleNavClick(link.href)}
+                        className={cn(
+                          "block rounded-xl px-4 py-3 text-[0.9375rem] font-medium transition-colors",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "text-foreground hover:bg-muted"
+                        )}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+                <li className="mt-4 border-t border-border pt-4">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex w-full justify-center rounded-xl bg-primary px-4 py-3 text-[0.9375rem] font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    Dashboard
+                  </Link>
+                </li>
+              </ul>
+            </SheetContent>
+          </Sheet>
+        </div>
       </nav>
     </header>
   );
