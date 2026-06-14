@@ -2,36 +2,26 @@
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { IconMessagePlus, IconSearch, IconAdjustmentsHorizontal, IconBulb, IconAlertTriangle } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { complaintService } from "@/services/complaints";
+import { Complaint } from "@/types";
 
-type TicketType = 'tiqoma' | 'abetuta';
+type TicketType = 'Complaint' | 'Suggestion';
 type TicketStatus = 'New' | 'Under Review' | 'Resolved' | 'Rejected';
 
-interface Ticket {
-  id: string;
-  category: TicketType;
-  title: string;
-  desc: string;
-  status: TicketStatus;
-  time: string;
-  name: string;
-}
-
 export default function ComplaintsPage() {
-  const [activeTab, setActiveTab] = useState<TicketType>('tiqoma');
+  const [activeTab, setActiveTab] = useState<TicketType>('Suggestion');
+  const [tickets, setTickets] = useState<Complaint[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const tickets: Ticket[] = [
-    { id: '#501', category: 'tiqoma', title: 'Online Portal Suggestion', desc: 'It would be great if users could track their application status in real-time.', status: 'New', time: '30 mins ago', name: 'Dawit S.' },
-    { id: '#500', category: 'tiqoma', title: 'Multilingual Form Support', desc: 'Add Afaan Oromo option to all citizen-facing forms.', status: 'Under Review', time: '2 days ago', name: 'Fatuma A.' },
-    { id: '#498', category: 'tiqoma', title: 'Extended Office Hours', desc: 'Consider opening until 6PM on weekdays to serve working citizens.', status: 'Resolved', time: '5 days ago', name: 'Meseret K.' },
-    { id: '#496', category: 'tiqoma', title: 'Spam Entry', desc: 'Test message, please ignore.', status: 'Rejected', time: '1 week ago', name: 'Unknown' },
-    { id: '#492', category: 'abetuta', title: 'Building Maintenance Issue', desc: 'Water leak on the 2nd floor restroom facilities needs urgent attention.', status: 'New', time: '2 hours ago', name: 'Anonymous' },
-    { id: '#491', category: 'abetuta', title: 'Document Request Delay', desc: 'Requested archives from 2024 are still pending approval after 3 months.', status: 'Under Review', time: '1 day ago', name: 'Sara M.' },
-    { id: '#489', category: 'abetuta', title: 'Staff Misconduct Report', desc: 'Rude behavior experienced at the South branch reception desk.', status: 'Resolved', time: '3 days ago', name: 'Tesfaye G.' },
-    { id: '#488', category: 'abetuta', title: 'Duplicate Complaint', desc: 'This is a duplicate of #487.', status: 'Rejected', time: '1 week ago', name: 'System' },
-  ];
+  useEffect(() => {
+    complaintService.getComplaints().then(data => {
+      setTickets(data);
+      setLoading(false);
+    });
+  }, []);
 
-  const filteredTickets = tickets.filter(t => t.category === activeTab);
+  const filteredTickets = tickets.filter(t => t.type === activeTab);
   const statuses: TicketStatus[] = ['New', 'Under Review', 'Resolved', 'Rejected'];
 
   const statusColors: Record<TicketStatus, string> = {
@@ -67,80 +57,84 @@ export default function ComplaintsPage() {
         {/* Category Tabs */}
         <div className="flex items-center gap-2 bg-surface-primary/40 backdrop-blur-md p-1.5 rounded-2xl border border-border/20 w-fit">
           <button
-            onClick={() => setActiveTab('tiqoma')}
+            onClick={() => setActiveTab('Suggestion')}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'tiqoma'
+              activeTab === 'Suggestion'
                 ? 'bg-brand-blue text-white shadow-sm'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary/50'
             }`}
           >
-            <IconBulb size={18} stroke={activeTab === 'tiqoma' ? 2 : 1.5} />
+            <IconBulb size={18} stroke={activeTab === 'Suggestion' ? 2 : 1.5} />
             ጥቆማ (Suggestions)
-            <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${activeTab === 'tiqoma' ? 'bg-white/20 text-white' : 'bg-surface-secondary text-text-primary'}`}>
-              {tickets.filter(t => t.category === 'tiqoma').length}
+            <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${activeTab === 'Suggestion' ? 'bg-white/20 text-white' : 'bg-surface-secondary text-text-primary'}`}>
+              {tickets.filter(t => t.type === 'Suggestion').length}
             </span>
           </button>
           <button
-            onClick={() => setActiveTab('abetuta')}
+            onClick={() => setActiveTab('Complaint')}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'abetuta'
+              activeTab === 'Complaint'
                 ? 'bg-brand-yellow text-[#3D352E] shadow-sm'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary/50'
             }`}
           >
-            <IconAlertTriangle size={18} stroke={activeTab === 'abetuta' ? 2 : 1.5} />
+            <IconAlertTriangle size={18} stroke={activeTab === 'Complaint' ? 2 : 1.5} />
             አቤቱታ (Complaints)
-            <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${activeTab === 'abetuta' ? 'bg-[#3D352E]/15 text-[#3D352E]' : 'bg-surface-secondary text-text-primary'}`}>
-              {tickets.filter(t => t.category === 'abetuta').length}
+            <span className={`ml-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${activeTab === 'Complaint' ? 'bg-[#3D352E]/15 text-[#3D352E]' : 'bg-surface-secondary text-text-primary'}`}>
+              {tickets.filter(t => t.type === 'Complaint').length}
             </span>
           </button>
         </div>
 
         {/* Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pb-10">
-          {statuses.map(statusColumn => {
-            const columnTickets = filteredTickets.filter(t => t.status === statusColumn);
-            return (
-              <div key={statusColumn} className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${statusColors[statusColumn]}`}></span>
-                    <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-widest">{statusColumn}</h3>
+        {loading ? (
+          <div className="flex items-center justify-center h-48">Loading...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pb-10">
+            {statuses.map(statusColumn => {
+              const columnTickets = filteredTickets.filter(t => t.status === statusColumn);
+              return (
+                <div key={statusColumn} className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${statusColors[statusColumn]}`}></span>
+                      <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-widest">{statusColumn}</h3>
+                    </div>
+                    <span className="w-6 h-6 rounded-full bg-surface-secondary flex items-center justify-center text-[10px] font-bold text-text-primary">
+                      {columnTickets.length}
+                    </span>
                   </div>
-                  <span className="w-6 h-6 rounded-full bg-surface-secondary flex items-center justify-center text-[10px] font-bold text-text-primary">
-                    {columnTickets.length}
-                  </span>
+                  {columnTickets.length === 0 && (
+                    <div className="border-2 border-dashed border-border/20 rounded-3xl p-6 flex items-center justify-center">
+                      <span className="text-xs text-text-muted">No items</span>
+                    </div>
+                  )}
+                  {columnTickets.map(ticket => (
+                    <TicketCard key={ticket.id} ticket={ticket} activeTab={activeTab} />
+                  ))}
                 </div>
-                {columnTickets.length === 0 && (
-                  <div className="border-2 border-dashed border-border/20 rounded-3xl p-6 flex items-center justify-center">
-                    <span className="text-xs text-text-muted">No items</span>
-                  </div>
-                )}
-                {columnTickets.map(ticket => (
-                  <TicketCard key={ticket.id} ticket={ticket} activeTab={activeTab} />
-                ))}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
 }
 
-function TicketCard({ ticket, activeTab }: { ticket: Ticket; activeTab: TicketType }) {
-  const accentColor = activeTab === 'tiqoma' ? 'brand-blue' : 'brand-yellow';
-  const accentTextHover = activeTab === 'tiqoma' ? 'group-hover:text-brand-blue' : 'group-hover:text-brand-yellow';
+function TicketCard({ ticket, activeTab }: { ticket: Complaint; activeTab: TicketType }) {
+  const accentColor = activeTab === 'Suggestion' ? 'brand-blue' : 'brand-yellow';
+  const accentTextHover = activeTab === 'Suggestion' ? 'group-hover:text-brand-blue' : 'group-hover:text-brand-yellow';
 
   return (
     <div className="bg-surface-primary/30 border border-border/20 rounded-3xl p-5 backdrop-blur-sm hover:bg-surface-primary/50 transition-all duration-200 cursor-pointer flex flex-col gap-3 group hover:border-border/40">
       <div className="flex justify-between items-start">
-        <span className={`text-xs font-medium text-${accentColor}`}>{ticket.id}</span>
-        <span className="text-[10px] text-text-muted">{ticket.time}</span>
+        <span className={`text-xs font-medium text-${accentColor}`}>#{ticket.id}</span>
+        <span className="text-[10px] text-text-muted">{ticket.date}</span>
       </div>
       <div>
-        <h4 className={`text-sm font-medium text-text-primary mb-1 ${accentTextHover} transition-colors leading-tight`}>{ticket.title}</h4>
-        <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">{ticket.desc}</p>
+        <h4 className={`text-sm font-medium text-text-primary mb-1 ${accentTextHover} transition-colors leading-tight`}>{ticket.subject}</h4>
+        <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">{ticket.subject}</p>
       </div>
       <div className="flex justify-between items-center mt-auto pt-3 border-t border-border/10">
         <span className="text-[11px] font-medium text-text-secondary">{ticket.name}</span>

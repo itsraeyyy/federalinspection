@@ -1,16 +1,78 @@
+'use client';
+
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { IconFolder, IconFileText, IconUpload, IconSearch, IconDotsVertical } from "@tabler/icons-react";
+import { useEffect, useState } from "react";
+import { DataTable } from "@/components/ui/data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { documentService } from "@/services/documents";
+import { Document } from "@/types";
 
 export default function DocumentsPage() {
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    documentService.getDocuments().then(data => {
+      setDocuments(data);
+      setLoading(false);
+    });
+  }, []);
+
   const folders = [
     { id: 1, name: 'ኮሚሽን ዋና ጽ/ቤት (Main Office)', code: 'ADMIN_DEFINED', files: 124 },
     { id: 2, name: 'የኮሚሽን ቅርንጫፍ ጽ/ቤቶች (Branches)', code: '14', files: 86 },
   ];
 
-  const recentFiles = [
-    { id: 1, title: 'Annual_Budget_2026.xlsx', type: 'Excel', size: '2.4 MB', folder: 'Main Office', uploader: 'Abebe B.', date: 'Today', version: 'v1.2', visibility: 'Internal' },
-    { id: 2, title: 'Commission_Bylaws_Revised.pdf', type: 'PDF', size: '1.1 MB', folder: 'Branches', uploader: 'Helen T.', date: 'Yesterday', version: 'v2.0', visibility: 'Public' },
-    { id: 3, title: 'Q3_Performance_Report.docx', type: 'Word', size: '845 KB', folder: 'Main Office', uploader: 'System', date: 'Oct 10, 2026', version: 'v1.0', visibility: 'Restricted' },
+  const columns: ColumnDef<Document>[] = [
+    {
+      accessorKey: "title",
+      header: "Document Title",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <IconFileText size={20} className="text-text-muted" />
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-text-primary group-hover:text-brand-yellow transition-colors">{row.original.title}</span>
+            <span className="text-[10px] text-text-muted mt-0.5">{row.original.fileType}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "folderCode",
+      header: "Folder",
+      cell: ({ row }) => <span className="text-xs text-text-secondary">{row.original.folderCode}</span>,
+    },
+    {
+      accessorKey: "uploadDate",
+      header: "Metadata",
+      cell: ({ row }) => (
+        <div>
+          <div className="text-xs text-text-secondary">{row.original.uploadedBy}</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{row.original.uploadDate} • {row.original.version}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "visibility",
+      header: "Visibility",
+      cell: ({ row }) => (
+        <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${row.original.visibility === 'Public' ? 'bg-success/10 text-success' : row.original.visibility === 'Restricted' ? 'bg-danger/10 text-danger' : 'bg-surface-secondary text-text-secondary'}`}>
+          {row.original.visibility}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: () => (
+        <div className="text-right">
+          <button className="p-1.5 text-text-muted hover:text-text-primary transition-colors opacity-0 group-hover:opacity-100">
+            <IconDotsVertical size={16} />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -53,47 +115,11 @@ export default function DocumentsPage() {
 
         <div>
           <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest mb-4">Recent Documents</h2>
-          <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 overflow-hidden backdrop-blur-md">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-text-muted/60 text-[10px] uppercase tracking-widest border-b border-border/10">
-                  <th className="font-semibold py-4 px-6">Document Title</th>
-                  <th className="font-semibold py-4 px-4">Folder</th>
-                  <th className="font-semibold py-4 px-4">Metadata</th>
-                  <th className="font-semibold py-4 px-4">Visibility</th>
-                  <th className="font-semibold py-4 px-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/10">
-                {recentFiles.map((file) => (
-                  <tr key={file.id} className="hover:bg-surface-secondary/20 transition-colors group cursor-default">
-                    <td className="py-4 px-6 flex items-center gap-3">
-                      <IconFileText size={20} className="text-text-muted" />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-text-primary group-hover:text-brand-yellow transition-colors">{file.title}</span>
-                        <span className="text-[10px] text-text-muted mt-0.5">{file.size} • {file.type}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-xs text-text-secondary">{file.folder}</td>
-                    <td className="py-4 px-4">
-                      <div className="text-xs text-text-secondary">{file.uploader}</div>
-                      <div className="text-[10px] text-text-muted mt-0.5">{file.date} • {file.version}</div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${file.visibility === 'Public' ? 'bg-success/10 text-success' : file.visibility === 'Restricted' ? 'bg-danger/10 text-danger' : 'bg-surface-secondary text-text-secondary'}`}>
-                        {file.visibility}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <button className="p-1.5 text-text-muted hover:text-text-primary transition-colors opacity-0 group-hover:opacity-100">
-                        <IconDotsVertical size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center h-48">Loading...</div>
+          ) : (
+             <DataTable columns={columns} data={documents} />
+          )}
         </div>
       </div>
     </DashboardLayout>

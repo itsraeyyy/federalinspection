@@ -38,9 +38,9 @@ export const StatCard = ({
     <div className="premium-card p-5 flex flex-col justify-between min-h-[160px] group bg-surface-primary/60 hover:bg-surface-primary/90 border-border/40">
       {/* Left Edge Stripe */}
       <div 
-        className="absolute left-0 top-0 bottom-0 w-[5px] opacity-90"
+        className="absolute left-0 top-0 bottom-0 w-2"
         style={{ 
-          background: `repeating-linear-gradient(45deg, ${accentHex}, ${accentHex} 6px, transparent 6px, transparent 12px)`
+          background: `repeating-linear-gradient(-45deg, ${accentHex}, ${accentHex} 4px, color-mix(in srgb, ${accentHex} 70%, black) 4px, color-mix(in srgb, ${accentHex} 70%, black) 8px)`
         }}
       />
       

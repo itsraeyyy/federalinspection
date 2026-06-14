@@ -1,6 +1,7 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { StatCard } from "@/components/ui/stat-card";
 import { RecentActivity } from "@/components/ui/recent-activity";
+import { Greeting } from "@/components/ui/greeting";
 import { IconNews, IconFileText, IconUsers, IconMessage2, IconQrcode, IconCheck, IconX, IconDeviceMobile, IconChartBar } from '@tabler/icons-react';
 import Link from "next/link";
 
@@ -16,7 +17,7 @@ export default function DashboardPage() {
       {/* Top Header Section */}
       <div className="flex flex-col mb-10 pt-6">
         <h1 className="text-4xl font-light text-text-primary mb-2 tracking-tight flex items-center gap-3">
-          <span className="text-brand-yellow drop-shadow-md">☕</span> Good morning, Administrator
+          <span className="text-brand-yellow drop-shadow-md">☕</span> <Greeting />, Administrator
         </h1>
         <p className="text-text-secondary text-sm">Here's your system overview for today.</p>
       </div>

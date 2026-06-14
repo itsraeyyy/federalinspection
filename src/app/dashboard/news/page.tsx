@@ -1,13 +1,71 @@
+'use client';
+
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { IconPlus, IconSearch, IconFilter, IconEdit, IconEye, IconTrash } from "@tabler/icons-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { DataTable } from "@/components/ui/data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { newsService } from "@/services/news";
+import { NewsArticle } from "@/types";
 
 export default function NewsPage() {
-  const articles = [
-    { id: 1, title: 'Annual Commission Report 2026 Published', lang: 'English', status: 'Published', author: 'Helen T.', created: 'Oct 10, 2026', published: 'Oct 12, 2026' },
-    { id: 2, title: 'የ2018 ዓ.ም በጀት ዓመት እቅድ ትውውቅ', lang: 'Amharic', status: 'Draft', author: 'Abebe B.', created: 'Oct 11, 2026', published: '-' },
-    { id: 3, title: 'New Digital ID Services Announced', lang: 'English', status: 'Published', author: 'Helen T.', created: 'Oct 05, 2026', published: 'Oct 08, 2026' },
-    { id: 4, title: 'Oduu Haaraa: Tajaajila Dijitaalaa', lang: 'Afaan Oromo', status: 'Draft', author: 'Chala D.', created: 'Oct 12, 2026', published: '-' },
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    newsService.getArticles().then(data => {
+      setArticles(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const columns: ColumnDef<NewsArticle>[] = [
+    {
+      accessorKey: "title",
+      header: "Title & Language",
+      cell: ({ row }) => (
+        <div>
+          <div className="text-sm font-medium text-text-primary group-hover:text-brand-green transition-colors">{row.original.title}</div>
+          <div className="text-[10px] text-text-muted mt-1">{row.original.lang}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "author",
+      header: "Author",
+      cell: ({ row }) => <span className="text-xs text-text-secondary">{row.original.author}</span>,
+    },
+    {
+      accessorKey: "created",
+      header: "Dates",
+      cell: ({ row }) => (
+        <div>
+          <div className="text-xs text-text-secondary">Created: {row.original.created}</div>
+          <div className="text-[10px] text-text-muted mt-0.5">Published: {row.original.published}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${row.original.status === 'Published' ? 'bg-success/10 text-success' : 'bg-surface-secondary text-text-secondary'}`}>
+          {row.original.status}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-2 transition-opacity">
+          <Link href={`/dashboard/news/${row.original.id}`} className="p-1.5 text-text-muted hover:text-brand-blue hover:bg-brand-blue/10 rounded-md transition-colors border border-border/30"><IconEye size={16} /></Link>
+          <Link href={`/dashboard/news/${row.original.id}/edit`} className="p-1.5 text-text-muted hover:text-brand-yellow hover:bg-brand-yellow/10 rounded-md transition-colors border border-border/30"><IconEdit size={16} /></Link>
+          <button onClick={() => newsService.deleteArticle(row.original.id).then(() => setArticles(articles.filter(a => a.id !== row.original.id)))} className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors border border-border/30"><IconTrash size={16} /></button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -33,46 +91,11 @@ export default function NewsPage() {
           </div>
         </div>
         
-        <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 overflow-hidden backdrop-blur-md">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-text-muted/60 text-[10px] uppercase tracking-widest border-b border-border/10">
-                <th className="font-semibold py-4 px-6">Title & Language</th>
-                <th className="font-semibold py-4 px-4">Author</th>
-                <th className="font-semibold py-4 px-4">Dates</th>
-                <th className="font-semibold py-4 px-4">Status</th>
-                <th className="font-semibold py-4 px-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/10">
-              {articles.map((article) => (
-                <tr key={article.id} className="hover:bg-surface-secondary/20 transition-colors group cursor-default">
-                  <td className="py-4 px-6">
-                    <div className="text-sm font-medium text-text-primary group-hover:text-brand-green transition-colors">{article.title}</div>
-                    <div className="text-[10px] text-text-muted mt-1">{article.lang}</div>
-                  </td>
-                  <td className="py-4 px-4 text-xs text-text-secondary">{article.author}</td>
-                  <td className="py-4 px-4">
-                    <div className="text-xs text-text-secondary">Created: {article.created}</div>
-                    <div className="text-[10px] text-text-muted mt-0.5">Published: {article.published}</div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${article.status === 'Published' ? 'bg-success/10 text-success' : 'bg-surface-secondary text-text-secondary'}`}>
-                      {article.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center justify-end gap-2 transition-opacity">
-                      <Link href={`/dashboard/news/${article.id}`} className="p-1.5 text-text-muted hover:text-brand-blue hover:bg-brand-blue/10 rounded-md transition-colors border border-border/30"><IconEye size={16} /></Link>
-                      <Link href={`/dashboard/news/${article.id}/edit`} className="p-1.5 text-text-muted hover:text-brand-yellow hover:bg-brand-yellow/10 rounded-md transition-colors border border-border/30"><IconEdit size={16} /></Link>
-                      <button className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors border border-border/30"><IconTrash size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center h-48">Loading...</div>
+        ) : (
+          <DataTable columns={columns} data={articles} />
+        )}
       </div>
     </DashboardLayout>
   );

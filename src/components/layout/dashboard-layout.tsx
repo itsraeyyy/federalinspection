@@ -87,7 +87,12 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           </div>
         </div>
 
-        <nav className={`flex-1 py-4 space-y-1.5 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+        <nav className={`flex-1 py-6 space-y-1 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+          {!isCollapsed && (
+            <div className="px-3 text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">
+              Quick access
+            </div>
+          )}
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
@@ -97,34 +102,40 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                 title={isCollapsed ? item.label : undefined}
                 className={`flex items-center rounded-xl transition-all duration-200 group relative ${
                   isActive 
-                    ? 'bg-brand-blue/10 text-brand-blue shadow-[inset_3px_0_0_0_#014BAA]'
-                    : 'text-text-secondary hover:bg-surface-secondary/80 hover:text-text-primary'
-                } ${isCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
+                    ? 'bg-surface-secondary/80 text-text-primary shadow-sm border border-border/50'
+                    : 'text-text-secondary hover:bg-surface-secondary/50 hover:text-text-primary border border-transparent'
+                } ${isCollapsed ? 'justify-center p-3' : 'gap-3 px-3 py-2.5'}`}
               >
                 <item.icon 
-                  size={22} 
+                  size={20} 
                   stroke={isActive ? 2 : 1.5} 
-                  className={isActive ? 'text-brand-blue' : 'text-text-muted group-hover:text-text-primary transition-colors'}
+                  className={isActive ? 'text-text-primary' : 'text-text-muted group-hover:text-text-primary transition-colors'}
                 />
-                {!isCollapsed && <span className={`font-medium ${isActive ? 'text-brand-blue' : ''}`}>{item.label}</span>}
+                {!isCollapsed && <span className={`text-[13px] font-medium ${isActive ? 'text-text-primary' : ''}`}>{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
         {/* Sidebar Footer Controls */}
-        <div className={`p-4 border-t border-border/50 flex flex-col gap-2 ${isCollapsed ? 'items-center' : ''}`}>
-          <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center p-0 mt-2' : 'px-3 mt-2'}`}>
-            <div className="w-10 h-10 rounded-full bg-surface-secondary flex items-center justify-center border border-border/50 shrink-0 shadow-sm">
+        <div className={`p-4 mt-auto border-t border-border/50`}>
+          <button className={`w-full flex items-center gap-3 rounded-xl hover:bg-surface-secondary/80 transition-all border border-transparent hover:border-border/50 ${isCollapsed ? 'justify-center p-2' : 'px-3 py-2'}`}>
+            <div className="w-9 h-9 rounded-full bg-surface-secondary flex items-center justify-center border border-border/50 shrink-0 shadow-sm">
               <span className="text-xs font-bold text-text-primary">AD</span>
             </div>
             {!isCollapsed && (
-              <div className="flex flex-col overflow-hidden whitespace-nowrap">
-                <span className="text-sm font-semibold text-text-primary">Administrator</span>
-                <span className="text-[11px] text-text-muted mt-0.5">CIDMS Office</span>
-              </div>
+              <>
+                <div className="flex flex-col items-start overflow-hidden whitespace-nowrap flex-1">
+                  <span className="text-[13px] font-semibold text-text-primary">Administrator</span>
+                  <span className="text-[11px] text-text-muted mt-0.5">cidms@office.gov</span>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0">
+                  <path d="M8 9l4-4 4 4" />
+                  <path d="M16 15l-4 4-4-4" />
+                </svg>
+              </>
             )}
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -160,8 +171,8 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-10" id="main-content">
-          <div className="min-h-full pb-10">
+        <main className="flex-1 overflow-y-auto px-6 md:px-10" id="main-content">
+          <div className="max-w-7xl mx-auto min-h-full pb-10">
             {children}
           </div>
         </main>

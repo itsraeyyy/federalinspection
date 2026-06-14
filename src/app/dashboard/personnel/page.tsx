@@ -1,67 +1,80 @@
+'use client';
+
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { IconUserPlus, IconSearch, IconFilter, IconBuilding, IconEdit, IconTrash, IconEye } from "@tabler/icons-react";
+import { IconUserPlus, IconSearch, IconFilter, IconBuilding, IconEdit, IconTrash } from "@tabler/icons-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { DataTable } from "@/components/ui/data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { personnelService } from "@/services/personnel";
+import { Personnel } from "@/types";
 
 export default function PersonnelPage() {
-  const mainOffice = [
-    { id: 1, name: 'Dr. Abebe Bekele', role: 'Chief Commissioner', title: 'ዋና ኮሚሽነር', status: 'Active', email: 'abebe.b@cidms.gov.et' },
-    { id: 2, name: 'Helen Tadesse', role: 'Head of Communications', title: 'ኮሚሽን ማኔጅመንት አባላት', status: 'Active', email: 'helen.t@cidms.gov.et' },
+  const [personnel, setPersonnel] = useState<Personnel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    personnelService.getPersonnel().then(data => {
+      setPersonnel(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const columns: ColumnDef<Personnel>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-surface-secondary to-surface-primary border border-border/50 flex items-center justify-center font-bold text-text-primary text-sm shadow-sm transition-transform group-hover:scale-105">
+            {row.original.name.charAt(0)}{row.original.name.split(' ')[1]?.charAt(0)}
+          </div>
+          <span className="text-sm font-medium text-text-primary group-hover:text-brand-blue transition-colors">{row.original.name}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "position",
+      header: "Official Title & Role",
+      cell: ({ row }) => (
+        <div>
+          <div className="text-sm font-medium text-text-secondary">{row.original.position}</div>
+          <div className="text-[11px] text-text-muted mt-0.5">{row.original.department}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => <span className="text-xs text-text-muted">{row.original.email}</span>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${row.original.status === 'Active' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+          {row.original.status}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-2">
+          <Link href={`/dashboard/personnel/${row.original.id}`} className="p-1.5 text-text-muted hover:text-brand-blue hover:bg-brand-blue/10 rounded-md transition-colors border border-border/30">
+            <IconEdit size={16} />
+          </Link>
+          <button className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors border border-border/30">
+            <IconTrash size={16} />
+          </button>
+        </div>
+      ),
+    },
   ];
 
-  const branchOffices = [
-    { id: 3, name: 'Chala Desta', role: 'Branch Manager (South)', title: 'ዋና ኮሚሽነር (ቅርንጫፍ)', status: 'On Leave', email: 'chala.d@cidms.gov.et' },
-    { id: 4, name: 'Aster Mengistu', role: 'Document Controller', title: 'ጸሃፊና ጽህፈት ቤት ሃላፊ', status: 'Active', email: 'aster.m@cidms.gov.et' },
-  ];
-
-  const renderTable = (people: typeof mainOffice) => (
-    <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 overflow-hidden backdrop-blur-md p-2">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="text-text-muted/60 text-[10px] uppercase tracking-widest border-b border-border/10">
-            <th className="font-semibold py-4 px-6">Name</th>
-            <th className="font-semibold py-4 px-4">Official Title & Role</th>
-            <th className="font-semibold py-4 px-4">Email</th>
-            <th className="font-semibold py-4 px-4">Status</th>
-            <th className="font-semibold py-4 px-6 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/10">
-          {people.map((person) => (
-            <tr key={person.id} className="hover:bg-surface-secondary/20 transition-colors group cursor-default">
-              <td className="py-4 px-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-surface-secondary to-surface-primary border border-border/50 flex items-center justify-center font-bold text-text-primary text-sm shadow-sm transition-transform group-hover:scale-105">
-                    {person.name.charAt(0)}{person.name.split(' ')[1]?.charAt(0)}
-                  </div>
-                  <span className="text-sm font-medium text-text-primary group-hover:text-brand-blue transition-colors">{person.name}</span>
-                </div>
-              </td>
-              <td className="py-4 px-4">
-                <div className="text-sm font-medium text-text-secondary">{person.title}</div>
-                <div className="text-[11px] text-text-muted mt-0.5">{person.role}</div>
-              </td>
-              <td className="py-4 px-4 text-xs text-text-muted">{person.email}</td>
-              <td className="py-4 px-4">
-                <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${person.status === 'Active' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                  {person.status}
-                </span>
-              </td>
-              <td className="py-4 px-6">
-                <div className="flex items-center justify-end gap-2">
-                  <Link href={`/dashboard/personnel/${person.id}`} className="p-1.5 text-text-muted hover:text-brand-blue hover:bg-brand-blue/10 rounded-md transition-colors border border-border/30">
-                    <IconEdit size={16} />
-                  </Link>
-                  <button className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-md transition-colors border border-border/30">
-                    <IconTrash size={16} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const mainOffice = personnel.filter(p => p.officeCategory === 'Main Office');
+  const branchOffices = personnel.filter(p => p.officeCategory !== 'Main Office');
 
   return (
     <DashboardLayout>
@@ -86,25 +99,29 @@ export default function PersonnelPage() {
           </div>
         </div>
         
-        <div className="flex flex-col gap-8 pb-10">
-          {/* Main Office Group */}
-          <div>
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
-              <IconBuilding size={16} />
-              ኮሚሽን ጽ/ቤት (Main Office)
-            </h2>
-            {renderTable(mainOffice)}
-          </div>
+        {loading ? (
+          <div className="flex items-center justify-center h-48">Loading...</div>
+        ) : (
+          <div className="flex flex-col gap-8 pb-10">
+            {/* Main Office Group */}
+            <div>
+              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                <IconBuilding size={16} />
+                ኮሚሽን ጽ/ቤት (Main Office)
+              </h2>
+              <DataTable columns={columns} data={mainOffice} />
+            </div>
 
-          {/* Branch Offices Group */}
-          <div>
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
-              <IconBuilding size={16} />
-              የኮሚሽን ቅርንጫፍ ጽ/ቤቶች (Branch Offices)
-            </h2>
-            {renderTable(branchOffices)}
+            {/* Branch Offices Group */}
+            <div>
+              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                <IconBuilding size={16} />
+                የኮሚሽን ቅርንጫፍ ጽ/ቤቶች (Branch Offices)
+              </h2>
+              <DataTable columns={columns} data={branchOffices} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   );
