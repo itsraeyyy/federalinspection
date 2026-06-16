@@ -4,6 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Benaiah — Amharic / Ethiopic script (public/Benaiah.ttf) */
+@font-face {
+  font-family: "Benaiah";
+  src: url("/Benaiah.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+1200-137F,
+    U+1380-139F,
+    U+2D80-2DDF,
+    U+AB00-AB2F;
+}
+
 @theme inline {
   --color-surface-primary: var(--surface-primary);
   --color-surface-secondary: var(--surface-secondary);
@@ -27,6 +41,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-heading: var(--font-heading);
+  --font-amharic: "Benaiah", ui-sans-serif, sans-serif;
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -147,9 +162,19 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Benaiah", var(--font-sans), ui-sans-serif, sans-serif;
   }
   html {
-    @apply font-sans scroll-smooth;
+    @apply scroll-smooth;
+    font-family: "Benaiah", var(--font-sans), ui-sans-serif, sans-serif;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Benaiah", var(--font-heading), ui-serif, serif;
   }
   ::selection {
     background-color: color-mix(in srgb, var(--brand) 20%, transparent);
@@ -158,6 +183,15 @@
 }
 
 @layer utilities {
+  .font-heading {
+    font-family: "Benaiah", var(--font-heading), ui-serif, serif;
+  }
+  .font-sans {
+    font-family: "Benaiah", var(--font-sans), ui-sans-serif, sans-serif;
+  }
+  .font-amharic {
+    font-family: "Benaiah", ui-sans-serif, sans-serif;
+  }
   .text-balance {
     text-wrap: balance;
   }
@@ -212,6 +246,44 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .hero-mesh-bg {
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(1, 75, 170, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 80%, rgba(255, 184, 0, 0.14) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 60% 30%, rgba(1, 75, 170, 0.06) 0%, transparent 45%),
+      linear-gradient(180deg, #f8fafc 0%, #eef4fc 45%, #f5f8ff 100%);
+  }
+
+  @keyframes hero-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-14px) rotate(2deg); }
+  }
+
+  @keyframes hero-float-delayed {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(-2deg); }
+  }
+
+  @keyframes hero-pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.06); opacity: 0.25; }
+  }
+
+  @keyframes hero-spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes hero-shimmer {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+
+  .hero-float { animation: hero-float 6s ease-in-out infinite; }
+  .hero-float-delayed { animation: hero-float-delayed 7s ease-in-out infinite 1s; }
+  .hero-pulse-ring { animation: hero-pulse-ring 3s ease-in-out infinite; }
+  .hero-spin-slow { animation: hero-spin-slow 24s linear infinite; }
 }
 
 @media (prefers-reduced-motion: reduce) {
