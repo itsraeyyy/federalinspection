@@ -62,7 +62,7 @@ export function CommissionRoleSection() {
             {responsibilities.length}
           </p>
           <p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
-            Core Responsibilities
+            ዋና ኃላፊነቶች
           </p>
         </div>
 
@@ -101,7 +101,7 @@ export function CommissionRoleSection() {
               href="/about#responsibilities"
               className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/20"
             >
-              View all responsibilities ↓
+              ሁሉንም ኃላፊነቶች ይመልከቱ ↓
             </Link>
           )}
         </div>

@@ -164,12 +164,12 @@ export default function StatisticsPage() {
               <BarChart3 className="size-8" />
             </div>
             <h1 className="font-heading text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Statistics
+              <span style={{ color: "#014BAA" }}>መረጃ</span>
             </h1>
             <div className="mt-5 flex items-center gap-2 text-sm font-medium text-slate-500">
-              <span>Home</span>
+              <span>መነሻ</span>
               <ChevronRight className="size-4" />
-              <span style={{ color: "#014BAA" }}>Statistics</span>
+              <span style={{ color: "#014BAA" }}>መረጃ</span>
             </div>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               የኮሚሽኑ መዋቅር መረጃዎች — የክልሎች፣ ዞኖች፣ ወረዳዎች፣ ቀበሌዎች፣ አባላት እና ኃላፊዎች አጠቃላይ ማጠቃለያ
@@ -196,7 +196,7 @@ export default function StatisticsPage() {
                       <AnimatedValue value={card.value} />
                     </p>
                     <p className="mt-1 text-sm font-semibold text-slate-500">{card.label}</p>
-                    <p className="text-[0.65rem] font-bold uppercase tracking-widest text-slate-300">{card.labelEn}</p>
+                    <p className="text-[0.65rem] font-bold uppercase tracking-widest text-slate-300">{card.label}</p>
                   </div>
                 </div>
               );
@@ -208,7 +208,7 @@ export default function StatisticsPage() {
         <section className="container-site mt-10">
           <div className="flex flex-wrap items-center justify-center gap-4 rounded-2xl bg-slate-50 px-6 py-5 ring-1 ring-slate-100">
             <Network className="size-5 text-slate-400" />
-            <span className="text-sm font-bold text-slate-500">Coverage:</span>
+            <span className="text-sm font-bold text-slate-500">የሽፋን፡</span>
             {coverage.map((c, i) => (
               <span key={i} className="flex items-center gap-1.5">
                 <span className="text-lg font-bold text-slate-900 tabular-nums">{c.value}</span>
@@ -226,7 +226,7 @@ export default function StatisticsPage() {
               <h2 className="font-heading text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                 የክልል ንጽጽር
               </h2>
-              <p className="mt-1 text-sm text-slate-500">Regional Comparison by metric</p>
+              <p className="mt-1 text-sm text-slate-500">በመለኪያ የክልል ንጽጽር</p>
             </div>
             <div className="flex gap-2">
               {(["members", "structure", "kebeles"] as const).map((m) => (
@@ -267,7 +267,7 @@ export default function StatisticsPage() {
             {/* Donut */}
             <div className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-100 sm:p-8">
               <h3 className="font-heading text-xl font-bold text-slate-900">የአባላት ስርጭት</h3>
-              <p className="mb-6 text-sm text-slate-500">Member Distribution by Region</p>
+              <p className="mb-6 text-sm text-slate-500">በክልል የአባላት ስርጭት</p>
               <DonutChart
                 data={regionalData.map((r) => ({ label: r.name, value: r.members }))}
                 colors={donutColors}
@@ -277,7 +277,7 @@ export default function StatisticsPage() {
             {/* Top 5 */}
             <div className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-100 sm:p-8">
               <h3 className="font-heading text-xl font-bold text-slate-900">ከፍተኛ 5 ክልሎች</h3>
-              <p className="mb-6 text-sm text-slate-500">Top 5 Regions by Commission Members</p>
+              <p className="mb-6 text-sm text-slate-500">በአባላት ብዛት ከፍተኛ 5 ክልሎች</p>
               <div className="flex flex-col gap-5">
                 {top5.map((r, i) => {
                   const pct = (r.members / totals.members) * 100;
@@ -317,7 +317,7 @@ export default function StatisticsPage() {
             <h2 className="font-heading text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               የኮሚሽኑ ዝርዝር ሰንጠረዥ
             </h2>
-            <p className="mt-1 text-sm text-slate-500">Detailed Regional Breakdown</p>
+            <p className="mt-1 text-sm text-slate-500">ዝርዝር የክልል ማጠቃለያ</p>
           </div>
 
           <div className="overflow-x-auto rounded-3xl bg-white ring-1 ring-slate-200 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)]">

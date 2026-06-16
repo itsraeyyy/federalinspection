@@ -44,9 +44,9 @@ export default function AboutPage() {
               ስለ <span style={{ color: "#014BAA" }}>እኛ</span>
             </h1>
             <div className="mt-6 flex items-center gap-2 text-sm font-medium text-slate-500">
-              <span>Home</span>
+              <span>መነሻ</span>
               <ChevronRight className="size-4" />
-              <span style={{ color: "#014BAA" }}>About Us</span>
+              <span style={{ color: "#014BAA" }}>ስለ እኛ</span>
             </div>
             <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-600">
               የፌዴራል ብልፅግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን ታሪክ፣ ኃላፊነት እና ተቋማዊ መዋቅር ዝርዝር መረጃ።
@@ -145,9 +145,9 @@ export default function AboutPage() {
               <div className="flex size-20 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
                 <Building2 className="size-10 text-slate-400" />
               </div>
-              <h3 className="font-heading text-xl font-semibold text-slate-700">Organizational Chart</h3>
+              <h3 className="font-heading text-xl font-semibold text-slate-700">የተቋም መዋቅር</h3>
               <p className="max-w-md text-sm text-slate-500">
-                Content placeholder — organizational chart / structure diagram to be added here.
+                የተቋም መዋቅር አብነት ጊዜው ይታከላል።
               </p>
             </div>
           </div>

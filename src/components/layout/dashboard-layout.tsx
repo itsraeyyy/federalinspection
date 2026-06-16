@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconLanguage, IconSun, IconMoon, IconClipboardCheck, IconQrcode, IconChartBar } from '@tabler/icons-react';
+import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconSun, IconMoon, IconClipboardCheck, IconQrcode, IconChartBar, IconMessageStar } from '@tabler/icons-react';
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const { t, language, setLanguage } = useI18n();
@@ -52,10 +52,12 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     { label: t('dashboard'), icon: IconDashboard, href: '/dashboard' },
     { label: t('news'), icon: IconNews, href: '/dashboard/news' },
     { label: t('documents'), icon: IconFileText, href: '/dashboard/documents' },
-    { label: 'QR Access', icon: IconQrcode, href: '/dashboard/qr-access' },
+    { label: t('qrAccess'), icon: IconQrcode, href: '/dashboard/qr-access' },
     { label: t('personnel'), icon: IconUsers, href: '/dashboard/personnel' },
     { label: t('complaints'), icon: IconMessage2, href: '/dashboard/complaints' },
-    { label: 'Statistics', icon: IconChartBar, href: '/dashboard/statistics' },
+    { label: t('assessment'), icon: IconClipboardCheck, href: '/dashboard/assessment' },
+    { label: t('feedback'), icon: IconMessageStar, href: '/dashboard/feedback' },
+    { label: t('statistics'), icon: IconChartBar, href: '/dashboard/statistics' },
   ];
 
   return (
@@ -90,14 +92,14 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
         <nav className={`flex-1 py-6 space-y-1 ${isCollapsed ? 'px-2' : 'px-4'}`}>
           {!isCollapsed && (
             <div className="px-3 text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">
-              Quick access
+              {t('quickAccess')}
             </div>
           )}
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
-                key={item.label}
+                key={item.href}
                 href={item.href}
                 title={isCollapsed ? item.label : undefined}
                 className={`flex items-center rounded-xl transition-all duration-200 group relative ${
@@ -126,7 +128,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             {!isCollapsed && (
               <>
                 <div className="flex flex-col items-start overflow-hidden whitespace-nowrap flex-1">
-                  <span className="text-[13px] font-semibold text-text-primary">Administrator</span>
+                  <span className="text-[13px] font-semibold text-text-primary">{t('administrator')}</span>
                   <span className="text-[11px] text-text-muted mt-0.5">cidms@office.gov</span>
                 </div>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0">
@@ -148,7 +150,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             <Link 
               href="/dashboard/settings"
               className="w-10 h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all"
-              title="Settings"
+              title={t('settings')}
             >
               <IconSettings size={18} stroke={2} />
             </Link>
@@ -156,7 +158,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             <button 
               onClick={() => setLanguage(language === 'en' ? 'am' : 'en')} 
               className="w-10 h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all text-xs font-bold tracking-wider"
-              title="Toggle Language"
+              title={t('toggleLanguage')}
             >
               {language === 'en' ? 'AM' : 'EN'}
             </button>
@@ -164,7 +166,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             <button 
               onClick={toggleTheme} 
               className="w-10 h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all"
-              title="Toggle Theme"
+              title={t('toggleTheme')}
             >
               {isDark ? <IconSun size={18} stroke={2} /> : <IconMoon size={18} stroke={2} />}
             </button>

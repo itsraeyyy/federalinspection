@@ -53,7 +53,7 @@ export function NewsMessagesSection() {
         <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
-              Latest Updates
+              የቅርብ ጊዜ
             </p>
             <h2
               id="news-heading"
@@ -75,7 +75,7 @@ export function NewsMessagesSection() {
               style={{ ...(canScrollLeft ? {} : {})} }
               onMouseEnter={(e) => canScrollLeft && ((e.currentTarget as HTMLElement).style.backgroundColor = "#014BAA", (e.currentTarget as HTMLElement).style.borderColor = "#014BAA")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "white", (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0")}
-              aria-label="Scroll left"
+              aria-label="ወደ ግራ ይגלגלו"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -85,7 +85,7 @@ export function NewsMessagesSection() {
               className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-all duration-200 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               onMouseEnter={(e) => canScrollRight && ((e.currentTarget as HTMLElement).style.backgroundColor = "#014BAA", (e.currentTarget as HTMLElement).style.borderColor = "#014BAA")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "white", (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0")}
-              aria-label="Scroll right"
+              aria-label="ወደ ቀኝ ይגלגלו"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -126,7 +126,7 @@ export function NewsMessagesSection() {
                       className="absolute right-3 top-3 rounded-full px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white shadow-sm"
                       style={{ backgroundColor: "#014BAA" }}
                     >
-                      New
+                      አዲስ
                     </div>
                   )}
                 </div>
@@ -149,9 +149,9 @@ export function NewsMessagesSection() {
                     href={`#news-${item.id}`}
                     className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold transition-colors"
                     style={{ color: "#014BAA" }}
-                    aria-label={`Read more about ${item.title}`}
+                    aria-label={`${item.title} ሙሉ ይዘት`}
                   >
-                    Read Article
+                    የጽሁፉን ሙሉ ይዘት ያንብቡ
                     <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
                   </Link>
                 </div>
@@ -168,7 +168,7 @@ export function NewsMessagesSection() {
               />
             </div>
             <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-slate-400 select-none">
-              Swipe to explore
+              ለመመልከት ይጎትቱ
             </span>
           </div>
         </div>

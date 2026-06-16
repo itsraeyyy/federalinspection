@@ -44,7 +44,7 @@ export function MembersSection() {
         <div className="flex items-start justify-between gap-6">
           <div className="max-w-md">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
-              Our Team
+              ቡድናችን
             </p>
             <h2
               id="members-heading"
@@ -93,7 +93,7 @@ export function MembersSection() {
         </div>
 
         {/* Category Tabs */}
-        <div role="tablist" aria-label="Member categories" className="flex items-center gap-2">
+        <div role="tablist" aria-label="የአባላት ምድቦች" className="flex items-center gap-2">
           {memberCategories.map((category) => {
             const isActive = activeTab === category.id;
             return (

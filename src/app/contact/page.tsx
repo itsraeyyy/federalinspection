@@ -23,9 +23,9 @@ export default function ContactPage() {
               ያግ<span style={{ color: "#FFB800" }}>ኙን</span>
             </h1>
             <div className="mt-6 flex items-center gap-2 text-sm font-medium text-slate-500">
-              <span>Home</span>
+              <span>መነሻ</span>
               <ChevronRight className="size-4" />
-              <span style={{ color: "#FFB800" }}>Contact Us</span>
+              <span style={{ color: "#FFB800" }}>ያግኙን</span>
             </div>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               ለማንኛውም ጥያቄ፣ መረጃ ወይም ማብራሪያ ኮሚሽናችንን በሚከተሉት አድራሻዎች ማግኘት ይችላሉ።
@@ -85,7 +85,7 @@ export default function ContactPage() {
             <div className="mt-12 overflow-hidden rounded-3xl bg-white p-2 ring-1 ring-slate-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)]">
               <div className="flex aspect-video w-full flex-col items-center justify-center gap-4 rounded-2xl bg-slate-100 sm:aspect-[21/9]">
                 <MapPin className="size-12 text-slate-300" />
-                <p className="font-heading text-lg font-semibold text-slate-400">ካርታ / Map Placeholder</p>
+                <p className="font-heading text-lg font-semibold text-slate-400">ካርታ</p>
               </div>
             </div>
 

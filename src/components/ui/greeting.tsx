@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react';
 
 export const Greeting = () => {
-  const [greeting, setGreeting] = useState('Good morning');
+  const [greeting, setGreeting] = useState('እንደምን አደሩ');
   
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) {
-      setGreeting('Good morning');
+      setGreeting('እንደምን አደሩ');
     } else if (hour < 18) {
-      setGreeting('Good afternoon');
+      setGreeting('እንደምን ዋሉ');
     } else {
-      setGreeting('Good evening');
+      setGreeting('እንደምን አመሹ');
     }
   }, []);
 

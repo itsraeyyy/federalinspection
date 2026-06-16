@@ -14,11 +14,11 @@ export default function Home() {
       <Menubar />
       <main id="main-content">
         <HeroSection />
+        <AboutMissionVisionSection />
+        <CommissionRoleSection />
         <ChairmanMessageSection />
         <NewsMessagesSection />
         <MembersSection />
-        <AboutMissionVisionSection />
-        <CommissionRoleSection />
         <AnalyticsSection />
       </main>
       <Footer />

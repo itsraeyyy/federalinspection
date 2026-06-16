@@ -118,7 +118,7 @@ export function HeroSection() {
               <div className="absolute inset-2">
                 <Image
                   src="/logo.jpg"
-                  alt="PP Inspection Commission Logo"
+                  alt="የብልፅግና ኢንስፔክሽን ኮሚሽን ምልክት"
                   fill
                   className="object-contain"
                   priority
@@ -208,8 +208,8 @@ export function HeroSection() {
 
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#014BAA]">At a Glance</p>
-                <p className="mt-1 text-sm text-slate-500">National commission reach</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#014BAA]">በአጭሩ</p>
+                <p className="mt-1 text-sm text-slate-500">የብሔራዊ ኮሚሽን ስፋት</p>
               </div>
               <div className="flex size-11 items-center justify-center rounded-2xl bg-[#014BAA]/10 text-[#014BAA]">
                 <Shield className="size-6" />
@@ -236,7 +236,7 @@ export function HeroSection() {
               className="mt-5 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all hover:opacity-90"
               style={{ backgroundColor: "#014BAA" }}
             >
-              Explore full statistics
+              ሙሉ መረጃ ይመልከቱ
               <ArrowRight className="size-4" />
             </Link>
           </div>

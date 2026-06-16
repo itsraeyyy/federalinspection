@@ -78,9 +78,9 @@ export default function FilesPage() {
               <span style={{ color: "#014BAA" }}>ሰነዶች</span>
             </h1>
             <div className="mt-6 flex items-center gap-2 text-sm font-medium text-slate-500">
-              <span>Home</span>
+              <span>መነሻ</span>
               <ChevronRight className="size-4" />
-              <span style={{ color: "#014BAA" }}>Files</span>
+              <span style={{ color: "#014BAA" }}>ሰነዶች</span>
             </div>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
               የፌዴራል ብልፅግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን ሕጎች፣ ደንቦች፣ መመሪያዎች እና ልዩ ልዩ ሪፖርቶች።
@@ -147,7 +147,7 @@ export default function FilesPage() {
                     <span className="text-sm font-bold text-slate-400">{doc.size}</span>
                     <button 
                       className="flex size-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-[#FFB800] group-hover:text-slate-900 group-hover:shadow-sm"
-                      aria-label="Download document"
+                      aria-label="ሰነድ አውርድ"
                     >
                       <Download className="size-5" />
                     </button>

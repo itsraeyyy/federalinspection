@@ -2,7 +2,7 @@ import { SubmissionForm } from "@/components/submission-form";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "ጥቆማ | Federal Inspection Commission",
+  title: "ጥቆማ | የብልፅግና ኢንስፔክሽን ኮሚሽን",
   description: "የጥቆማ ማቅረቢያ ቅጽ",
 };
 
