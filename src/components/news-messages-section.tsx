@@ -1,17 +1,27 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CalendarDays, ArrowRight } from "lucide-react";
-
-import { newsItems } from "@/lib/site-data";
 
 export function NewsMessagesSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    import("@/services/news").then(({ newsService }) => {
+      newsService.getArticles().then(data => {
+        // Filter out drafts just in case the user is an admin looking at the homepage
+        const published = data.filter(a => a.status === 'Published');
+        setArticles(published);
+        setLoading(false);
+      });
+    });
+  }, []);
 
   const checkState = () => {
     const el = scrollRef.current;
@@ -33,7 +43,7 @@ export function NewsMessagesSection() {
       el.removeEventListener("scroll", checkState);
       window.removeEventListener("resize", checkState);
     };
-  }, []);
+  }, [articles]); // Re-run when articles load
 
   const scroll = (dir: "left" | "right") => {
     const el = scrollRef.current;
@@ -98,29 +108,28 @@ export function NewsMessagesSection() {
             ref={scrollRef}
             className="flex gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-6 px-0.5"
           >
-            {newsItems.map((item, index) => (
+            {loading ? (
+              <div className="w-full flex justify-center py-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#014BAA]"></div>
+              </div>
+            ) : articles.length === 0 ? (
+              <div className="w-full flex justify-center py-10 text-slate-500">
+                ምንም ዜና አልተገኘም (No news found)
+              </div>
+            ) : articles.map((item, index) => (
               <article
                 key={item.id}
                 className="group w-[85vw] shrink-0 snap-start overflow-hidden rounded-3xl bg-white p-2 shadow-[0_4px_20px_-6px_rgba(0,0,0,0.06)] ring-1 ring-slate-100 transition-all duration-400 hover:-translate-y-1.5 hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.10)] sm:w-[360px] md:w-[400px]"
               >
                 {/* Image */}
                 <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-slate-100">
-                  {item.image === "__placeholder__" ? (
-                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 to-slate-200">
-                      <svg className="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A1.5 1.5 0 0 0 21.75 19.5V4.5A1.5 1.5 0 0 0 20.25 3H3.75A1.5 1.5 0 0 0 2.25 4.5v15A1.5 1.5 0 0 0 3.75 21Z" />
-                      </svg>
-                      <span className="text-xs font-medium text-slate-400">ፎቶ ያልተሰቀለ</span>
-                    </div>
-                  ) : (
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, 400px"
-                    />
-                  )}
+                  {/* Defaulting to placeholder since there's no image field yet */}
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 to-slate-200">
+                    <svg className="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A1.5 1.5 0 0 0 21.75 19.5V4.5A1.5 1.5 0 0 0 20.25 3H3.75A1.5 1.5 0 0 0 2.25 4.5v15A1.5 1.5 0 0 0 3.75 21Z" />
+                    </svg>
+                    <span className="text-xs font-medium text-slate-400">ፎቶ ያልተሰቀለ</span>
+                  </div>
                   {index === 0 && (
                     <div
                       className="absolute right-3 top-3 rounded-full px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white shadow-sm"
@@ -136,13 +145,13 @@ export function NewsMessagesSection() {
                   <div>
                     <div className="mb-3 flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">
                       <CalendarDays className="size-3.5" aria-hidden="true" />
-                      <time dateTime={item.date}>{item.date}</time>
+                      <time dateTime={item.published || item.created}>{item.published || item.created}</time>
                     </div>
                     <h3 className="font-heading text-xl font-semibold leading-snug text-slate-900 line-clamp-2 transition-colors group-hover:text-slate-700">
                       {item.title}
                     </h3>
                     <p className="mt-3 line-clamp-2 text-sm font-medium leading-relaxed text-slate-500">
-                      {item.description}
+                      {item.content || "No description provided."}
                     </p>
                   </div>
                   <Link

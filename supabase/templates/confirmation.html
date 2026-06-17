@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #fafafa; padding: 48px 24px; margin: 0; }
+    .container { background-color: #ffffff; padding: 32px; border-radius: 16px; max-width: 520px; margin: 0 auto; border: 1px solid #f1f5f9; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02); }
+    .logo { font-size: 20px; font-weight: 600; color: #0f172a; margin-bottom: 32px; letter-spacing: -0.02em; }
+    h1 { color: #0f172a; font-size: 24px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.02em; }
+    p { color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    .button { display: inline-block; padding: 12px 24px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 14px; text-align: center; }
+    .footer { margin-top: 48px; font-size: 13px; color: #94a3b8; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">Federal Inspection System</div>
+    <h1>Verify your email</h1>
+    <p>Welcome to Federal Inspection System. To complete your registration and access your account, please verify your email address by clicking the button below.</p>
+    <a href="{{ .ConfirmationURL }}" class="button">Verify Email Address</a>
+    <div class="footer">
+      &copy; 2026 Federal Inspection System. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>

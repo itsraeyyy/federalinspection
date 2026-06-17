@@ -1,33 +1,69 @@
-import { apiClient } from '../lib/api-client';
+import { supabase } from '@/lib/supabaseClient';
 import { NewsArticle } from '../types';
-
-// Mock Data
-const mockNews: NewsArticle[] = [
-  { id: '1', title: 'Annual Commission Report 2026 Published', lang: 'English', status: 'Published', author: 'Helen T.', created: 'Oct 10, 2026', published: 'Oct 12, 2026' },
-  { id: '2', title: 'የ2018 ዓ.ም በጀት ዓመት እቅድ ትውውቅ', lang: 'Amharic', status: 'Draft', author: 'Abebe B.', created: 'Oct 11, 2026', published: '-' },
-  { id: '3', title: 'New Digital ID Services Announced', lang: 'English', status: 'Published', author: 'Helen T.', created: 'Oct 05, 2026', published: 'Oct 08, 2026' },
-  { id: '4', title: 'Oduu Haaraa: Tajaajila Dijitaalaa', lang: 'Afaan Oromo', status: 'Draft', author: 'Chala D.', created: 'Oct 12, 2026', published: '-' },
-];
 
 export const newsService = {
   getArticles: async (): Promise<NewsArticle[]> => {
-    await apiClient.get('/news');
-    return mockNews;
+    const { data, error } = await supabase
+      .from('news_articles')
+      .select('*')
+      .order('created', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching articles:', error);
+      return [];
+    }
+    return data.map((d: any) => ({
+      ...d,
+      created: d.created ? new Date(d.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
+      published: d.published ? new Date(d.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
+    })) as NewsArticle[];
   },
+  
   getArticle: async (id: string): Promise<NewsArticle | undefined> => {
-    await apiClient.get(`/news/${id}`);
-    return mockNews.find(n => n.id === id);
+    const { data, error } = await supabase
+      .from('news_articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching article:', error);
+      return undefined;
+    }
+    return {
+      ...data,
+      created: data.created ? new Date(data.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
+      published: data.published ? new Date(data.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
+    } as NewsArticle;
   },
+  
   createArticle: async (data: Partial<NewsArticle>): Promise<NewsArticle> => {
-    await apiClient.post('/news', data);
-    const newArticle = { ...data, id: Date.now().toString(), created: 'Today' } as NewsArticle;
-    mockNews.push(newArticle);
-    return newArticle;
+    // We assume the author name is passed in or derived from profile later
+    const { data: newArticle, error } = await supabase
+      .from('news_articles')
+      .insert([data])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return newArticle as NewsArticle;
   },
+  
   updateArticle: async (id: string, data: Partial<NewsArticle>): Promise<void> => {
-    await apiClient.put(`/news/${id}`, data);
+    const { error } = await supabase
+      .from('news_articles')
+      .update(data)
+      .eq('id', id);
+      
+    if (error) throw error;
   },
+  
   deleteArticle: async (id: string): Promise<void> => {
-    await apiClient.delete(`/news/${id}`);
+    const { error } = await supabase
+      .from('news_articles')
+      .delete()
+      .eq('id', id);
+      
+    if (error) throw error;
   }
 };

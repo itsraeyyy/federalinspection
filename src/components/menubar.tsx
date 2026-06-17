@@ -99,10 +99,10 @@ export function Menubar() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/dashboard"
+            href="/auth/login"
             className="hidden items-center justify-center rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_0_rgba(0,0,0,0.15)] transition-all duration-300 hover:scale-105 hover:bg-slate-800 hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] md:flex"
           >
-            ዳሽቦርድ
+            Sign In
           </Link>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -147,11 +147,11 @@ export function Menubar() {
                 })}
                 <li className="mt-8 border-t border-slate-100 pt-8">
                   <Link
-                    href="/dashboard"
+                    href="/auth/login"
                     onClick={handleNavClick}
                     className="flex h-14 w-full items-center justify-center rounded-2xl bg-slate-900 px-4 text-base font-semibold text-white shadow-md transition-all duration-300 hover:bg-slate-800 hover:shadow-lg"
                   >
-                    ወደ ዳሽቦርድ
+                    Sign In
                   </Link>
                 </li>
               </ul>

@@ -3,7 +3,9 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { IconArrowLeft, IconDeviceFloppy, IconPhotoPlus } from "@tabler/icons-react";
 import Link from "next/link";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { maskSupabaseError } from "@/lib/errorMasking";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { newsSchema } from "@/lib/validations";
 import { newsService } from "@/services/news";
@@ -25,12 +27,24 @@ export default function CreateNewsPage() {
     }
   });
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const onSubmit = async (data: NewsFormValues) => {
+    setErrorMsg(null);
     try {
-      await newsService.createArticle({ ...data, lang: data.language, author: 'Current Admin' });
+      const { body, language, ...rest } = data as any;
+      await newsService.createArticle({ 
+        ...rest, 
+        content: body, 
+        lang: language, 
+        author: 'Current Admin',
+        status: 'Published', // default to published for now since the UI button says 'Publish Article'
+        published: new Date().toISOString()
+      });
       router.push('/dashboard/news');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorMsg(maskSupabaseError(error));
     }
   };
 
@@ -57,6 +71,15 @@ export default function CreateNewsPage() {
         </div>
         
         <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 p-8 backdrop-blur-md flex flex-col gap-6">
+          {errorMsg && (
+            <div className="p-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-100 dark:border-red-900/50 flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 flex-shrink-0">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              {errorMsg}
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">Article Title</label>
             <input {...register("title")} type="text" placeholder="e.g., Annual Commission Report 2026..." className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors" />

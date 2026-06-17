@@ -4,13 +4,21 @@ import React, { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconSun, IconMoon, IconClipboardCheck, IconQrcode, IconChartBar, IconMessageStar } from '@tabler/icons-react';
+import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconSun, IconMoon, IconClipboardCheck, IconQrcode, IconChartBar, IconMessageStar, IconLogout } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const { t, language, setLanguage } = useI18n();
   const pathname = usePathname();
   const [isDark, setIsDark] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/auth/login');
+  };
 
   // Persist theme
   useEffect(() => {
@@ -169,6 +177,14 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
               title={t('toggleTheme')}
             >
               {isDark ? <IconSun size={18} stroke={2} /> : <IconMoon size={18} stroke={2} />}
+            </button>
+            <div className="w-[1px] h-4 bg-border/50"></div>
+            <button 
+              onClick={handleLogout}
+              className="w-10 h-10 flex justify-center items-center rounded-full hover:bg-red-50 hover:text-red-600 text-text-secondary transition-all"
+              title="Sign Out"
+            >
+              <IconLogout size={18} stroke={2} />
             </button>
           </div>
         </header>
