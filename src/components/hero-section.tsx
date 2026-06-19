@@ -19,11 +19,31 @@ const FULL_TEXT = LINE_1 + "\n" + LINE_2;
 const TYPING_SPEED = 80;
 
 const heroStats = [
-  { value: "531,894", label: "አባላት", icon: Users },
-  { value: "106,174", label: "መዋቅር", icon: Shield },
-  { value: "14", label: "ክልሎች", icon: MapPin },
-  { value: "88,232", label: "ህብረት", icon: Scale },
+  { value: 531894, label: "አባላት", icon: Users },
+  { value: 106174, label: "መዋቅር", icon: Shield },
+  { value: 14, label: "ክልሎች", icon: MapPin },
 ];
+
+function AnimatedNumber({ target, duration = 2000 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const increment = target / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [target, duration]);
+
+  return <>{count.toLocaleString()}</>;
+}
 
 export function HeroSection() {
   const [charCount, setCharCount] = useState(0);
@@ -128,34 +148,44 @@ export function HeroSection() {
           </div>
 
           {/* Typing title */}
-          <h1
-            id="hero-heading"
-            className="font-heading flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
-          >
-            <span className="text-slate-900">
-              {line1Typed}
-              {cursorOnLine1 && (
-                <span
-                  className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm"
-                  style={{ backgroundColor: "#FFB800", opacity: isDone && !showCursor ? 0 : 1 }}
-                />
-              )}
-            </span>
-            <span style={{ color: "#014BAA" }}>
-              {line2Typed}
-              {!cursorOnLine1 && (
-                <span
-                  className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm"
-                  style={{ backgroundColor: "#FFB800", opacity: isDone && !showCursor ? 0 : 1 }}
-                />
-              )}
-            </span>
-          </h1>
+          <div className="relative">
+            {/* Invisible spacer — reserves exact space */}
+            <h1
+              aria-hidden="true"
+              className="font-heading invisible flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
+            >
+              <span className="text-slate-900">{LINE_1}</span>
+              <span style={{ color: "#014BAA" }}>{LINE_2}</span>
+            </h1>
+            {/* Animated overlay */}
+            <h1
+              id="hero-heading"
+              className="font-heading absolute inset-0 flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
+            >
+              <span className="text-slate-900">
+                {line1Typed}
+                {cursorOnLine1 && (
+                  <span
+                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm"
+                    style={{ backgroundColor: "#FFB800", opacity: isDone && !showCursor ? 0 : 1 }}
+                  />
+                )}
+              </span>
+              <span style={{ color: "#014BAA" }}>
+                {line2Typed}
+                {!cursorOnLine1 && (
+                  <span
+                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm"
+                    style={{ backgroundColor: "#FFB800", opacity: isDone && !showCursor ? 0 : 1 }}
+                  />
+                )}
+              </span>
+            </h1>
+          </div>
 
           {/* Motto */}
           <div
-            className="mt-7 flex flex-col items-center gap-3 transition-opacity duration-700 lg:items-start"
-            style={{ opacity: isDone ? 1 : 0.3 }}
+            className="mt-7 flex flex-col items-center gap-3 lg:items-start"
           >
             <div className="flex items-center gap-3">
               <div className="h-1 w-10 rounded-full" style={{ backgroundColor: "#FFB800" }} />
@@ -168,8 +198,7 @@ export function HeroSection() {
 
           {/* CTAs */}
           <div
-            className="mt-10 flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center transition-opacity duration-700"
-            style={{ opacity: isDone ? 1 : 0.3 }}
+            className="mt-10 flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center"
           >
             <Link
               href="/abetuta"
@@ -190,45 +219,50 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Decorative stats panel — right side */}
+        {/* Right side panel */}
         <div
-          className="relative mx-auto w-full max-w-md transition-opacity duration-700 lg:mx-0 lg:max-w-none"
-          style={{ opacity: isDone ? 1 : 0.5 }}
+          className="relative mx-auto w-full max-w-md lg:mx-0 lg:max-w-none"
         >
-          <div className="relative overflow-hidden rounded-3xl bg-white/75 p-6 shadow-[0_24px_60px_-20px_rgba(1,75,170,0.2)] ring-1 ring-white/80 backdrop-blur-md sm:p-8">
-            {/* Accent bar */}
-            <div
-              className="absolute inset-x-0 top-0 h-1"
-              style={{ backgroundColor: "#014BAA" }}
-            />
+          <div className="relative overflow-hidden rounded-3xl bg-white/80 p-6 shadow-[0_24px_60px_-20px_rgba(1,75,170,0.2)] ring-1 ring-white/80 backdrop-blur-md sm:p-8">
+            {/* Accent top bar */}
+            <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: "#014BAA" }} />
 
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#014BAA]">የኮሚሽኑ መዋቅር መረጃዎች</p>
+            {/* Header */}
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl" style={{ backgroundColor: "#014BAA" }}>
+                <Shield className="size-6 text-white" />
               </div>
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-[#014BAA]/10 text-[#014BAA]">
-                <Shield className="size-6" />
+              <div>
+                <p className="text-sm font-bold text-slate-800">የኮሚሽኑ መዋቅር</p>
+                <p className="text-xs text-slate-500">ዋና መረጃዎች</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {/* Stats */}
+            <div className="space-y-3">
               {heroStats.map(({ value, label, icon: Icon }) => (
                 <div
                   key={label}
-                  className="group rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-100 transition-all duration-300 hover:bg-white hover:shadow-md hover:ring-[#014BAA]/15"
+                  className="group flex items-center gap-4 rounded-2xl p-4 transition-all duration-300 hover:shadow-md"
+                  style={{ backgroundColor: "rgba(1,75,170,0.04)" }}
                 >
-                  <div className="mb-3 flex size-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-100 transition-colors group-hover:bg-[#014BAA] group-hover:text-white">
-                    <Icon className="size-4 text-[#014BAA] transition-colors group-hover:text-white" />
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-transform duration-300 group-hover:scale-105" style={{ backgroundColor: "#014BAA" }}>
+                    <Icon className="size-5" />
                   </div>
-                  <p className="text-2xl font-bold tabular-nums text-slate-900">{value}</p>
-                  <p className="mt-0.5 text-xs font-semibold text-slate-500">{label}</p>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-slate-500">{label}</p>
+                    <p className="text-2xl font-bold tabular-nums text-slate-900">
+                      <AnimatedNumber target={value} />
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
 
+            {/* CTA */}
             <Link
               href="/analytics"
-              className="mt-5 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all hover:opacity-90"
+              className="mt-6 flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all hover:shadow-lg hover:opacity-90"
               style={{ backgroundColor: "#014BAA" }}
             >
               ሙሉ መረጃ ይመልከቱ
@@ -236,10 +270,10 @@ export function HeroSection() {
             </Link>
           </div>
 
-          {/* Decorative offset card behind */}
+          {/* Decorative offset card */}
           <div
             className="absolute -bottom-4 -right-4 -z-10 hidden h-full w-full rounded-3xl lg:block"
-            style={{ background: "linear-gradient(135deg, #014BAA 0%, #FFB800 100%)", opacity: 0.15 }}
+            style={{ background: "linear-gradient(135deg, #014BAA 0%, #FFB800 100%)", opacity: 0.12 }}
             aria-hidden="true"
           />
         </div>

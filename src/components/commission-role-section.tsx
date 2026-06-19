@@ -59,7 +59,7 @@ export function CommissionRoleSection() {
           </h2>
           <div className="mt-8 h-px w-16 bg-white/20" />
           <p className="mt-6 text-6xl font-bold tabular-nums text-white/10">
-            {responsibilities.length}
+          18
           </p>
           <p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
             ዋና ኃላፊነቶች

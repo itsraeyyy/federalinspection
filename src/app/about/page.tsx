@@ -1,6 +1,8 @@
 import { Menubar } from "@/components/menubar";
 import { Footer } from "@/components/footer";
-import { ChevronRight, Shield, BookOpen, Users, Building2 } from "lucide-react";
+import Image from "next/image";
+import { ChevronRight } from "lucide-react";
+import { InstitutionalWorkflow } from "@/components/institutional-workflow";
 
 const responsibilities = [
   { letter: "ሀ", text: "ኮሚሽኑ የፓርቲውን መተዳደሪያ ደንብና መመሪያዎች በሥራ ላይ መዋላቸውን ይከታተላል" },
@@ -48,9 +50,7 @@ export default function AboutPage() {
               <ChevronRight className="size-4" />
               <span style={{ color: "#014BAA" }}>ስለ እኛ</span>
             </div>
-            <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-600">
-              የፌዴራል ብልፅግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን ታሪክ፣ ኃላፊነት እና ተቋማዊ መዋቅር ዝርዝር መረጃ።
-            </p>
+
           </div>
         </section>
 
@@ -80,18 +80,8 @@ export default function AboutPage() {
                 <div className="absolute -bottom-20 -left-20 size-64 rounded-full bg-[#FFB800] opacity-10 blur-3xl" />
               </div>
               <div className="relative flex flex-col items-center gap-6 text-center">
-                <div className="flex size-20 items-center justify-center rounded-2xl bg-slate-50 text-[#014BAA] shadow-inner">
-                  <Shield className="size-10" />
-                </div>
-                <div>
-                  <h3 className="font-heading text-xl font-bold text-slate-900">ጠንካራ ኢንስፔክሽን</h3>
-                  <p className="mt-2 text-sm text-slate-500">ለጠንካራ ፓርቲ</p>
-                </div>
-                <div className="h-px w-full bg-slate-100" />
-                <div className="flex w-full justify-around text-slate-400">
-                  <BookOpen className="size-6" />
-                  <Users className="size-6" />
-                  <Building2 className="size-6" />
+                <div className="relative size-64 overflow-hidden rounded-3xl shadow-inner sm:size-80">
+                  <Image src="/logo.jpg" alt="የኮሚሽኑ ምልክት" fill className="object-contain" />
                 </div>
               </div>
             </div>
@@ -99,30 +89,38 @@ export default function AboutPage() {
         </section>
 
         {/* --- Functions & Responsibilities Section --- */}
-        <section id="responsibilities" className="scroll-mt-28 bg-[#014BAA] py-16 lg:py-24">
-          <div className="container-site">
-            <div className="mb-16 text-center">
+        <section id="responsibilities" className="relative scroll-mt-28 overflow-hidden py-20 lg:py-28" style={{ backgroundColor: "#014BAA" }}>
+          {/* Subtle dot texture */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: "radial-gradient(rgba(255,255,255,0.15) 1.5px, transparent 0)",
+              backgroundSize: "32px 32px",
+            }}
+            aria-hidden="true"
+          />
+
+          <div className="container-site relative z-10">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl">
                 የኮሚሽኑ <span style={{ color: "#FFB800" }}>ተግባርና ኃላፊነት</span>
               </h2>
-              <div className="mx-auto mt-6 h-1 w-12 rounded-full" style={{ backgroundColor: "#FFB800" }} />
-              <p className="mx-auto mt-6 max-w-2xl text-lg text-white/80">
-                በፓርቲው በተሻሻለው መተዳደሪያ ደንቡ አንቀፅ 25(6) መሰረት ለኮሚሽኑ የተሰጡት ተግባራት እና ኃላፊነቶች የሚከተሉት ናቸው፡፡
-              </p>
+              <div className="mx-auto mt-6 h-0.5 w-10 rounded-full" style={{ backgroundColor: "#FFB800" }} />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {responsibilities.map((item, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className="group relative flex flex-col gap-4 rounded-3xl bg-white/5 p-6 transition-all hover:bg-white hover:shadow-xl"
+                  className="group flex items-start gap-5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 py-5 transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.07]"
                 >
-                  <div 
-                    className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xl font-bold text-white transition-colors group-hover:bg-[#FFB800] group-hover:text-slate-900"
+                  <span
+                    className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors duration-200 group-hover:bg-[#FFB800] group-hover:text-[#014BAA]"
+                    style={{ backgroundColor: "rgba(255,184,0,0.12)", color: "#FFB800" }}
                   >
                     {item.letter}
-                  </div>
-                  <p className="text-sm leading-relaxed text-white/90 group-hover:text-slate-700">
+                  </span>
+                  <p className="pt-0.5 text-sm leading-relaxed text-white/70 transition-colors duration-200 group-hover:text-white/90">
                     {item.text}
                   </p>
                 </div>
@@ -135,22 +133,12 @@ export default function AboutPage() {
         <section className="container-site py-16 lg:py-24">
           <div className="mb-16 text-center">
             <h2 className="font-heading text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-              የኮሚሽኑ ተቋማዊ <span style={{ color: "#014BAA" }}>መዋቅር</span>
+              የኮሚሽኑ <span style={{ color: "#014BAA" }}>ተቋማዊ መዋቅር</span>
             </h2>
-            <div className="mx-auto mt-6 h-1 w-12 rounded-full" style={{ backgroundColor: "#014BAA" }} />
+            <div className="mx-auto mt-6 h-0.5 w-10 rounded-full" style={{ backgroundColor: "#FFB800" }} />
           </div>
 
-          <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex aspect-video w-full flex-col items-center justify-center gap-4 bg-slate-50 p-8 text-center">
-              <div className="flex size-20 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
-                <Building2 className="size-10 text-slate-400" />
-              </div>
-              <h3 className="font-heading text-xl font-semibold text-slate-700">የተቋም መዋቅር</h3>
-              <p className="max-w-md text-sm text-slate-500">
-                የተቋም መዋቅር አብነት ጊዜው ይታከላል።
-              </p>
-            </div>
-          </div>
+          <InstitutionalWorkflow />
         </section>
 
       </main>

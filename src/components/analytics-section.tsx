@@ -4,7 +4,6 @@ const summaryCards = [
   { amharic: "አጠቃላይ መዋቅር", value: "106,174", sub: "ክልሎች / ዞኖች / ወረዳዎች" },
   { amharic: "የኮሚሽን አባላት", value: "531,894", sub: "በሁሉም ክልሎች" },
   { amharic: "ኀላፊዎች", value: "2,584", sub: "ንቁ አመራር" },
-  { amharic: "ህብረት", value: "88,232", sub: "በሁሉም ክልሎች" },
 ];
 
 export function AnalyticsSection() {
