@@ -1,45 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
-const messages = [
-  {
-    id: 1,
-    name: "ዋና ኮሚሽነሩ",
-    title: "ዋና ኮሚሽነር",
-    org: "የፌዴራል ብልፅግና ኢንስፔክሽን ኮሚሽን",
-    paragraphs: [
-      "የፌዴራሉ ብልፅግና ኢንስፔክሽን ኮሚሽን — ፓርቲያችን ያወጣቸውን ሕጎች፣ ደንቦችና መምሪያዎች በሥራ ላይ ስለመዋላቸው ቁጥጥርና ክትትል ያደርጋል።",
-      "ኮሚሽናችን ሙሳና ብልሹ አሠራርን ለመዋጋት፣ የፓርቲው ሥነ-ምግባርና ዲሲፕሊን ጥቅም ላይ ስለመዋሉ የቀጣይ ክትትልና ምርምራ ያካሄዳል።",
-      "ጠንካራ ኢንስፔክሽን ለጠንካራ ፓርቲ — ይህ ያልተናወጸ ቁርጠኝነታችን ነው።",
-    ],
-  },
-  {
-    id: 2,
-    name: "ምክትል ኮሚሽነር",
-    title: "ምክትል ኮሚሽነር",
-    org: "የፌዴራል ብልፅግና ኢንስፔክሽን ኮሚሽን",
-    paragraphs: [
-      "ኮሚሽናችን በፓርቲው መርሆዎች መሠረት ፍትሐዊ እና ግልጽ የሆነ የኢንስፔክሽን አገልግሎት ለማበርከት የተቋቋመ ነው።",
-      "የኮሚሽኑ አባላት በሙሉ በታማኝነት፣ በትጋት እና በሙያዊ ሥነ-ምግባር የተገኙ ሲሆኑ ለፓርቲው እድገት ያላሰለሰ ጥረት እያደረጉ ይገኛሉ።",
-      "ወደፊትም ኮሚሽኑ ተግባሩን በተሻለ ደረጃ ለማከናወን የቴክኖሎጂ አጠቃቀምን በማስፋት አገልግሎቱን ዘመናዊ ለማድረግ እየሰራ ይገኛል።",
-    ],
-  },
-  {
-    id: 3,
-    name: "ዋና ሥራ አስኪያጁ",
-    title: "ዋና ሥራ አስኪያጅ",
-    org: "የፌዴራል ብልፅግና ኢንስፔክሽን ኮሚሽን",
-    paragraphs: [
-      "በኮሚሽናችን የምንሰራው ሥራ ለፓርቲው መጠናከር እና ለሀገራችን ዕድገት ትልቅ ፋይዳ አለው።",
-      "የኢንስፔክሽን ሥራውን በአግባቡ በማከናወን የፓርቲውን ሀብት በአግባቡ ጥቅም ላይ መዋሉን ማረጋገጥ የእኛ ዋና ተግባር ነው።",
-    ],
-  },
-];
+interface MessageData {
+  id: string;
+  name: string;
+  title: string;
+  org: string;
+  paragraphs: string[];
+  photo: string | null;
+}
 
 export function ChairmanMessageSection() {
+  const [messages, setMessages] = useState<MessageData[]>([]);
   const [current, setCurrent] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchMessages() {
+      const { data, error } = await supabase
+        .from('personnel')
+        .select('*')
+        .not('message', 'is', null)
+        .neq('message', '');
+
+      if (!error && data) {
+        // filter only those with actual message text
+        const validData = data.filter(p => p.message && p.message.trim().length > 0);
+        
+        const formatted = validData.map(p => ({
+          id: p.id,
+          name: p.name_am || p.name,
+          title: p.position_am || p.position,
+          org: p.office_category_am || p.office_category || "የፌዴራል ብልፅግና ኢንስፔክሽን ኮሚሽን",
+          paragraphs: p.message.split('\n').filter((text: string) => text.trim().length > 0),
+          photo: p.photo
+        }));
+        
+        setMessages(formatted);
+      }
+      setLoading(false);
+    }
+    fetchMessages();
+  }, []);
+
+  if (loading || messages.length === 0) return null;
+
   const msg = messages[current];
 
   const prev = () => setCurrent((c) => (c === 0 ? messages.length - 1 : c - 1));
@@ -79,14 +87,18 @@ export function ChairmanMessageSection() {
 
               {/* Photo placeholder */}
               <div className="relative h-[460px] w-[340px] overflow-hidden rounded-3xl bg-gradient-to-br from-slate-200 to-slate-100 shadow-2xl ring-1 ring-slate-200 sm:h-[520px] sm:w-[380px]">
-                <div className="flex h-full w-full flex-col items-center justify-center gap-4">
-                  <div className="flex size-28 items-center justify-center rounded-full bg-slate-200">
-                    <svg className="size-16 text-slate-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-                    </svg>
+                {msg.photo ? (
+                  <img src={msg.photo} alt={msg.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-4">
+                    <div className="flex size-28 items-center justify-center rounded-full bg-slate-200">
+                      <svg className="size-16 text-slate-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-slate-400">የሃላፊ ፎቶ</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-400">የሃላፊ ፎቶ</p>
-                </div>
+                )}
 
                 {/* Name plate overlay */}
                 <div
@@ -148,37 +160,38 @@ export function ChairmanMessageSection() {
               </div>
             </div>
 
-            {/* Navigation dots + arrows */}
-            <div className="mt-8 flex items-center justify-start gap-4">
-              <button
-                onClick={prev}
-                className="flex size-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition-all hover:text-[#014BAA] hover:ring-[#014BAA]/30"
-                aria-label="ቀዳሚ"
-              >
-                <ChevronLeft className="size-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                {messages.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrent(i)}
-                    className={`rounded-full transition-all duration-300 ${
-                      i === current
-                        ? "h-2.5 w-8 bg-[#014BAA]"
-                        : "h-2.5 w-2.5 bg-slate-300 hover:bg-slate-400"
-                    }`}
-                    aria-label={`መልዕክት ${i + 1}`}
-                  />
-                ))}
+            {messages.length > 1 && (
+              <div className="mt-8 flex items-center justify-start gap-4">
+                <button
+                  onClick={prev}
+                  className="flex size-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition-all hover:text-[#014BAA] hover:ring-[#014BAA]/30"
+                  aria-label="ቀዳሚ"
+                >
+                  <ChevronLeft className="size-5" />
+                </button>
+                <div className="flex items-center gap-2">
+                  {messages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrent(i)}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === current
+                          ? "h-2.5 w-8 bg-[#014BAA]"
+                          : "h-2.5 w-2.5 bg-slate-300 hover:bg-slate-400"
+                      }`}
+                      aria-label={`መልዕክት ${i + 1}`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={next}
+                  className="flex size-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition-all hover:text-[#014BAA] hover:ring-[#014BAA]/30"
+                  aria-label="ቀጣይ"
+                >
+                  <ChevronRight className="size-5" />
+                </button>
               </div>
-              <button
-                onClick={next}
-                className="flex size-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition-all hover:text-[#014BAA] hover:ring-[#014BAA]/30"
-                aria-label="ቀጣይ"
-              >
-                <ChevronRight className="size-5" />
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -60,6 +60,7 @@ const translations: Record<Language, Record<string, string>> = {
     assessment: 'ምዘና',
     feedback: 'አስተያየት መቀበያ',
     admins: 'አስተዳዳሪዎች',
+    analytics: 'ትንታኔ',
   },
   en: {
     dashboard: 'Dashboard',
@@ -110,6 +111,7 @@ const translations: Record<Language, Record<string, string>> = {
     assessment: 'Assessment',
     feedback: 'Feedback Inbox',
     admins: 'Admins',
+    analytics: 'Analytics',
   },
 };
 

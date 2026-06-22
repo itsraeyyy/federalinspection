@@ -4,6 +4,7 @@ import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { SocketProvider } from "@/providers/socket-provider";
 import { CommissionReviewPopup } from "@/components/commission-review-popup";
+import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -54,6 +55,7 @@ export default function RootLayout({
             </a>
             {children}
             <CommissionReviewPopup />
+            <AnalyticsTracker />
           </I18nProvider>
         </SocketProvider>
       </body>

@@ -1,60 +1,38 @@
+'use client';
+
 import { Menubar } from "@/components/menubar";
 import { Footer } from "@/components/footer";
-import { ChevronRight, FileText, Download, Search, FilePdf, FileArchive } from "lucide-react";
+import { ChevronRight, FileText, Download, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { publicFilesService, PublicFile, PublicFileCategory } from "@/services/publicFiles";
+import { IconLoader2 } from "@tabler/icons-react";
 
-// Mock data for files
-const documents = [
-  {
-    id: 1,
-    title: "የብልፅግና ፓርቲ መተዳደሪያ ደንብ (የተሻሻለው)",
-    category: "መተዳደሪያ ደንብ",
-    size: "2.4 MB",
-    date: "ጥር 24, 2017 ዓ.ም",
-    type: "pdf",
-  },
-  {
-    id: 2,
-    title: "የኢንስፔክሽን እና ቁጥጥር መመሪያ",
-    category: "መመሪያ",
-    size: "1.1 MB",
-    date: "መጋቢት 15, 2016 ዓ.ም",
-    type: "pdf",
-  },
-  {
-    id: 3,
-    title: "የአቤቱታ አቀራረብና አፈታት ሥነ-ሥርዓት",
-    category: "መመሪያ",
-    size: "850 KB",
-    date: "ጥቅምት 10, 2016 ዓ.ም",
-    type: "pdf",
-  },
-  {
-    id: 4,
-    title: "የ2016 በጀት ዓመት የሥራ አፈጻጸም ሪፖርት",
-    category: "ሪፖርት",
-    size: "3.2 MB",
-    date: "ሐምሌ 30, 2016 ዓ.ም",
-    type: "pdf",
-  },
-  {
-    id: 5,
-    title: "የክልል ጽ/ቤቶች የክትትል ቅፆች ማጠቃለያ",
-    category: "ቅፆች",
-    size: "500 KB",
-    date: "መስከረም 05, 2016 ዓ.ም",
-    type: "zip",
-  },
-  {
-    id: 6,
-    title: "የኮሚሽኑ የ5 ዓመት ስትራቴጂክ ዕቅድ",
-    category: "ዕቅድ",
-    size: "4.5 MB",
-    date: "ነሐሴ 12, 2015 ዓ.ም",
-    type: "pdf",
-  },
-];
+const CATEGORIES: PublicFileCategory[] = ['መተዳደርያ ደንብ', 'የኮሚሽኑ መመሪያዎች', 'የፓርቲ መመሪያዎች'];
 
 export default function FilesPage() {
+  const [files, setFiles] = useState<PublicFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<PublicFileCategory | 'ሁሉም'>('ሁሉም');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    loadFiles();
+  }, [activeTab]);
+
+  const loadFiles = async () => {
+    setLoading(true);
+    const categoryFilter = activeTab === 'ሁሉም' ? undefined : activeTab;
+    const data = await publicFilesService.getFiles(categoryFilter);
+    setFiles(data);
+    setLoading(false);
+  };
+
+  const filteredFiles = files.filter(f => 
+    !searchQuery || 
+    f.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    f.file_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <>
       <Menubar />
@@ -99,62 +77,94 @@ export default function FilesPage() {
                 <input
                   type="text"
                   placeholder="ሰነዶችን ይፈልጉ..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-12 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-[#014BAA] focus:ring-4 focus:ring-[#014BAA]/10 shadow-sm"
                 />
               </div>
-              <div className="flex gap-2">
-                <button className="rounded-xl bg-[#014BAA] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#013a85] hover:shadow">
+              <div className="flex gap-2 flex-wrap">
+                <button 
+                  onClick={() => setActiveTab('ሁሉም')}
+                  className={`rounded-xl px-5 py-2.5 text-sm font-bold shadow-sm transition-all ${
+                    activeTab === 'ሁሉም'
+                      ? 'bg-[#014BAA] text-white hover:bg-[#013a85]'
+                      : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                  }`}
+                >
                   ሁሉም
                 </button>
-                <button className="rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:text-slate-900">
-                  መመሪያ
-                </button>
-                <button className="rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:text-slate-900">
-                  ሪፖርት
-                </button>
+                {CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveTab(category)}
+                    className={`rounded-xl px-5 py-2.5 text-sm font-bold shadow-sm transition-all ${
+                      activeTab === category
+                        ? 'bg-[#014BAA] text-white hover:bg-[#013a85]'
+                        : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Documents List */}
-            <div className="flex flex-col gap-4">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="group flex flex-col items-start gap-4 rounded-3xl bg-white p-5 ring-1 ring-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-8px_rgba(1,75,170,0.12)] hover:ring-[#014BAA]/20 sm:flex-row sm:items-center sm:p-6"
-                >
-                  <div 
-                    className="flex size-14 shrink-0 items-center justify-center rounded-2xl transition-colors"
-                    style={{ backgroundColor: "rgba(1, 75, 170, 0.06)", color: "#014BAA" }}
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <IconLoader2 className="animate-spin text-[#014BAA]" size={40} />
+              </div>
+            ) : filteredFiles.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-3xl border border-slate-200">
+                <FileText className="mx-auto text-slate-200 mb-4" size={48} />
+                <h3 className="text-lg font-medium text-slate-900 mb-1">ምንም ፋይል አልተገኘም</h3>
+                <p className="text-slate-500 text-sm">በዚህ ምድብ ውስጥ የተጫነ ፋይል የለም።</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {filteredFiles.map((doc) => (
+                  <a
+                    key={doc.id}
+                    href={doc.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex flex-col items-start gap-4 rounded-3xl bg-white p-5 ring-1 ring-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-8px_rgba(1,75,170,0.12)] hover:ring-[#014BAA]/20 sm:flex-row sm:items-center sm:p-6 cursor-pointer"
                   >
-                    {doc.type === "pdf" ? <FileText className="size-7" /> : <FileArchive className="size-7" />}
-                  </div>
-                  
-                  <div className="flex flex-1 flex-col">
-                    <div className="flex items-center gap-3">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider text-slate-500">
-                        {doc.category}
-                      </span>
-                      <span className="text-[0.65rem] font-bold tracking-wider text-slate-400">
-                        {doc.date}
-                      </span>
-                    </div>
-                    <h3 className="mt-2 font-heading text-lg font-bold text-slate-900 group-hover:text-[#014BAA] transition-colors">
-                      {doc.title}
-                    </h3>
-                  </div>
-
-                  <div className="mt-4 flex w-full items-center justify-between sm:mt-0 sm:w-auto sm:gap-6">
-                    <span className="text-sm font-bold text-slate-400">{doc.size}</span>
-                    <button 
-                      className="flex size-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-[#FFB800] group-hover:text-slate-900 group-hover:shadow-sm"
-                      aria-label="ሰነድ አውርድ"
+                    <div 
+                      className="flex size-14 shrink-0 items-center justify-center rounded-2xl transition-colors"
+                      style={{ backgroundColor: "rgba(1, 75, 170, 0.06)", color: "#014BAA" }}
                     >
-                      <Download className="size-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      <FileText className="size-7" />
+                    </div>
+                    
+                    <div className="flex flex-1 flex-col">
+                      <div className="flex items-center gap-3">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider text-slate-500">
+                          {doc.category}
+                        </span>
+                        <span className="text-[0.65rem] font-bold tracking-wider text-slate-400">
+                          {new Date(doc.created_at).toLocaleDateString('am-ET')}
+                        </span>
+                      </div>
+                      <h3 className="mt-2 font-heading text-lg font-bold text-slate-900 group-hover:text-[#014BAA] transition-colors">
+                        {doc.title}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">{doc.file_name}</p>
+                    </div>
+
+                    <div className="mt-4 flex w-full items-center justify-between sm:mt-0 sm:w-auto sm:gap-6">
+                      <span className="text-sm font-bold text-slate-400">{doc.file_size}</span>
+                      <div 
+                        className="flex size-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-[#FFB800] group-hover:text-slate-900 group-hover:shadow-sm"
+                        aria-label="ሰነድ አውርድ"
+                      >
+                        <Download className="size-5" />
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
 
           </div>
         </section>

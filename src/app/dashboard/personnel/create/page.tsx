@@ -12,8 +12,8 @@ import { useState } from "react";
 import * as z from "zod";
 import { COMMISSION_POSITIONS, OFFICE_CATEGORIES, Personnel } from "@/types";
 
-// @BACKEND: Extended validation schema for personnel creation.
-const createPersonnelSchema = personnelSchema.extend({
+// @BACKEND: Independent validation schema for personnel creation matching the form fields.
+const createPersonnelSchema = z.object({
   positionId: z.string().min(1, 'ሹመት ያስፈልጋል።'),
   officeId: z.string().min(1, 'ምድብ ያስፈልጋል።'),
   fullName: z.string().min(1, 'ሙሉ ስም ያስፈልጋል።'),
@@ -29,15 +29,17 @@ const createPersonnelSchema = personnelSchema.extend({
   responsibility: z.string().optional(),
   commissionTenure: z.string().optional(),
   phone: z.string().optional(),
+  message: z.string().optional(),
+  photoFile: z.any().optional(),
 });
 
 type CreatePersonnelFormValues = z.infer<typeof createPersonnelSchema>;
 
 export default function CreatePersonnelPage() {
   const router = useRouter();
-  // @BACKEND: Photo upload not needed for this form — remove if not required
+  const [statusMsg, setStatusMsg] = useState<{type: 'error' | 'success', text: string} | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CreatePersonnelFormValues>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<any>({
     resolver: zodResolver(createPersonnelSchema),
     defaultValues: {
       positionId: '',
@@ -55,18 +57,42 @@ export default function CreatePersonnelPage() {
       responsibility: '',
       commissionTenure: '',
       phone: '',
+      message: '',
+      photoFile: undefined,
     },
   });
 
+  const positionId = watch('positionId');
+
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoPreview(URL.createObjectURL(file));
+      // react-hook-form does not auto bind file inputs easily, we'll manually set it or just let the register handle it
+    }
+  };
+
   // @BACKEND: Replace with real API call — payload fields must match backend schema
-  const onSubmit = async (formData: CreatePersonnelFormValues) => {
+  const onSubmit = async (formData: any) => {
     try {
+      setStatusMsg(null);
       const pos = COMMISSION_POSITIONS.find(p => p.id === formData.positionId);
       const off = OFFICE_CATEGORIES.find(o => o.id === formData.officeId);
-      if (!pos || !off) return;
+      if (!pos || !off) {
+        setStatusMsg({ type: 'error', text: 'እባክዎ ሹመት እና ምድብ በትክክል ይምረጡ።' });
+        return;
+      }
+
+      let photoUrl = '';
+      if (formData.photoFile && formData.photoFile.length > 0) {
+        photoUrl = await personnelService.uploadPhoto(formData.photoFile[0]);
+      }
 
       const payload = {
         name: formData.fullName,
+        nameAm: formData.fullName,
         position: pos.nameEn,
         positionAm: pos.nameAm,
         officeCategory: off.nameEn,
@@ -74,13 +100,20 @@ export default function CreatePersonnelPage() {
         department: formData.educationType || '',
         email: '',
         phone: formData.phone || '',
-        photo: '',
+        photo: photoUrl,
+        message: pos.id === 'chief' ? formData.message : undefined,
         status: 'Active' as const,
       };
-      await personnelService.createPersonnel(payload as unknown as Personnel);
-      router.push('/dashboard/personnel');
-    } catch (error) {
+      
+      await personnelService.createPersonnel(payload);
+      setStatusMsg({ type: 'success', text: 'መረጃው በትክክል ተመዝግቧል!' });
+      
+      setTimeout(() => {
+        router.push('/dashboard/personnel');
+      }, 1500);
+    } catch (error: any) {
       console.error(error);
+      setStatusMsg({ type: 'error', text: error.message || 'መረጃ መመዝገብ አልተቻለም። እባክዎ እንደገና ይሞክሩ።' });
     }
   };
 
@@ -101,7 +134,43 @@ export default function CreatePersonnelPage() {
           </button>
         </div>
 
+        {statusMsg && (
+          <div className={`p-4 rounded-xl text-sm font-semibold ${statusMsg.type === 'error' ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-success/10 text-success border border-success/20'}`}>
+            {statusMsg.text}
+          </div>
+        )}
+
         <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 p-8 backdrop-blur-md flex flex-col gap-8">
+          {/* Photo Upload */}
+          <div className="flex flex-col gap-6">
+            <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-widest">የአባል ፎቶ (Photo)</h3>
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 rounded-2xl bg-surface-primary border border-border/50 flex items-center justify-center overflow-hidden shrink-0">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs text-text-muted text-center px-2">ምንም ፎቶ የለም</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  {...register('photoFile')}
+                  onChange={(e) => {
+                    handlePhotoChange(e);
+                    // Also fire react-hook-form onChange
+                    register('photoFile').onChange(e);
+                  }}
+                  className="text-sm text-text-primary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20 cursor-pointer"
+                />
+                <p className="text-xs text-text-muted">የሚፈቀደው መጠን: እስከ 5MB.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full h-[1px] bg-border/20"></div>
+
           {/* ሹመት እና ምድብ */}
           <div className="flex flex-col gap-6">
             <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ሹመት እና ምድብ</h3>
@@ -223,6 +292,20 @@ export default function CreatePersonnelPage() {
               </div>
             </div>
           </div>
+
+          <div className="w-full h-[1px] bg-border/20"></div>
+
+          {/* Conditional Message for Chief Commissioner */}
+          {positionId === 'chief' && (
+            <div className="flex flex-col gap-6">
+              <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-widest">መልዕክት (ዋና ኮሚሽነር ብቻ)</h3>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">መልዕክት</label>
+                <textarea {...register('message')} placeholder="ዋና ኮሚሽነሩ የሚያስተላልፉት መልዕክት ካለ እዚህ ያስገቡ..." rows={4} className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors resize-none" />
+                <p className="text-xs text-text-muted">ይህ ክፍል የሚሞላው ለዋና ኮሚሽነር ብቻ ነው</p>
+              </div>
+            </div>
+          )}
         </div>
       </form>
     </DashboardLayout>

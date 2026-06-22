@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconSun, IconMoon, IconClipboardCheck, IconQrcode, IconChartBar, IconMessageStar, IconLogout, IconShieldCheck } from '@tabler/icons-react';
+import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconSun, IconMoon, IconClipboardCheck, IconQrcode, IconChartBar, IconMessageStar, IconLogout, IconShieldCheck, IconChartDots, IconFileDescription } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useAdmin } from '@/lib/hooks/useAdmin';
@@ -56,19 +56,21 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     }
   };
 
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
-    { label: t('dashboard'), icon: IconDashboard, href: '/dashboard' },
-    { label: t('news'), icon: IconNews, href: '/dashboard/news', id: 'news' },
-    { label: t('documents'), icon: IconFileText, href: '/dashboard/documents', id: 'documents' },
-    { label: t('qrAccess'), icon: IconQrcode, href: '/dashboard/qr-access', id: 'qr-access' },
-    { label: t('personnel'), icon: IconUsers, href: '/dashboard/personnel', id: 'personnel' },
-    { label: t('complaints'), icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
-    { label: t('assessment'), icon: IconClipboardCheck, href: '/dashboard/assessment', id: 'assessment' },
-    { label: t('feedback'), icon: IconMessageStar, href: '/dashboard/feedback', id: 'feedback' },
-    { label: t('statistics'), icon: IconChartBar, href: '/dashboard/statistics', id: 'statistics' },
-    { label: t('admins'), icon: IconShieldCheck, href: '/dashboard/admins', id: 'admins' },
+    { label: 'ዳሽቦርድ', icon: IconDashboard, href: '/dashboard' },
+    { label: 'ዜና', icon: IconNews, href: '/dashboard/news', id: 'news' },
+    { label: 'ሰነዶች', icon: IconFileText, href: '/dashboard/documents', id: 'documents' },
+    { label: 'የህዝብ ፋይሎች', icon: IconFileText, href: '/dashboard/files', id: 'public-files' },
+    { label: 'QR መዳረሻ', icon: IconQrcode, href: '/dashboard/qr-access', id: 'qr-access' },
+    { label: 'የአመራር አካላት', icon: IconUsers, href: '/dashboard/personnel', id: 'personnel' },
+    { label: 'ጥቆማ እና አቤቱታ', icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
+    { label: 'ምዘና', icon: IconClipboardCheck, href: '/dashboard/assessment', id: 'assessment' },
+    { label: 'አስተያየት', icon: IconMessageStar, href: '/dashboard/feedback', id: 'feedback' },
+    { label: 'መረጃ', icon: IconChartBar, href: '/dashboard/statistics', id: 'statistics' },
+    { label: 'ቅጾች', icon: IconFileDescription, href: '/dashboard/forms', id: 'forms' },
+    { label: 'አስተዳዳሪዎች', icon: IconShieldCheck, href: '/dashboard/admins', id: 'admins' },
   ];
 
   const allowedNavItems = navItems.filter(item => {
@@ -181,13 +183,13 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
               <IconSettings size={18} stroke={2} />
             </Link>
             <div className="w-[1px] h-4 bg-border/50 mx-1"></div>
-            <button 
-              onClick={() => setLanguage(language === 'en' ? 'am' : 'en')} 
-              className="w-10 h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all text-xs font-bold tracking-wider"
-              title={t('toggleLanguage')}
+            <Link 
+              href="/dashboard/analytics"
+              className="w-10 h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all"
+              title={t('analytics')}
             >
-              {language === 'en' ? 'AM' : 'EN'}
-            </button>
+              <IconChartDots size={18} stroke={2} />
+            </Link>
             <div className="w-[1px] h-4 bg-border/50"></div>
             <button 
               onClick={toggleTheme} 

@@ -11,6 +11,7 @@ type AdminProfile = {
   last_name?: string;
   access_level?: string;
   modules?: string[];
+  email?: string;
 };
 
 type AdminContextType = {

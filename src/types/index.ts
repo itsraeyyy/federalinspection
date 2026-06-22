@@ -118,6 +118,7 @@ export interface Personnel {
   email: string;
   phone: string;
   photo?: string;
+  message?: string;
   status: 'Active' | 'Inactive';
 }
 
@@ -126,26 +127,43 @@ export interface ComplaintAttachment {
   filename: string;
   fileType: string;
   fileSize: string;
+  url?: string;
 }
 
 export interface ComplaintResolution {
   message: string;
-  attachedFile?: ComplaintAttachment;
+  attachments?: ComplaintAttachment[];
   resolvedAt: string;
   resolvedBy: string;
 }
 
+export type ComplaintStatus = 'New' | 'Processing' | 'Resolved' | 'Rejected';
+
 export interface Complaint {
   id: string;
+  trackingCode: string;
   name: string;
   phone: string;
   email?: string;
+  age?: number;
+  gender?: string;
+  address?: string;
+  submissionMode: string;
+  memberCount?: number;
+  institution?: string;
   type: 'Complaint' | 'Suggestion';
   subject: string;
   message: string;
+  requestedResolution?: string;
   attachments: ComplaintAttachment[];
   date: string;
-  status: 'New' | 'Under Review' | 'Resolved' | 'Rejected';
+  createdAt: string;
+  updatedAt?: string;
+  processedAt?: string;
+  resolvedAt?: string;
+  processedBy?: string;
+  resolvedBy?: string;
+  status: ComplaintStatus;
   resolution?: ComplaintResolution;
 }
 

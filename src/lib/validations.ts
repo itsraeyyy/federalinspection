@@ -5,7 +5,7 @@ export const newsSchema = z.object({
   description: z.string().optional(),
   image: z.string().optional(),
   language: z.string().min(1, 'Language is required.'),
-  category: z.string().min(1, 'Category is required.'),
+  category: z.string().optional(),
   body: z.string().min(10, 'Body content is required.'),
   status: z.enum(['Draft', 'Published']).optional(),
 });
