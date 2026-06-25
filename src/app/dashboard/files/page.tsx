@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useState, useEffect, useRef } from "react";
 import { publicFilesService, PublicFile, PublicFileCategory } from "@/services/publicFiles";
 import { IconUpload, IconTrash, IconFileText, IconLoader2, IconExternalLink } from "@tabler/icons-react";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const CATEGORIES: PublicFileCategory[] = ['መተዳደርያ ደንብ', 'የኮሚሽኑ መመሪያዎች', 'የፓርቲ መመሪያዎች'];
 
@@ -19,6 +20,10 @@ export default function PublicFilesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [uploadError, setUploadError] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    fileToDelete: { id: string; url: string } | null;
+  }>({ isOpen: false, fileToDelete: null });
 
   useEffect(() => {
     loadFiles();
@@ -53,10 +58,17 @@ export default function PublicFilesPage() {
     setUploading(false);
   };
 
-  const handleDelete = async (id: string, url: string) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+  const handleDelete = (id: string, url: string) => {
+    setConfirmDialog({ isOpen: true, fileToDelete: { id, url } });
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmDialog.fileToDelete) return;
+    
+    const { id, url } = confirmDialog.fileToDelete;
     const success = await publicFilesService.deleteFile(id, url);
     if (success) {
+      setConfirmDialog({ isOpen: false, fileToDelete: null });
       await loadFiles();
     } else {
       alert('Failed to delete file.');
@@ -192,6 +204,15 @@ export default function PublicFilesPage() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        title="ፋይል ማጥፋት"
+        message="እርግጠኛ ነዎት ይህን ፋይል ማጥፋት ይፈልጋሉ?"
+        isDanger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDialog({ isOpen: false, fileToDelete: null })}
+      />
     </DashboardLayout>
   );
 }

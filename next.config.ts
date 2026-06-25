@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["abushakir", "@js-temporal/polyfill"],
   images: {
     remotePatterns: [
       {
@@ -16,6 +17,12 @@ const nextConfig: NextConfig = {
       {
         protocol: "http",
         hostname: "localhost",
+        port: "54321",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "192.168.3.81",
         port: "54321",
         pathname: "/**",
       },

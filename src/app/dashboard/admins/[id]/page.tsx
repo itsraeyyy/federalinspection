@@ -11,6 +11,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import * as z from "zod";
 import { Admin, PERMISSION_GROUPS, ALL_MODULES } from "@/types";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type AdminFormValues = z.infer<typeof adminSchema>;
 
@@ -41,6 +42,7 @@ export default function EditAdminPage() {
   const id = params.id as string;
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<AdminFormValues>({
     resolver: zodResolver(adminSchema),
@@ -101,11 +103,13 @@ export default function EditAdminPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (confirm('ይህን አስተዳዳሪ ማስወገድ ይፈልጋሉ? ሁሉንም የስርዓት መዳረሻ ያጣሉ።')) {
-      await adminService.deleteAdmin(id);
-      router.push('/dashboard/admins');
-    }
+  const handleDelete = () => {
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    await adminService.deleteAdmin(id);
+    router.push('/dashboard/admins');
   };
 
   if (loading) {
@@ -251,6 +255,15 @@ export default function EditAdminPage() {
           </div>
         </div>
       </form>
+      
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="አስተዳዳሪ ማስወገድ"
+        message="ይህን አስተዳዳሪ ማስወገድ ይፈልጋሉ? ሁሉንም የስርዓት መዳረሻ ያጣሉ።"
+        isDanger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
     </DashboardLayout>
   );
 }

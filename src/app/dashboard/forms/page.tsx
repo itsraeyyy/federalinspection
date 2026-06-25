@@ -1,16 +1,38 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { IconTool } from "@tabler/icons-react";
+import { FormsAdminView } from "@/components/dashboard/FormsAdminView";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function FormsPage() {
+export default async function FormsPage() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+
+  // Fetch representatives
+  const { data: reps } = await supabase
+    .from('user_profiles')
+    .select('user_id, region, system_role, users:user_id(full_name, phone_number)')
+    .eq('system_role', 'representative');
+
+  // Fetch reports
+  const { data: reports } = await supabase
+    .from('reports')
+    .select('*')
+    .order('created_at', { ascending: false });
+
   return (
     <DashboardLayout>
-      <div className="flex flex-col items-center justify-center h-full min-h-[60vh] gap-4">
-        <div className="w-20 h-20 bg-brand-blue/10 text-brand-blue rounded-full flex items-center justify-center mb-2">
-          <IconTool size={40} />
-        </div>
-        <h1 className="text-3xl font-bold text-text-primary tracking-tight">ቅጾች</h1>
-        <p className="text-lg text-text-muted">ይህ ገፅ በመሰራት ላይ ነው</p>
-      </div>
+      <FormsAdminView initialRepresentatives={reps || []} initialReports={reports || []} />
     </DashboardLayout>
   );
 }

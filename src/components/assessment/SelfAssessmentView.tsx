@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { SELF_ASSESSMENT_QUESTIONS_10 } from '@/lib/assessment-data';
+import { SELF_ASSESSMENT_QUESTIONS } from '@/lib/assessment-data';
 
-export function SelfAssessmentView({ periodId, existingData }: { periodId: string, existingData: any }) {
+export function SelfAssessmentView({ periodId, existingData, readOnly = false }: { periodId: string, existingData: any, readOnly?: boolean }) {
   const router = useRouter();
   const [responses, setResponses] = useState<Record<string, number>>(existingData?.responses || {});
   const [loading, setLoading] = useState(false);
@@ -19,25 +19,28 @@ export function SelfAssessmentView({ periodId, existingData }: { periodId: strin
   };
 
   // Compute total score
-  let totalScore = 0;
+  let totalRawScore = 0;
   let totalAnswered = 0;
   let totalQuestions = 0;
 
-  SELF_ASSESSMENT_QUESTIONS_10.forEach(category => {
+  SELF_ASSESSMENT_QUESTIONS.forEach(category => {
     category.questions.forEach(q => {
       totalQuestions++;
       if (responses[q.question_id] !== undefined) {
         totalAnswered++;
-        // Calculate weighted score: (Rating / 5) * Weight
-        totalScore += (responses[q.question_id] / 5) * q.weight;
+        // Score (C) = A × B
+        totalRawScore += q.weight * responses[q.question_id];
       }
     });
   });
 
-  const displayScore = totalScore.toFixed(2);
+  // For Form 1 (ቅፅ-1) - Out of 10: The raw score is simply converted into a 10% scale by dividing the total raw score by 10.
+  const finalScore10 = totalRawScore / 10;
+  const displayScore = finalScore10.toFixed(2);
   const allAnswered = totalAnswered === totalQuestions;
 
   const handleScoreChange = (qId: string, score: number) => {
+    if (readOnly) return;
     setResponses(prev => ({ ...prev, [qId]: score }));
   };
 
@@ -63,7 +66,7 @@ export function SelfAssessmentView({ periodId, existingData }: { periodId: strin
       if (upsertError) throw upsertError;
 
       if (lock) {
-        router.refresh();
+        window.location.reload();
       } else {
         showToast('በተሳካ ሁኔታ ተቀምጧል (Draft saved successfully)', 'success');
       }
@@ -95,7 +98,7 @@ export function SelfAssessmentView({ periodId, existingData }: { periodId: strin
           </div>
           <h1 className="text-4xl font-heading text-text-primary tracking-tight mb-3">የራስ ግምገማ <span className="text-brand-blue text-2xl ml-2 font-sans font-medium">(Self Assessment)</span></h1>
           <p className="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
-            እባክዎን ከታች ያሉትን መስፈርቶች መሰረት በማድረግ እራስዎን ይገምግሙ። 
+            {readOnly ? 'ይህ ያቀረቡት የራስዎ ግምገማ ነው። (This is your submitted self assessment.)' : 'እባክዎን ከታች ያሉትን መስፈርቶች መሰረት በማድረግ እራስዎን ይገምግሙ።'}
             <span className="block mt-2 font-medium bg-surface-secondary inline-block px-4 py-1.5 rounded-full text-sm">
               <span className="text-danger mr-1">1 = በጣም ደካማ</span> | <span className="text-success ml-1">5 = በጣም ጥሩ</span>
             </span>
@@ -110,7 +113,7 @@ export function SelfAssessmentView({ periodId, existingData }: { periodId: strin
         )}
 
         <div className="space-y-8 mb-24">
-          {SELF_ASSESSMENT_QUESTIONS_10.map((category) => (
+          {SELF_ASSESSMENT_QUESTIONS.map((category) => (
             <div key={category.category_id} className="premium-card overflow-hidden border border-border/60 shadow-md hover:shadow-lg transition-shadow bg-surface-primary">
               <div className="bg-gradient-to-r from-surface-secondary to-background px-6 py-5 border-b border-border/60 flex items-center justify-between">
                 <h2 className="text-xl font-heading font-semibold text-text-primary">
@@ -150,8 +153,8 @@ export function SelfAssessmentView({ periodId, existingData }: { periodId: strin
                               className={`flex-1 relative h-12 rounded-xl text-base font-semibold transition-all duration-200 transform ${
                                 isSelected
                                   ? 'bg-brand-blue text-white shadow-lg scale-105 ring-2 ring-brand-blue ring-offset-2 ring-offset-background'
-                                  : 'bg-surface-secondary text-text-secondary hover:bg-border/80 border border-border/60 hover:text-text-primary'
-                              }`}
+                                  : 'bg-surface-secondary text-text-secondary border border-border/60'
+                              } ${!readOnly && !isSelected ? 'hover:bg-border/80 hover:text-text-primary' : ''} ${readOnly ? 'cursor-default' : ''}`}
                             >
                               {score}
                             </button>
@@ -195,21 +198,29 @@ export function SelfAssessmentView({ periodId, existingData }: { periodId: strin
           </div>
           
           <div className="flex gap-3 sm:gap-4 max-w-3xl mx-auto">
-            <button
-              onClick={() => handleSave(false)}
-              disabled={loading}
-              className="flex-1 py-3.5 px-4 rounded-xl font-semibold text-text-primary bg-surface-secondary hover:bg-border transition-colors disabled:opacity-50 border border-border flex items-center justify-center"
-            >
-              አስቀምጥ (Save Draft)
-            </button>
-            <button
-              onClick={() => handleSave(true)}
-              disabled={loading || !allAnswered}
-              className="flex-[2] flex items-center justify-center py-3.5 px-4 rounded-xl font-semibold text-white bg-brand-blue disabled:opacity-50 transition-all shadow-md hover:shadow-lg hover:bg-brand-blue/90"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-              ቆልፍ እና ላክ (Lock & Submit)
-            </button>
+            {readOnly ? (
+              <div className="flex-1 py-3.5 px-4 rounded-xl font-semibold text-text-secondary bg-surface-secondary border border-border flex items-center justify-center">
+                ይህ ግምገማ ተቆልፏል (This assessment is locked)
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleSave(false)}
+                  disabled={loading}
+                  className="flex-1 py-3.5 px-4 rounded-xl font-semibold text-text-primary bg-surface-secondary hover:bg-border transition-colors disabled:opacity-50 border border-border flex items-center justify-center"
+                >
+                  አስቀምጥ (Save Draft)
+                </button>
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={loading || !allAnswered}
+                  className="flex-[2] flex items-center justify-center py-3.5 px-4 rounded-xl font-semibold text-white bg-brand-blue disabled:opacity-50 transition-all shadow-md hover:shadow-lg hover:bg-brand-blue/90"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                  ቆልፍ እና ላክ (Lock & Submit)
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

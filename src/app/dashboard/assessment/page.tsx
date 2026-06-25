@@ -5,10 +5,18 @@ import { supabase } from '@/lib/supabaseClient';
 import { PlusCircle, QrCode, FileCheck, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 export default function AssessmentPage() {
   const [periods, setPeriods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   const loadPeriods = async () => {
     // Fetch periods. Based on RLS, admins will see all periods.
@@ -26,21 +34,27 @@ export default function AssessmentPage() {
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`እርግጠኛ ነዎት '${name}' የምዘና ጊዜን ማጥፋት ይፈልጋሉ? ይህ እርምጃ ሁሉንም ውጤቶች እና መረጃዎች ሙሉ በሙሉ ያጠፋል። (Are you sure you want to delete '${name}'? This action is irreversible and will delete all related scores and data.)`)) {
-      setLoading(true);
-      const { error } = await supabase
-        .from('assessment_periods')
-        .delete()
-        .eq('id', id);
-        
-      if (error) {
-        alert('ማጥፋት አልተሳካም። (Failed to delete)');
-        console.error(error);
-        setLoading(false);
-      } else {
-        await loadPeriods();
+    setConfirmDialog({
+      isOpen: true,
+      title: 'የምዘና ጊዜ ማጥፋት',
+      message: `እርግጠኛ ነዎት '${name}' የምዘና ጊዜን ማጥፋት ይፈልጋሉ? ይህ እርምጃ ሁሉንም ውጤቶች እና መረጃዎች ሙሉ በሙሉ ያጠፋል።`,
+      isDanger: true,
+      onConfirm: async () => {
+        setLoading(true);
+        const { error } = await supabase
+          .from('assessment_periods')
+          .delete()
+          .eq('id', id);
+          
+        if (error) {
+          alert('ማጥፋት አልተሳካም።');
+          console.error(error);
+          setLoading(false);
+        } else {
+          await loadPeriods();
+        }
       }
-    }
+    });
   };
 
   return (
@@ -48,7 +62,7 @@ export default function AssessmentPage() {
       <div className="flex flex-col gap-8 pb-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-primary p-6 rounded-2xl border border-border shadow-sm">
           <div>
-            <h1 className="text-3xl font-heading text-text-primary mb-1">የምዘና ጊዜ (Assessment Periods)</h1>
+            <h1 className="text-3xl font-heading text-text-primary mb-1">የምዘና ጊዜ</h1>
             <p className="text-text-secondary text-sm">የምዘና ጊዜዎችን ያስተዳድሩ፣ መጋበዣ (QR) ያዘጋጁ፣ እና ውጤቶችን ያፅድቁ።</p>
           </div>
           <Link 
@@ -61,7 +75,7 @@ export default function AssessmentPage() {
         </div>
 
         {loading ? (
-          <div className="py-16 text-center text-text-muted">በመጫን ላይ... (Loading...)</div>
+          <div className="py-16 text-center text-text-muted">በመጫን ላይ...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {periods.length > 0 ? (
@@ -73,7 +87,7 @@ export default function AssessmentPage() {
                         {period.name}
                       </h3>
                       <p className="text-sm text-text-secondary mt-1">
-                        መለያ (ID): <span className="font-mono text-xs opacity-70">{period.id.substring(0, 8)}...</span>
+                        መለያ: <span className="font-mono text-xs opacity-70">{period.id.substring(0, 8)}...</span>
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
@@ -118,13 +132,22 @@ export default function AssessmentPage() {
                 <div className="w-16 h-16 rounded-full bg-surface-secondary/50 mx-auto mb-4 flex items-center justify-center">
                   <PlusCircle className="w-8 h-8 text-text-muted" />
                 </div>
-                <h3 className="text-lg font-medium text-text-primary mb-1">ምንም የምዘና ጊዜ የለም (No assessment periods found)</h3>
+                <h3 className="text-lg font-medium text-text-primary mb-1">ምንም የምዘና ጊዜ የለም</h3>
                 <p className="text-text-secondary text-sm">አዲስ የምዘና ጊዜ በመፍጠር የግምገማ ሂደቱን ይጀምሩ።</p>
               </div>
             )}
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        isDanger={confirmDialog.isDanger}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </DashboardLayout>
   );
 }

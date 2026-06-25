@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { maskSupabaseError } from '@/lib/errorMasking';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
-import { verifyLoginAttempt } from '@/app/actions/auth';
+import { verifyLoginAttempt, resolveLoginEmail } from '@/app/actions/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,10 +30,7 @@ export default function LoginPage() {
       // Check rate limit first
       await verifyLoginAttempt();
 
-      let authEmail = email;
-      if (!authEmail.includes('@')) {
-        authEmail = `${authEmail}@federal.local`;
-      }
+      const { email: authEmail } = await resolveLoginEmail(email);
 
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: authEmail,
@@ -133,7 +130,7 @@ export default function LoginPage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="email">
-                  Username or Email
+                  Phone or Email
                 </label>
                 <input
                   id="email"
@@ -141,7 +138,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Admin or m@example.com"
+                  placeholder="0911000000 or admin@example.com"
                   className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-900 dark:focus:border-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 />
               </div>

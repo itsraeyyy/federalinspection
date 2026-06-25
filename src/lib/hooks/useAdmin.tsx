@@ -47,13 +47,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         .from('admin_profiles')
         .select('*')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching admin profile:', error);
       }
 
-      if (!error && data && mounted) {
+      if (!error && mounted) {
         setProfile(data);
       }
       

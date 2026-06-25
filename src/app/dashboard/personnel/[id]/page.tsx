@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, use } from "react";
 import * as z from "zod";
 import { COMMISSION_POSITIONS, OFFICE_CATEGORIES, Personnel } from "@/types";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const editPersonnelSchema = z.object({
   positionId: z.string().min(1, 'ሹመት ያስፈልጋል።'),
@@ -43,6 +44,7 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
   const [personnelData, setPersonnelData] = useState<Personnel | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<{type: 'error' | 'success', text: string} | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = useForm<any>({
     resolver: zodResolver(editPersonnelSchema),
@@ -123,11 +125,13 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const handleDelete = async () => {
-    if (confirm(' እርግጠኛ ነዎት ይህን መረጃ ማጥፋት ይፈልጋሉ?')) {
-      await personnelService.deletePersonnel(id);
-      router.push('/dashboard/personnel');
-    }
+  const handleDelete = () => {
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    await personnelService.deletePersonnel(id);
+    router.push('/dashboard/personnel');
   };
 
   if (loading) return <DashboardLayout><div className="flex h-full items-center justify-center text-text-muted">በማምጣት ላይ...</div></DashboardLayout>;
@@ -271,6 +275,15 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
 
         </div>
       </form>
+      
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="መረጃ ማጥፋት"
+        message="እርግጠኛ ነዎት ይህን መረጃ ማጥፋት ይፈልጋሉ?"
+        isDanger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
     </DashboardLayout>
   );
 }

@@ -7,6 +7,7 @@ import { SelfAssessmentView } from '@/components/assessment/SelfAssessmentView';
 import { LeadershipEvaluationView } from '@/components/assessment/LeadershipEvaluationView';
 import { ApproverDashboardView } from '@/components/assessment/ApproverDashboardView';
 import { FinalRevealView } from '@/components/assessment/FinalRevealView';
+import { UserProfileViewer } from '@/components/assessment/UserProfileViewer';
 import { Loader2 } from 'lucide-react';
 
 export default function AssessmentModulePage() {
@@ -139,45 +140,90 @@ export default function AssessmentModulePage() {
     );
   }
 
-  if (period.status === 'finalized') {
-    return <FinalRevealView score={finalScore?.final_score_100 || 0} />;
-  }
+  const renderContent = () => {
+    if (period.status === 'finalized') {
+      return <FinalRevealView score={finalScore?.final_score_100 || 0} />;
+    }
 
-  // Everyone must complete their self assessment first
-  if (!selfAssessment?.is_locked) {
-    return <SelfAssessmentView periodId={period.id} existingData={selfAssessment} />;
-  }
+    // Everyone must complete their self assessment first
+    if (!selfAssessment?.is_locked) {
+      return <SelfAssessmentView periodId={period.id} existingData={selfAssessment} />;
+    }
 
-  if (membership.role === 'evaluator') {
-    return (
-      <LeadershipEvaluationView 
-        periodId={period.id} 
-        members={allMembers} 
-        evaluations={evaluations} 
-      />
-    );
-  }
-
-  if (membership.role === 'approver') {
-    return (
-      <ApproverDashboardView 
-        periodId={period.id} 
-      />
-    );
-  }
+    // After self-assessment is locked, give them the tabbed layout
+    return <AssessmentDashboardLayout 
+      membership={membership} 
+      period={period} 
+      selfAssessment={selfAssessment} 
+      allMembers={allMembers} 
+      evaluations={evaluations} 
+    />;
+  };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4">
-      <div className="premium-card max-w-md w-full p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-brand-blue/10 border border-brand-blue/20 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+    <div className="flex-1 flex flex-col w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+      <UserProfileViewer userId={session.user.id} />
+      {renderContent()}
+    </div>
+  );
+}
+
+function AssessmentDashboardLayout({ membership, period, selfAssessment, allMembers, evaluations }: any) {
+  const [activeTab, setActiveTab] = useState<'self' | 'eval' | 'approve'>(
+    membership.role === 'approver' ? 'approve' : 'eval'
+  );
+
+  return (
+    <div className="flex-1 flex flex-col bg-background">
+      <div className="bg-surface-primary border-b border-border/50 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-6 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setActiveTab('self')}
+              className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'self'
+                  ? 'border-brand-blue text-brand-blue'
+                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+              }`}
+            >
+              የኔ ግምገማ (My Assessment)
+            </button>
+            <button
+              onClick={() => setActiveTab('eval')}
+              className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'eval'
+                  ? 'border-brand-blue text-brand-blue'
+                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+              }`}
+            >
+              ቡድንን ገምግም (Evaluate Team)
+            </button>
+            {membership.role === 'approver' && (
+              <button
+                onClick={() => setActiveTab('approve')}
+                className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'approve'
+                    ? 'border-brand-yellow text-brand-yellow'
+                    : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                }`}
+              >
+                ውጤቶችን አጽድቅ (Approve Scores)
+              </button>
+            )}
+          </div>
         </div>
-        <h2 className="text-xl font-heading text-text-primary mb-2">የራስ ግምገማ ተቆልፏል (Assessment Locked)</h2>
-        <p className="text-text-secondary text-sm">
-          የራስዎ ግምገማ በተሳካ ሁኔታ ተልኳል። በአሁን ሰዓት የአመራር ግምገማዎች በሂደት ላይ ናቸው። (Your self-assessment is submitted. Leadership evaluations are currently in progress.)
-        </p>
+      </div>
+      
+      <div className="flex-1 flex flex-col">
+        {activeTab === 'self' && (
+          <SelfAssessmentView periodId={period.id} existingData={selfAssessment} readOnly={true} />
+        )}
+        {activeTab === 'eval' && (
+          <LeadershipEvaluationView periodId={period.id} members={allMembers} evaluations={evaluations} />
+        )}
+        {activeTab === 'approve' && membership.role === 'approver' && (
+          <ApproverDashboardView periodId={period.id} />
+        )}
       </div>
     </div>
   );

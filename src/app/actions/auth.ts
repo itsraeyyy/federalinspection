@@ -55,7 +55,7 @@ export async function registerUserAction(formData: FormData) {
 
     // 1. Create user in Supabase Auth bypassing phone confirmation
     // We use a synthetic email to avoid Supabase's 'Phone Logins Disabled' requirement
-    const syntheticEmail = `${phone.replace(/\s+/g, '')}@federal.local`;
+    const syntheticEmail = `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local`;
     
     let userId;
     
@@ -134,6 +134,51 @@ export async function registerUserAction(formData: FormData) {
   }
 }
 
+export async function resolveLoginEmail(identifier: string) {
+  const lowerId = identifier.trim().toLowerCase();
+
+  if (lowerId === 'superadmin') {
+    return { email: 'superadmin@commission.gov' };
+  }
+
+  if (lowerId === 'admin') {
+    // Attempt to return the primary admin email
+    const { data: defaultAdmin } = await supabaseAdmin
+      .from('admin_profiles')
+      .select('email')
+      .eq('role', 'super_admin')
+      .limit(1)
+      .maybeSingle();
+      
+    if (defaultAdmin?.email) {
+      return { email: defaultAdmin.email };
+    }
+    // Fallback just in case
+    return { email: 'admin@commission.gov' };
+  }
+
+  if (identifier.includes('@')) {
+    return { email: identifier.trim() };
+  }
+  
+  const cleanPhone = identifier.trim();
+  const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+
+  // Check if it's an admin first
+  const { data: adminData } = await supabaseAdmin
+    .from('admin_profiles')
+    .select('email')
+    .eq('phone', phone)
+    .maybeSingle();
+
+  if (adminData?.email) {
+    return { email: adminData.email };
+  }
+
+  // Fallback to synthetic email for regular users
+  return { email: `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+}
+
 export async function resetPasswordAction(rawPhone: string) {
   try {
     if (!rawPhone) return { error: 'Phone number is required' };
@@ -141,18 +186,33 @@ export async function resetPasswordAction(rawPhone: string) {
     // Format phone to E.164
     const cleanPhone = rawPhone.trim();
     const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
-    const syntheticEmail = `${phone.replace(/\s+/g, '')}@federal.local`;
 
-    // 1. Find user by email
-    // Unfortunately, admin.listUsers is required to find by email if we don't know the ID, 
-    // but we can query public.users using the phone_number
-    const { data: userData, error: userError } = await supabaseAdmin
+    let userId;
+    let userName;
+
+    const { data: userData } = await supabaseAdmin
       .from('users')
       .select('id, full_name')
       .eq('phone_number', phone)
-      .single();
+      .maybeSingle();
 
-    if (userError || !userData) {
+    if (userData) {
+      userId = userData.id;
+      userName = userData.full_name;
+    } else {
+      const { data: adminData } = await supabaseAdmin
+        .from('admin_profiles')
+        .select('id, first_name, last_name')
+        .eq('phone', phone)
+        .maybeSingle();
+        
+      if (adminData) {
+        userId = adminData.id;
+        userName = `${adminData.first_name} ${adminData.last_name || ''}`.trim();
+      }
+    }
+
+    if (!userId) {
       return { error: 'User not found' };
     }
 
@@ -160,7 +220,7 @@ export async function resetPasswordAction(rawPhone: string) {
     const newPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
 
     // 3. Force update password
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userData.id, {
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword
     });
 
@@ -170,7 +230,7 @@ export async function resetPasswordAction(rawPhone: string) {
 
     // 4. Send SMS via Textbee
     const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/assessment/login`;
-    const smsMessage = `ሰላም ${userData.full_name}፣ የይለፍ ቃልዎ ተቀይሯል።\nአዲሱ የይለፍ ቃል (New Password): ${newPassword}\nመግቢያ (Link): ${loginUrl}`;
+    const smsMessage = `ሰላም ${userName}፣ የይለፍ ቃልዎ ተቀይሯል።\nአዲሱ የይለፍ ቃል (New Password): ${newPassword}\nመግቢያ (Link): ${loginUrl}`;
 
     const smsResult = await sendSMS(phone, smsMessage);
     if (smsResult.error) {
@@ -180,6 +240,182 @@ export async function resetPasswordAction(rawPhone: string) {
     return { success: true };
   } catch (error: any) {
     console.error("Reset password error:", error);
+    return { error: error.message || 'An unexpected error occurred' };
+  }
+}
+
+export async function sendOtpAction(rawPhone: string) {
+  try {
+    if (!rawPhone) return { error: 'Phone number is required' };
+
+    // Format phone
+    const cleanPhone = rawPhone.trim();
+    const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+
+    let userId;
+    let userName;
+
+    const { data: userData } = await supabaseAdmin
+      .from('users')
+      .select('id, full_name')
+      .eq('phone_number', phone)
+      .maybeSingle();
+
+    if (userData) {
+      userId = userData.id;
+      userName = userData.full_name;
+    } else {
+      const { data: adminData } = await supabaseAdmin
+        .from('admin_profiles')
+        .select('id, first_name, last_name')
+        .eq('phone', phone)
+        .maybeSingle();
+        
+      if (adminData) {
+        userId = adminData.id;
+        userName = `${adminData.first_name} ${adminData.last_name || ''}`.trim();
+      }
+    }
+
+    if (!userId) {
+      return { error: 'User not found' };
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
+
+    // Save OTP to db
+    const { error: otpError } = await supabaseAdmin
+      .from('otp_requests')
+      .insert({
+        phone_number: phone,
+        otp_code: otpCode,
+        expires_at: expiresAt.toISOString()
+      });
+
+    if (otpError) {
+      console.error("OTP Insert Error:", otpError);
+      return { error: 'Failed to generate OTP' };
+    }
+
+    // Send SMS
+    const smsMessage = `የማረጋገጫ ኮድዎ (Your Verification Code): ${otpCode}\nበ10 ደቂቃ ውስጥ ይጠቀሙ (Expires in 10 mins).`;
+    const smsResult = await sendSMS(phone, smsMessage);
+    
+    if (smsResult.error) {
+      console.error("SMS Error:", smsResult.error);
+      return { error: 'Failed to send SMS' };
+    }
+
+    return { success: true, phone };
+  } catch (error: any) {
+    console.error("Send OTP error:", error);
+    return { error: error.message || 'An unexpected error occurred' };
+  }
+}
+
+export async function verifyOtpAction(phone: string, otpCode: string) {
+  try {
+    if (!phone || !otpCode) return { error: 'Phone and OTP are required' };
+
+    // Find the latest valid OTP for this phone
+    const { data: otpRecords, error: otpError } = await supabaseAdmin
+      .from('otp_requests')
+      .select('id, expires_at, used')
+      .eq('phone_number', phone)
+      .eq('otp_code', otpCode)
+      .eq('used', false)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (otpError || !otpRecords || otpRecords.length === 0) {
+      return { error: 'Invalid or expired OTP' };
+    }
+
+    const otpRecord = otpRecords[0];
+    
+    // Check expiration
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      return { error: 'OTP has expired' };
+    }
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Verify OTP error:", error);
+    return { error: error.message || 'An unexpected error occurred' };
+  }
+}
+
+export async function resetPasswordWithOtpAction(phone: string, otpCode: string, newPassword: string) {
+  try {
+    if (!phone || !otpCode || !newPassword) return { error: 'Missing required fields' };
+
+    // Find valid OTP again
+    const { data: otpRecords, error: otpError } = await supabaseAdmin
+      .from('otp_requests')
+      .select('id, expires_at, used')
+      .eq('phone_number', phone)
+      .eq('otp_code', otpCode)
+      .eq('used', false)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (otpError || !otpRecords || otpRecords.length === 0) {
+      return { error: 'Invalid or expired OTP' };
+    }
+
+    const otpRecord = otpRecords[0];
+    
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      return { error: 'OTP has expired' };
+    }
+
+    // OTP is valid. Find user ID
+    let userId;
+
+    const { data: userData } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('phone_number', phone)
+      .maybeSingle();
+
+    if (userData) {
+      userId = userData.id;
+    } else {
+      const { data: adminData } = await supabaseAdmin
+        .from('admin_profiles')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle();
+      if (adminData) {
+        userId = adminData.id;
+      }
+    }
+
+    if (!userId) {
+      return { error: 'User not found' };
+    }
+
+    // Update password
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword
+    });
+
+    if (updateError) {
+      return { error: 'Failed to reset password: ' + updateError.message };
+    }
+
+    // Mark OTP as used
+    await supabaseAdmin
+      .from('otp_requests')
+      .update({ used: true })
+      .eq('id', otpRecord.id);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Reset password with OTP error:", error);
     return { error: error.message || 'An unexpected error occurred' };
   }
 }

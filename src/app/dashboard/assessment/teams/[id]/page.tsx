@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { ArrowLeft, Users, ShieldCheck, QrCode, AlertCircle, Loader2, Plus, X, Power } from 'lucide-react';
+import { ArrowLeft, Trash2, ShieldCheck, Loader2, Plus, QrCode, X, AlertCircle, Power, Pencil, Users, Filter, Download } from 'lucide-react';
 import Link from 'next/link';
+import { UserProfileDrawer } from '@/components/assessment/UserProfileDrawer';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { registerUserAction } from '@/app/actions/auth';
+import { exportBulkOverview } from '@/lib/exportUtils';
 
 export default function PeriodManagePage() {
   const params = useParams();
@@ -18,12 +21,30 @@ export default function PeriodManagePage() {
   const [scores, setScores] = useState<Record<string, { s10: number, s20: number, s70: number, f100: number }>>({});
   const [loading, setLoading] = useState(true);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // Add Member Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [addFullName, setAddFullName] = useState('');
   const [addPhone, setAddPhone] = useState('');
+  
+  // Profile Drawer State
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
+  // Filter & Export State
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState(false);
@@ -106,9 +127,15 @@ export default function PeriodManagePage() {
       if (error) throw error;
       
       setMembers(members.map(m => m.id === memberId ? { ...m, role: newRole } : m));
-      showToast('ኃላፊነት በተሳካ ሁኔታ ተቀይሯል! (Role updated successfully)', 'success');
+      
+      // Remove from pending roles
+      const newPending = { ...pendingRoles };
+      delete newPending[memberId];
+      setPendingRoles(newPending);
+
+      showToast('ኃላፊነት በተሳካ ሁኔታ ተቀይሯል!', 'success');
     } catch (err: any) {
-      showToast(err.message || 'ኃላፊነት መቀየር አልተሳካም። (Failed to update role)', 'error');
+      showToast(err.message || 'ኃላፊነት መቀየር አልተሳካም።', 'error');
     } finally {
       setUpdatingRole(null);
     }
@@ -118,43 +145,51 @@ export default function PeriodManagePage() {
     if (!period) return;
     const newStatus = period.status === 'active' ? 'finalized' : 'active';
     
-    if (!window.confirm(`እርግጠኛ ነዎት ይህን የምዘና ጊዜ ወደ '${newStatus === 'active' ? 'በሂደት ላይ' : 'የተጠናቀቀ'}' መቀየር ይፈልጋሉ?`)) {
-      return;
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'ሁኔታ መቀየር',
+      message: `እርግጠኛ ነዎት ይህን የምዘና ጊዜ ወደ '${newStatus === 'active' ? 'በሂደት ላይ' : 'የተጠናቀቀ'}' መቀየር ይፈልጋሉ?`,
+      isDanger: false,
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('assessment_periods')
+            .update({ status: newStatus })
+            .eq('id', period.id);
 
-    try {
-      const { error } = await supabase
-        .from('assessment_periods')
-        .update({ status: newStatus })
-        .eq('id', period.id);
-
-      if (error) throw error;
-      
-      setPeriod({ ...period, status: newStatus });
-      showToast('ሁኔታ በተሳካ ሁኔታ ተቀይሯል! (Status updated successfully)', 'success');
-    } catch (err: any) {
-      showToast(err.message || 'ሁኔታ መቀየር አልተሳካም። (Failed to update status)', 'error');
-    }
+          if (error) throw error;
+          
+          setPeriod({ ...period, status: newStatus });
+          showToast('ሁኔታ በተሳካ ሁኔታ ተቀይሯል!', 'success');
+        } catch (err: any) {
+          showToast(err.message || 'ሁኔታ መቀየር አልተሳካም።', 'error');
+        }
+      }
+    });
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
-    if (!window.confirm(`እርግጠኛ ነዎት '${memberName}'ን ከምዘናው ማውጣት ይፈልጋሉ? (Are you sure you want to remove this member?)`)) {
-      return;
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'አባል ማስወገድ',
+      message: `እርግጠኛ ነዎት '${memberName}'ን ከምዘናው ማውጣት ይፈልጋሉ?`,
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('period_members')
+            .delete()
+            .eq('id', memberId);
 
-    try {
-      const { error } = await supabase
-        .from('period_members')
-        .delete()
-        .eq('id', memberId);
-
-      if (error) throw error;
-      
-      setMembers(members.filter(m => m.id !== memberId));
-      showToast('አባል በተሳካ ሁኔታ ተወግዷል! (Member removed successfully)', 'success');
-    } catch (err: any) {
-      showToast(err.message || 'አባል ማስወገድ አልተሳካም። (Failed to remove member)', 'error');
-    }
+          if (error) throw error;
+          
+          setMembers(members.filter(m => m.id !== memberId));
+          showToast('አባል በተሳካ ሁኔታ ተወግዷል!', 'success');
+        } catch (err: any) {
+          showToast(err.message || 'አባል ማስወገድ አልተሳካም።', 'error');
+        }
+      }
+    });
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -188,10 +223,59 @@ export default function PeriodManagePage() {
   };
 
   const ROLES = [
-    { value: 'regular', label: 'ተገምጋሚ / አባል (Regular)' },
-    { value: 'evaluator', label: 'ገምጋሚ (Evaluator)' },
-    { value: 'approver', label: 'አጽዳቂ (Approver)' }
+    { value: 'regular', label: 'ተገምጋሚ / አባል' },
+    { value: 'evaluator', label: 'ገምጋሚ' },
+    { value: 'approver', label: 'አጽዳቂ' }
   ];
+
+  const filteredMembers = members.filter(m => roleFilter === 'all' || m.role === roleFilter);
+
+  const toggleUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedUserIds);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUserIds(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUserIds.size === filteredMembers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(filteredMembers.map(m => m.id)));
+    }
+  };
+
+  const handleBulkExport = () => {
+    const targetMembers = selectedUserIds.size > 0 
+      ? members.filter(m => selectedUserIds.has(m.id))
+      : filteredMembers;
+
+    if (targetMembers.length === 0) {
+      showToast('ምንም መረጃ አልተገኘም', 'error');
+      return;
+    }
+
+    const exportData = targetMembers.map(m => {
+      const userScores = scores[m.user_id] || { s10: 0, s20: 0, s70: 0, f100: 0 };
+      const currentTotal = userScores.s10 + userScores.s20 + userScores.s70;
+      const roleLabel = ROLES.find(r => r.value === m.role)?.label || m.role;
+
+      return {
+        name: m.users?.full_name || 'ያልታወቀ',
+        phone: m.users?.phone_number || '',
+        role: roleLabel,
+        s10: userScores.s10,
+        s20: userScores.s20,
+        s70: userScores.s70,
+        total: period?.status === 'finalized' ? userScores.f100 : currentTotal
+      };
+    });
+
+    exportBulkOverview(exportData, `${period?.name}_Overview.xlsx`);
+  };
 
   if (loading) {
     return (
@@ -208,9 +292,9 @@ export default function PeriodManagePage() {
       <DashboardLayout>
         <div className="text-center py-12">
           <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
-          <h2 className="text-xl font-heading text-text-primary mb-2">የምዘና ጊዜ አልተገኘም (Assessment Period Not Found)</h2>
+          <h2 className="text-xl font-heading text-text-primary mb-2">የምዘና ጊዜ አልተገኘም</h2>
           <Link href="/dashboard/assessment" className="text-brand-blue hover:underline">
-            ወደ ዳሽቦርድ ተመለስ (Back to Dashboard)
+            ወደ ዳሽቦርድ ተመለስ
           </Link>
         </div>
       </DashboardLayout>
@@ -227,63 +311,89 @@ export default function PeriodManagePage() {
         </div>
       )}
       
-      <div className="container-site section-padding max-w-7xl mx-auto relative">
-        <div className="mb-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 w-full relative">
+        <div className="mb-6">
           <Link href="/dashboard/assessment" className="inline-flex items-center text-sm font-medium text-text-secondary hover:text-text-primary transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4 mr-1" /> ወደ ዳሽቦርድ ተመለስ (Back to Dashboard)
+            <ArrowLeft className="w-4 h-4 mr-1" /> ወደ ዳሽቦርድ ተመለስ
           </Link>
           
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-primary p-6 rounded-2xl border border-border shadow-sm">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-heading text-text-primary">{period.name}</h1>
-                <span 
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-full border ${
-                    period.status === 'active' 
-                      ? 'bg-warning/10 text-warning border-warning/20' 
-                      : 'bg-success/10 text-success border-success/20'
-                  }`}
-                >
-                  {period.status === 'active' ? 'በሂደት ላይ (Active)' : 'የተጠናቀቀ (Finalized)'}
-                </span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-surface-primary p-6 rounded-2xl border border-border shadow-sm">
+            <div className="space-y-1 flex-1">
+              <h1 className="text-3xl font-heading text-text-primary">{period.name}</h1>
+              <p className="text-text-secondary text-sm font-mono opacity-60">መለያ: {period.id}</p>
+            </div>
+            
+            <div className="flex items-center flex-wrap gap-4">
+              <div className="flex items-center gap-3 bg-surface-secondary px-4 py-2 rounded-xl border border-border/50">
+                <span className="text-sm font-medium text-text-primary">ሁኔታ:</span>
                 <button 
                   onClick={handleStatusToggle}
-                  className="p-1.5 rounded-lg bg-surface-secondary hover:bg-border text-text-secondary transition-colors border border-border"
-                  title="Toggle Period Status"
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    period.status === 'active' ? 'bg-brand-blue' : 'bg-surface-primary border border-border'
+                  }`}
                 >
-                  <Power className="w-4 h-4" />
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    period.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
+                <span className={`text-sm font-medium ${period.status === 'active' ? 'text-brand-blue' : 'text-text-secondary'}`}>
+                  {period.status === 'active' ? 'በሂደት ላይ' : 'የተጠናቀቀ'}
+                </span>
+              </div>
+              
+              <div className="flex gap-2">
+                <Link 
+                  href={`/dashboard/assessment/teams/${period.id}/qr`}
+                  className="inline-flex items-center justify-center bg-surface-secondary text-text-primary px-4 py-2.5 rounded-xl font-medium hover:bg-border transition-colors border border-border shadow-sm"
+                >
+                  <QrCode className="w-4 h-4 mr-2 text-brand-yellow" />
+                  የመመዝገቢያ QR
+                </Link>
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center justify-center bg-brand-blue text-white px-4 py-2.5 rounded-xl font-medium hover:bg-brand-blue/90 transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  አዲስ አባል
                 </button>
               </div>
-              <p className="text-text-secondary text-sm font-mono">መለያ (ID): {period.id}</p>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Link 
-                href={`/dashboard/assessment/teams/${period.id}/qr`}
-                className="inline-flex items-center justify-center bg-surface-secondary text-text-primary px-4 py-2.5 rounded-xl font-medium hover:bg-border transition-colors border border-border"
-              >
-                <QrCode className="w-5 h-5 mr-2 text-brand-yellow" />
-                የመመዝገቢያ QR (Signup Link)
-              </Link>
-              <button 
-                onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center justify-center bg-brand-blue text-white px-4 py-2.5 rounded-xl font-medium hover:bg-brand-blue/90 transition-colors shadow-sm"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                አዲስ አባል ጨምር (Add Member)
-              </button>
             </div>
           </div>
         </div>
 
         <div className="premium-card overflow-hidden">
-          <div className="p-6 border-b border-border flex items-center justify-between">
+          <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-lg font-heading text-text-primary">
               <Users className="w-5 h-5 text-brand-blue" />
-              <h3>የተመዘገቡ ተጠቃሚዎች እና ውጤቶች (Users & Submissions)</h3>
+              <h3>የተመዘገቡ ተጠቃሚዎች እና ውጤቶች</h3>
+              <span className="bg-surface-secondary text-text-secondary px-3 py-1 rounded-full text-sm font-medium ml-2 border border-border/50">
+                {filteredMembers.length}
+              </span>
             </div>
-            <span className="bg-surface-secondary text-text-secondary px-3 py-1 rounded-full text-sm font-medium">
-              {members.length} ተጠቃሚዎች
-            </span>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-surface-secondary px-3 py-1.5 rounded-xl border border-border/50">
+                <Filter className="w-4 h-4 text-text-secondary" />
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="bg-transparent border-none text-sm font-medium text-text-primary focus:ring-0 cursor-pointer outline-none"
+                >
+                  <option value="all">ሁሉም</option>
+                  {ROLES.map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <button
+                onClick={handleBulkExport}
+                className="inline-flex items-center justify-center bg-surface-secondary text-brand-blue px-4 py-2 rounded-xl font-medium hover:bg-border transition-colors border border-border/50 text-sm shadow-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {selectedUserIds.size > 0 ? `የተመረጡትን አውርድ (${selectedUserIds.size})` : 'ሁሉንም አውርድ'}
+              </button>
+            </div>
           </div>
 
           {members.length === 0 ? (
@@ -301,69 +411,116 @@ export default function PeriodManagePage() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-surface-secondary text-text-secondary font-medium">
                   <tr>
-                    <th className="px-6 py-4">ስም (Name)</th>
-                    <th className="px-6 py-4">ሚና (Role)</th>
+                    <th className="px-6 py-4 w-10">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedUserIds.size === filteredMembers.length && filteredMembers.length > 0}
+                        onChange={toggleSelectAll}
+                        className="rounded border-border/80 text-brand-blue focus:ring-brand-blue/50 w-4 h-4 cursor-pointer"
+                      />
+                    </th>
+                    <th className="px-6 py-4">ስም</th>
+                    <th className="px-6 py-4">ሚና</th>
                     <th className="px-6 py-4 text-center">የራስ (10)</th>
                     <th className="px-6 py-4 text-center">የገምጋሚ (20)</th>
                     <th className="px-6 py-4 text-center">የአጽዳቂ (70)</th>
-                    <th className="px-6 py-4 text-center border-l border-border/50">ድምር (100)</th>
-                    <th className="px-6 py-4 border-l border-border/50">ድርጊት (Actions)</th>
+                    <th className="px-6 py-4 text-center border-l border-border/50 bg-surface-secondary/50">ድምር (100)</th>
+                    <th className="px-6 py-4 border-l border-border/50">ድርጊት</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {members.map((member) => {
+                  {filteredMembers.map((member) => {
                     const userScores = scores[member.user_id] || { s10: 0, s20: 0, s70: 0, f100: 0 };
                     const currentTotal = userScores.s10 + userScores.s20 + userScores.s70;
+                    const isSelected = selectedUserIds.has(member.id);
                     
                     return (
-                      <tr key={member.id} className="hover:bg-surface-secondary/50 transition-colors">
+                      <tr key={member.id} className={`hover:bg-surface-secondary/50 transition-colors ${isSelected ? 'bg-brand-blue/5' : ''}`}>
                         <td className="px-6 py-4">
-                          <p className="font-medium text-text-primary">{member.users?.full_name || 'ያልታወቀ'}</p>
-                          <p className="text-xs text-text-muted font-mono mt-0.5">{member.users?.phone_number}</p>
+                          <input 
+                            type="checkbox" 
+                            checked={isSelected}
+                            onChange={() => toggleUserSelection(member.id)}
+                            className="rounded border-border/80 text-brand-blue focus:ring-brand-blue/50 w-4 h-4 cursor-pointer"
+                          />
                         </td>
                         <td className="px-6 py-4">
-                          <select
-                            value={member.role}
-                            onChange={(e) => handleRoleChange(member.id, e.target.value)}
-                            disabled={period.status !== 'active' || updatingRole === member.id}
-                            className="bg-surface-primary border border-border text-text-primary text-xs rounded-lg focus:ring-brand-blue focus:border-brand-blue block p-2 disabled:opacity-50 min-w-[120px]"
+                          <button 
+                            onClick={() => {
+                              setSelectedProfileId(member.user_id);
+                              setIsDrawerOpen(true);
+                            }}
+                            className="text-left group"
                           >
-                            {ROLES.map(r => (
-                              <option key={r.value} value={r.value}>{r.label}</option>
-                            ))}
-                          </select>
+                            <p className="font-medium text-text-primary group-hover:text-brand-blue transition-colors">
+                              {member.users?.full_name || 'ያልታወቀ'}
+                            </p>
+                            <p className="text-xs text-text-muted font-mono mt-0.5">{member.users?.phone_number}</p>
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={pendingRoles[member.id] || member.role}
+                              onChange={(e) => setPendingRoles({...pendingRoles, [member.id]: e.target.value})}
+                              disabled={period.status !== 'active' || updatingRole === member.id}
+                              className="bg-surface-primary border border-border text-text-primary text-xs rounded-lg focus:ring-brand-blue focus:border-brand-blue block p-2 disabled:opacity-50 min-w-[120px] shadow-sm hover:border-brand-blue/30 transition-colors"
+                            >
+                              {ROLES.map(r => (
+                                <option key={r.value} value={r.value}>{r.label}</option>
+                              ))}
+                            </select>
+                            {pendingRoles[member.id] && pendingRoles[member.id] !== member.role && (
+                              <button
+                                onClick={() => handleRoleChange(member.id, pendingRoles[member.id])}
+                                disabled={updatingRole === member.id}
+                                className="bg-brand-blue text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-brand-blue/90 transition-colors"
+                              >
+                                {updatingRole === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'አስቀምጥ'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-center font-mono">
                           {userScores.s10 > 0 ? (
-                            <span className="text-brand-blue font-medium">{userScores.s10}</span>
+                            <span className="text-brand-blue font-medium bg-brand-blue/10 px-2 py-0.5 rounded">{userScores.s10}</span>
                           ) : (
                             <span className="text-text-muted">-</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-center font-mono">
                           {userScores.s20 > 0 ? (
-                            <span className="text-brand-blue font-medium">{userScores.s20}</span>
+                            <span className="text-brand-blue font-medium bg-brand-blue/10 px-2 py-0.5 rounded">{userScores.s20}</span>
                           ) : (
                             <span className="text-text-muted">-</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-center font-mono">
                           {userScores.s70 > 0 ? (
-                            <span className="text-brand-yellow font-medium">{userScores.s70}</span>
+                            <span className="text-brand-yellow font-medium bg-brand-yellow/10 px-2 py-0.5 rounded">{userScores.s70}</span>
                           ) : (
                             <span className="text-text-muted">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-center font-mono font-bold border-l border-border/50 text-text-primary">
+                        <td className="px-6 py-4 text-center font-mono font-bold border-l border-border/50 text-text-primary bg-surface-secondary/20">
                           {period.status === 'finalized' ? userScores.f100 : currentTotal}
                         </td>
-                        <td className="px-6 py-4 border-l border-border/50">
+                        <td className="px-6 py-4 border-l border-border/50 flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedProfileId(member.user_id);
+                              setIsDrawerOpen(true);
+                            }}
+                            className="text-brand-blue hover:text-brand-blue/80 bg-brand-blue/10 hover:bg-brand-blue/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border border-brand-blue/20"
+                          >
+                            መገለጫ
+                          </button>
                           <button
                             onClick={() => handleRemoveMember(member.id, member.users?.full_name || 'ያልታወቀ')}
                             disabled={period.status !== 'active'}
-                            className="text-danger hover:text-danger/80 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                            className="text-danger hover:text-danger/80 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 border border-danger/20"
                           >
-                            አስወግድ
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
@@ -403,7 +560,7 @@ export default function PeriodManagePage() {
                 </div>
                 <h3 className="text-xl font-heading text-text-primary mb-2">አባል በተሳካ ሁኔታ ተጨምሯል!</h3>
                 <p className="text-text-secondary text-sm mb-6">
-                  (Member added successfully). የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ወደ አባሉ ስልክ ተልኳል።
+                  የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ወደ አባሉ ስልክ ተልኳል።
                 </p>
                 <button
                   onClick={() => {
@@ -412,13 +569,13 @@ export default function PeriodManagePage() {
                   }}
                   className="w-full bg-surface-secondary text-text-primary px-4 py-2.5 rounded-xl font-medium hover:bg-border transition-colors border border-border"
                 >
-                  ዝጋ (Close)
+                  ዝጋ
                 </button>
               </div>
             ) : (
               <form onSubmit={handleAddMember} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">ሙሉ ስም (Full Name)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">ሙሉ ስም</label>
                   <input
                     type="text"
                     required
@@ -429,7 +586,7 @@ export default function PeriodManagePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">ስልክ ቁጥር (Phone Number)</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">ስልክ ቁጥር</label>
                   <input
                     type="tel"
                     required
@@ -445,13 +602,29 @@ export default function PeriodManagePage() {
                   disabled={addLoading || !addFullName || !addPhone}
                   className="w-full flex items-center justify-center bg-brand-blue text-white px-4 py-3 rounded-xl font-medium transition-colors hover:bg-brand-blue/90 disabled:opacity-50 mt-4"
                 >
-                  {addLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'መዝግብ (Register & Send SMS)'}
+                  {addLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'መዝግብ እና SMS ላክ'}
                 </button>
               </form>
             )}
           </div>
         </div>
       )}
+
+      <UserProfileDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        userId={selectedProfileId}
+        periodId={periodId}
+      />
+      
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        isDanger={confirmDialog.isDanger}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </DashboardLayout>
   );
 }

@@ -4,10 +4,12 @@ import { supabase } from '@/lib/supabaseClient';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 export function AssessmentHeader() {
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -20,11 +22,13 @@ export function AssessmentHeader() {
   }, []);
 
   const handleLogout = async () => {
-    if (window.confirm('እርግጠኛ ነዎት መውጣት ይፈልጋሉ? (Are you sure you want to log out?)')) {
-      await supabase.auth.signOut();
-      router.push('/assessment/login');
-      router.refresh();
-    }
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/assessment/login');
+    router.refresh();
   };
 
   if (!session) return null;
@@ -37,7 +41,7 @@ export function AssessmentHeader() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <span className="font-heading font-semibold text-text-primary text-lg">የግምገማ ስርዓት (Assessment System)</span>
+        <span className="font-heading font-semibold text-text-primary text-lg">የግምገማ ስርዓት</span>
       </div>
       
       <button 
@@ -45,8 +49,18 @@ export function AssessmentHeader() {
         className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-danger bg-surface-secondary hover:bg-danger/10 px-4 py-2 rounded-xl transition-all border border-border/50 hover:border-danger/20 active:scale-95"
       >
         <LogOut className="w-4 h-4" />
-        <span className="hidden sm:inline">ውጣ (Logout)</span>
+        <span className="hidden sm:inline">ውጣ</span>
       </button>
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        title="ከሲስተም መውጣት"
+        message="እርግጠኛ ነዎት መውጣት ይፈልጋሉ?"
+        isDanger={true}
+        confirmText="ውጣ"
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </div>
   );
 }

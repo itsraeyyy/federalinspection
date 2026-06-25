@@ -210,7 +210,7 @@ export async function provisionAdmin(data: any) {
       </p>
 
       <div class="btn-container">
-        <a href="http://localhost:3000/auth/login" class="btn">Access Dashboard</a>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/login" class="btn">Access Dashboard</a>
       </div>
     </div>
 

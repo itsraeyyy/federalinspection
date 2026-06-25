@@ -7,11 +7,13 @@ import { useEffect, useState, use } from "react";
 import { newsService } from "@/services/news";
 import { NewsArticle } from "@/types";
 import { useRouter } from "next/navigation";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export default function ViewNewsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [article, setArticle] = useState<NewsArticle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,7 +24,10 @@ export default function ViewNewsPage({ params }: { params: Promise<{ id: string 
   }, [id]);
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this article?')) return;
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = async () => {
     try {
       await newsService.deleteArticle(id);
       router.push('/dashboard/news');
@@ -92,6 +97,15 @@ export default function ViewNewsPage({ params }: { params: Promise<{ id: string 
           </div>
         </div>
       </div>
+      
+      <ConfirmModal
+        isOpen={showConfirm}
+        title="Delete Article"
+        message="Are you sure you want to delete this article?"
+        isDanger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
     </DashboardLayout>
   );
 }

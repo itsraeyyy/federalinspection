@@ -8,6 +8,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { adminService } from "@/services/admins";
 import { Admin, PERMISSION_GROUPS, ALL_MODULES } from "@/types";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 // @BACKEND: This component displays admins from the mock service.
 // Once the API is live, all CRUD operations flow through adminService.
@@ -39,6 +40,10 @@ function getRoleLabel(admin: Admin): { label: string; icon: React.ReactNode; col
 export default function AdminsPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    idToDelete: string | null;
+  }>({ isOpen: false, idToDelete: null });
 
   useEffect(() => {
     adminService.getAdmins().then(data => {
@@ -47,10 +52,15 @@ export default function AdminsPage() {
     });
   }, []);
 
-  const deleteAdmin = async (id: string) => {
-    if (confirm('እርግጠኛ ነዎት ይህን አስተዳዳሪ ማስወገድ ይፈልጋሉ?')) {
-      await adminService.deleteAdmin(id);
-      setAdmins(prev => prev.filter(a => a.id !== id));
+  const deleteAdmin = (id: string) => {
+    setConfirmDialog({ isOpen: true, idToDelete: id });
+  };
+
+  const confirmDelete = async () => {
+    if (confirmDialog.idToDelete) {
+      await adminService.deleteAdmin(confirmDialog.idToDelete);
+      setAdmins(prev => prev.filter(a => a.id !== confirmDialog.idToDelete));
+      setConfirmDialog({ isOpen: false, idToDelete: null });
     }
   };
 
@@ -146,6 +156,15 @@ export default function AdminsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        title="አስተዳዳሪ ማስወገድ"
+        message="እርግጠኛ ነዎት ይህን አስተዳዳሪ ማስወገድ ይፈልጋሉ?"
+        isDanger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDialog({ isOpen: false, idToDelete: null })}
+      />
     </DashboardLayout>
   );
 }

@@ -7,10 +7,15 @@ import { useEffect, useState } from "react";
 import { personnelService } from "@/services/personnel";
 import { Personnel } from "@/types";
 import Image from "next/image";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export default function PersonnelPage() {
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    idToDelete: string | null;
+  }>({ isOpen: false, idToDelete: null });
 
   const fetchPersonnel = async () => {
     setLoading(true);
@@ -28,9 +33,14 @@ export default function PersonnelPage() {
     fetchPersonnel();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (confirm(' እርግጠኛ ነዎት ይህን መረጃ ማጥፋት ይፈልጋሉ?')) {
-      await personnelService.deletePersonnel(id);
+  const handleDelete = (id: string) => {
+    setConfirmDialog({ isOpen: true, idToDelete: id });
+  };
+
+  const confirmDelete = async () => {
+    if (confirmDialog.idToDelete) {
+      await personnelService.deletePersonnel(confirmDialog.idToDelete);
+      setConfirmDialog({ isOpen: false, idToDelete: null });
       fetchPersonnel();
     }
   };
@@ -153,6 +163,15 @@ export default function PersonnelPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDialog.isOpen}
+        title="መረጃ ማጥፋት"
+        message="እርግጠኛ ነዎት ይህን መረጃ ማጥፋት ይፈልጋሉ?"
+        isDanger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDialog({ isOpen: false, idToDelete: null })}
+      />
     </DashboardLayout>
   );
 }
