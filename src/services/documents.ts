@@ -205,5 +205,20 @@ export const documentService = {
       uploadDate: data.upload_date,
       files: data.files || []
     } as Document;
+  },
+
+  deleteDocument: async (id: string): Promise<boolean> => {
+    // Delete the database record. 
+    // In a full implementation, you should also delete the files from storage here.
+    const { error } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Error deleting document:', error);
+      return false;
+    }
+    return true;
   }
 };

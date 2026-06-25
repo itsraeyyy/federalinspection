@@ -11,8 +11,9 @@ import { Personnel, COMMISSION_POSITIONS } from "@/types";
 // Each position (ዋና ኮሚሽነር, etc.) gets its own horizontal row.
 
 const OFFICE_TABS = [
-  { id: 'main', label: 'ኮሚሽን ጽ/ቤት', labelEn: 'Main Office' },
+  { id: 'main', label: 'ኮሚሽን ዋና ጽ/ቤት', labelEn: 'Main Office' },
   { id: 'branch', label: 'ኮሚሽን ቅርንጫፍ ጽ/ቤት', labelEn: 'Branch Office' },
+  { id: 'commission-members', label: 'ኮሚሽን አባላት', labelEn: 'Commission Members' },
 ];
 
 export function MembersSection() {
@@ -27,9 +28,12 @@ export function MembersSection() {
     });
   }, []);
 
-  const currentOffice = personnel.filter(p =>
-    p.officeCategory === (activeTab === 'main' ? 'Main Office' : 'Branch Office')
-  );
+  const currentOffice = personnel.filter(p => {
+    if (activeTab === 'main') return p.officeCategory === 'Main Office';
+    if (activeTab === 'branch') return p.officeCategory === 'Branch Office';
+    if (activeTab === 'commission-members') return p.officeCategory === 'Commission Members';
+    return false;
+  });
 
   const groupedByPosition = COMMISSION_POSITIONS
     .map(pos => ({
@@ -37,6 +41,16 @@ export function MembersSection() {
       members: currentOffice.filter(m => m.positionAm === pos.nameAm),
     }))
     .filter(group => group.members.length > 0);
+
+  // Fallback for commission members tab if they don't have a matching position
+  if (activeTab === 'commission-members' && groupedByPosition.length === 0 && currentOffice.length > 0) {
+    groupedByPosition.push({
+      id: 'member',
+      nameAm: 'ኮሚሽን አባል',
+      nameEn: 'Commission Member',
+      members: currentOffice
+    } as any);
+  }
 
   return (
     <section

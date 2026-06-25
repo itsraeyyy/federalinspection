@@ -214,6 +214,8 @@ export default function PeriodManagePage() {
       setAddSuccess(true);
       setAddFullName('');
       setAddPhone('');
+      setShowAddModal(false);
+      showToast('አዲስ አባል በተሳካ ሁኔታ ተጨምሯል!', 'success');
       fetchPeriodData(); // Refresh list
     } catch (err: any) {
       setAddError(err.message || 'አባል መጨመር አልተሳካም። (Failed to add member)');

@@ -1,21 +1,13 @@
 'use client';
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { IconCheck, IconX, IconDeviceMobile, IconFileText, IconKey, IconCopy, IconRefresh, IconFolder, IconFiles } from "@tabler/icons-react";
+import { IconCheck, IconX, IconDeviceMobile, IconFileText, IconKey, IconCopy, IconRefresh, IconFolder, IconFiles, IconTrash } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
-import { MAIN_CATEGORIES, SUB_CATEGORIES } from "@/services/documents";
+import { documentService, MAIN_CATEGORIES, SUB_CATEGORIES } from "@/services/documents";
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from "@/lib/supabaseClient";
 
 type AccessType = 'file' | 'main' | 'sub';
-
-const documents = [
-  'የ2017 የስራ ሂደት መመሪያ',
-  'የአደረጃጀት መመሪያ ቁጥር 1/2014',
-  'የሩብ ዓመት ሪፖርት Q3 2026',
-  'የ2016 በጀት ዓመት ዕቅድ',
-  'የሱፐርቪዥን ቼክ ሊስት 2026',
-];
 
 const accessTypes: { value: AccessType; label: string; icon: typeof IconFolder }[] = [
   { value: 'file', label: 'ሰነድ', icon: IconFileText },
@@ -25,24 +17,43 @@ const accessTypes: { value: AccessType; label: string; icon: typeof IconFolder }
 
 export default function QRAccessPage() {
   const [accessType, setAccessType] = useState<AccessType>('file');
-  const [selectedDoc, setSelectedDoc] = useState(documents[0]);
   const [selectedMain, setSelectedMain] = useState(MAIN_CATEGORIES[0].code);
   const [selectedSub, setSelectedSub] = useState(SUB_CATEGORIES[MAIN_CATEGORIES[0].code]?.[0]?.code || '');
+  const [selectedDoc, setSelectedDoc] = useState('');
   const [generatedCode, setGeneratedCode] = useState('847291');
   
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [historyRequests, setHistoryRequests] = useState<any[]>([]);
+  const [allDocs, setAllDocs] = useState<any[]>([]);
+
+  // Derived state for files in the current sub-category
+  const filesInSubCategory = allDocs
+    .filter(d => d.mainCategory === selectedMain && d.subCategory === selectedSub)
+    .flatMap(d => d.files || []);
 
   useEffect(() => {
-    // Fetch initial pending requests
+    if (filesInSubCategory.length > 0 && !filesInSubCategory.find((f: any) => f.name === selectedDoc)) {
+      setSelectedDoc(filesInSubCategory[0].name);
+    } else if (filesInSubCategory.length === 0) {
+      setSelectedDoc('');
+    }
+  }, [filesInSubCategory, selectedDoc]);
+
+  useEffect(() => {
+    // Fetch docs
+    documentService.getDocuments().then(data => {
+      setAllDocs(data);
+    });
+    // Fetch initial requests
     const fetchRequests = async () => {
       const { data, error } = await supabase
         .from('scan_requests')
         .select('*')
-        .eq('status', 'Pending')
         .order('created_at', { ascending: false });
 
       if (data) {
-        setPendingRequests(data);
+        setPendingRequests(data.filter(r => r.status === 'Pending'));
+        setHistoryRequests(data.filter(r => r.status !== 'Pending'));
       }
     };
 
@@ -52,11 +63,22 @@ export default function QRAccessPage() {
     const subscription = supabase
       .channel('public:scan_requests')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'scan_requests' }, (payload) => {
-        if (payload.eventType === 'INSERT' && payload.new.status === 'Pending') {
-          setPendingRequests(prev => [payload.new, ...prev]);
+        if (payload.eventType === 'INSERT') {
+          if (payload.new.status === 'Pending') {
+            setPendingRequests(prev => [payload.new, ...prev]);
+          } else {
+            setHistoryRequests(prev => [payload.new, ...prev]);
+          }
         } else if (payload.eventType === 'UPDATE') {
           if (payload.new.status !== 'Pending') {
             setPendingRequests(prev => prev.filter(req => req.id !== payload.new.id));
+            setHistoryRequests(prev => {
+              const exists = prev.find(req => req.id === payload.new.id);
+              if (exists) {
+                return prev.map(req => req.id === payload.new.id ? payload.new : req);
+              }
+              return [payload.new, ...prev];
+            });
           } else {
             setPendingRequests(prev => prev.map(req => req.id === payload.new.id ? payload.new : req));
           }
@@ -70,23 +92,46 @@ export default function QRAccessPage() {
   }, []);
 
   const handleApprove = async (id: string) => {
-    const { error } = await supabase
-      .from('scan_requests')
-      .update({ status: 'Approved', resolved_at: new Date().toISOString() })
-      .eq('id', id);
-    if (!error) {
+    const reqToUpdate = pendingRequests.find(r => r.id === id);
+    const resolvedAt = new Date().toISOString();
+    
+    // Optimistic UI
+    if (reqToUpdate) {
       setPendingRequests(prev => prev.filter(req => req.id !== id));
+      setHistoryRequests(prev => [{ ...reqToUpdate, status: 'Approved', resolved_at: resolvedAt }, ...prev]);
     }
+
+    await supabase
+      .from('scan_requests')
+      .update({ status: 'Approved', resolved_at: resolvedAt })
+      .eq('id', id);
   };
 
   const handleDeny = async (id: string) => {
-    const { error } = await supabase
-      .from('scan_requests')
-      .update({ status: 'Denied', resolved_at: new Date().toISOString() })
-      .eq('id', id);
-    if (!error) {
+    const reqToUpdate = pendingRequests.find(r => r.id === id);
+    const resolvedAt = new Date().toISOString();
+    
+    // Optimistic UI
+    if (reqToUpdate) {
       setPendingRequests(prev => prev.filter(req => req.id !== id));
+      setHistoryRequests(prev => [{ ...reqToUpdate, status: 'Denied', resolved_at: resolvedAt }, ...prev]);
     }
+
+    await supabase
+      .from('scan_requests')
+      .update({ status: 'Denied', resolved_at: resolvedAt })
+      .eq('id', id);
+  };
+
+  const handleClearHistory = async () => {
+    if (!window.confirm('ሁሉንም የታሪክ መዝገቦች ማጥፋት ይፈልጋሉ? (Are you sure you want to clear all history records?)')) return;
+    
+    setHistoryRequests([]);
+
+    await supabase
+      .from('scan_requests')
+      .delete()
+      .neq('status', 'Pending');
   };
 
   const currentSubs = SUB_CATEGORIES[selectedMain] || [];
@@ -166,13 +211,38 @@ export default function QRAccessPage() {
                 <label className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">የመዳረሻ ዒላማ</label>
 
                 {accessType === 'file' && (
-                  <select
-                    value={selectedDoc}
-                    onChange={(e) => setSelectedDoc(e.target.value)}
-                    className="w-full bg-surface-primary border border-border/50 rounded-xl p-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors appearance-none cursor-pointer"
-                  >
-                    {documents.map((doc) => <option key={doc} value={doc}>{doc}</option>)}
-                  </select>
+                  <div className="flex flex-col gap-2">
+                    <select
+                      value={selectedMain}
+                      onChange={(e) => { setSelectedMain(e.target.value); setSelectedSub(SUB_CATEGORIES[e.target.value]?.[0]?.code || ''); }}
+                      className="w-full bg-surface-primary border border-border/50 rounded-xl px-3 py-2.5 text-xs text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors appearance-none cursor-pointer"
+                    >
+                      {MAIN_CATEGORIES.map((cat) => (
+                        <option key={cat.code} value={cat.code}>{cat.code} - {cat.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedSub}
+                      onChange={(e) => setSelectedSub(e.target.value)}
+                      className="w-full bg-surface-primary border border-border/50 rounded-xl px-3 py-2.5 text-xs text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors appearance-none cursor-pointer"
+                    >
+                      {currentSubs.map((sub) => (
+                        <option key={sub.code} value={sub.code}>{sub.code} - {sub.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedDoc}
+                      onChange={(e) => setSelectedDoc(e.target.value)}
+                      className="w-full bg-surface-primary border border-border/50 rounded-xl p-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors appearance-none cursor-pointer"
+                    >
+                      {filesInSubCategory.map((f: any) => (
+                        <option key={f.name} value={f.name}>{f.name}</option>
+                      ))}
+                      {filesInSubCategory.length === 0 && (
+                        <option value="">ምንም ሰነድ አልተገኘም</option>
+                      )}
+                    </select>
+                  </div>
                 )}
 
                 {accessType === 'main' && (
@@ -289,6 +359,49 @@ export default function QRAccessPage() {
                   <IconFileText size={32} className="text-text-muted/40" />
                   <div className="text-sm text-text-muted font-medium">ምንም አዲስ ጥያቄ የለም</div>
                 </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between mt-6">
+              <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-widest flex items-center gap-2">
+                የጥያቄዎች ታሪክ (Records)
+              </h2>
+              {historyRequests.length > 0 && (
+                <button 
+                  onClick={handleClearHistory}
+                  className="text-[10px] font-bold text-danger hover:bg-danger/10 px-2 py-1 rounded-md transition-colors flex items-center gap-1 uppercase tracking-widest"
+                >
+                  <IconTrash size={14} /> ሁሉንም አጥፋ
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-2">
+              {historyRequests.map((req) => (
+                <div key={req.id} className="bg-surface-primary/30 border border-border/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${req.status === 'Approved' ? 'bg-success/10' : 'bg-danger/10'}`}>
+                      {req.status === 'Approved' ? <IconCheck size={20} className="text-success" /> : <IconX size={20} className="text-danger" />}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-text-primary truncate">{req.requester_device || 'Unknown Device'}</span>
+                        <span className="text-[10px] text-text-muted shrink-0">• {new Date(req.resolved_at || req.created_at).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <IconFileText size={11} className="text-text-muted shrink-0" />
+                        <span className="text-xs text-brand-blue font-medium truncate">{req.file_name}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${req.status === 'Approved' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
+                      {req.status === 'Approved' ? 'ተፈቅዷል' : 'ተከልክሏል'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {historyRequests.length === 0 && (
+                <div className="text-sm text-text-muted text-center p-4">ምንም ታሪክ የለም</div>
               )}
             </div>
           </div>

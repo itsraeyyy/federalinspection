@@ -3,7 +3,7 @@ import Link from "next/link";
 const summaryCards = [
   { amharic: "አጠቃላይ መዋቅር", value: "106,174", sub: "ክልሎች / ዞኖች / ወረዳዎች" },
   { amharic: "የኮሚሽን አባላት", value: "531,894", sub: "በሁሉም ክልሎች" },
-  { amharic: "ኀላፊዎች", value: "2,584", sub: "ንቁ አመራር" },
+  { amharic: "የኮሚሽን ኀላፊዎች", value: "2,584", sub: "ንቁ አመራር" },
 ];
 
 export function AnalyticsSection() {

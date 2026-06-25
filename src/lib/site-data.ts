@@ -238,23 +238,7 @@ export const memberCategories: MemberCategory[] = [
 
         name: "ጸሃፊና ጽህፈት ቤት ሃላፊ",
 
-        position: "ጸሃፊና ጽህፈት ቤት ሃላፊ",
-
-        email: "",
-
-        phone: "",
-
-        image: "__placeholder__",
-
-      },
-
-      {
-
-        id: "sec-4",
-
-        name: "ኮሚቴ አባል",
-
-        position: "ኮሚሽን ኮሚቴ አባላት",
+        position: "የኮሚሽን ጸሃፊና ጽህፈት ቤት ሃላፊ",
 
         email: "",
 
@@ -270,7 +254,7 @@ export const memberCategories: MemberCategory[] = [
 
         name: "ስራ አመራር አባል",
 
-        position: "ስራ አመራር ኮሚቴ አባላት",
+        position: "የኮሚሽን ስራ አመራር ኮሚቴ አባላት",
 
         email: "",
 
@@ -346,7 +330,7 @@ export const memberCategories: MemberCategory[] = [
 
         name: "ጸሃፊ",
 
-        position: "ጸሃፊና ጽህፈት ቤት ሃላፊ (ቅርንጫፍ)",
+        position: "የኮሚሽን ጸሃፊና ጽህፈት ቤት ሃላፊ (ቅርንጫፍ)",
 
         email: "",
 
@@ -356,13 +340,25 @@ export const memberCategories: MemberCategory[] = [
 
       },
 
+    ],
+
+  },
+
+  {
+
+    id: "commission-members",
+
+    label: "ኮሚሽን አባላት",
+
+    members: [
+
       {
 
-        id: "br-4",
+        id: "cm-1",
 
-        name: "ኮሚቴ አባል",
+        name: "ኮሚሽን አባል",
 
-        position: "ኮሚሽን ኮሚቴ አባላት (ቅርንጫፍ)",
+        position: "ኮሚሽን አባላት",
 
         email: "",
 

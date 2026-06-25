@@ -11,7 +11,7 @@ const formatTimeAgo = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
   if (diffInSeconds < 60) return `አሁን`;
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} ደቂቃ በፊት`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} ሰዓት በፊት`;
@@ -69,46 +69,46 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-text-secondary text-sm">የዛሬው የስርዓት አጠቃላይ እይታ።</p>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard 
-          label="የሰነዶች ቤተ-መጽሐፍት" 
-          value={(totalDocs || 0).toLocaleString()} 
-          accentColor="yellow" 
-          icon={IconFileText} 
+        <StatCard
+          label="ሰነዶች"
+          value={(totalDocs || 0).toLocaleString()}
+          accentColor="yellow"
+          icon={IconFileText}
           substats={[
             { label: 'ህዝባዊ', value: (publicDocs || 0).toString() },
             { label: 'የግል', value: privateDocs.toString() }
           ]}
           badge="ተመሳስሏል"
         />
-        <StatCard 
-          label="ዜና እና ሚዲያ" 
-          value={(totalNews || 0).toLocaleString()} 
-          accentColor="green" 
-          icon={IconNews} 
+        <StatCard
+          label="ዜናዎች"
+          value={(totalNews || 0).toLocaleString()}
+          accentColor="green"
+          icon={IconNews}
           substats={[
             { label: 'ታተመ', value: (publishedNews || 0).toString() },
             { label: 'ረቂቅ', value: (draftNews || 0).toString() }
           ]}
           badge="ንቁ"
         />
-        <StatCard 
-          label="የዜጎች ጥቆማዎች" 
-          value={(totalComplaints || 0).toLocaleString()} 
-          accentColor="purple" 
-          icon={IconMessage2} 
+        <StatCard
+          label="ጥቆማዎች"
+          value={(totalComplaints || 0).toLocaleString()}
+          accentColor="purple"
+          icon={IconMessage2}
           substats={[
             { label: 'አዲስ', value: newComplaints.toString() },
             { label: 'ተፈቷል', value: (resolvedComplaints || 0).toString() }
           ]}
           badge="ቅድመ ተሰጥዎ"
         />
-        <StatCard 
-          label="የተመዘገቡ ሰራተኞች" 
-          value={(totalPersonnel || 0).toLocaleString()} 
-          accentColor="red" 
-          icon={IconUsers} 
+        <StatCard
+          label="የተመዘገቡ ተቆጣጣሪዎች "
+          value={(totalPersonnel || 0).toLocaleString()}
+          accentColor="red"
+          icon={IconUsers}
           substats={[
             { label: 'ንቁ', value: (activePersonnel || 0).toString() },
             { label: 'በዕረፍት', value: onLeavePersonnel.toString() }
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest">ፈጣን እርምጃዎች</h2>
           <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 p-5 backdrop-blur-md flex flex-col gap-3 flex-1">
             <Link href="/dashboard/personnel/create" className="w-full py-3 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue rounded-xl text-sm font-medium transition-colors border border-brand-blue/20 flex items-center justify-center gap-2">
-              <IconUsers size={16} /> አዲስ ሰራተኛ ጨምር
+              <IconUsers size={16} /> አዲስ አባል ጨምር
             </Link>
             <Link href="/dashboard/news/create" className="w-full py-3 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary rounded-xl text-sm font-medium transition-colors border border-border/50 flex items-center justify-center gap-2">
               <IconNews size={16} /> ዜና ጽሁፍ ፍጠር

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import { IconFileText, IconCheck, IconX, IconLoader2, IconDownload, IconShieldLock } from '@tabler/icons-react';
 
@@ -16,6 +17,10 @@ function RequestAccessForm() {
   // 'idle' | 'submitting' | 'pending' | 'approved' | 'denied'
   const [status, setStatus] = useState<'idle' | 'submitting' | 'pending' | 'approved' | 'denied'>('idle');
   const [requestId, setRequestId] = useState<string | null>(null);
+
+  const [downloading, setDownloading] = useState(false);
+  const [categoryFiles, setCategoryFiles] = useState<{doc: any, file: any}[]>([]);
+  const [fetchingFiles, setFetchingFiles] = useState(false);
 
   useEffect(() => {
     // Basic User-Agent parser for a friendly device name
@@ -58,6 +63,97 @@ function RequestAccessForm() {
       supabase.removeChannel(subscription);
     };
   }, [requestId, status]);
+
+  useEffect(() => {
+    if (status === 'approved' && targetType !== 'file') {
+      fetchCategoryFiles();
+    }
+  }, [status, targetType]);
+
+  const fetchCategoryFiles = async () => {
+    if (!target) return;
+    setFetchingFiles(true);
+    try {
+      const { data: docs, error: docsError } = await supabase.from('documents').select('*');
+      if (docsError) throw docsError;
+
+      const codePart = target.split(' - ')[0];
+      let mainCode = '';
+      let subCode = '';
+      
+      if (targetType === 'main') {
+        mainCode = codePart;
+      } else if (targetType === 'sub') {
+        const parts = codePart.split('.');
+        mainCode = parts[0];
+        subCode = parts[1];
+      }
+
+      const filesList: {doc: any, file: any}[] = [];
+      docs.forEach(doc => {
+        let match = false;
+        if (targetType === 'main' && doc.main_category === mainCode) match = true;
+        if (targetType === 'sub' && doc.main_category === mainCode && doc.sub_category === subCode) match = true;
+        
+        if (match && doc.files) {
+          doc.files.forEach((f: any) => {
+            filesList.push({doc, file: f});
+          });
+        }
+      });
+      setCategoryFiles(filesList);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFetchingFiles(false);
+    }
+  };
+
+  const downloadFile = async (doc: any, file: any) => {
+    try {
+      const storagePath = `${doc.office}/${doc.year}/${file.id}`;
+      const { data, error } = await supabase.storage.from('documents').createSignedUrl(storagePath, 60);
+      if (error) throw error;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('ፋይሉን ማውረድ አልተሳካም።');
+    }
+  };
+
+  const handleDownloadSingle = async () => {
+    if (!target) return;
+    setDownloading(true);
+    try {
+      const { data: docs, error: docsError } = await supabase.from('documents').select('*');
+      if (docsError) throw docsError;
+
+      let foundDoc = null;
+      let foundFile = null;
+
+      for (const doc of docs) {
+        const files = doc.files || [];
+        const file = files.find((f: any) => f.name === target);
+        if (file) {
+          foundDoc = doc;
+          foundFile = file;
+          break;
+        }
+      }
+
+      if (foundDoc && foundFile) {
+        await downloadFile(foundDoc, foundFile);
+      } else {
+        alert('ፋይሉ አልተገኘም');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,10 +286,34 @@ function RequestAccessForm() {
                 አሁን ሰነዱን ማውረድ ወይም ማየት ይችላሉ።
               </p>
             </div>
-            <button className="w-full flex items-center justify-center gap-2 bg-success hover:bg-success/90 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm active:scale-[0.98]">
-              <IconDownload size={20} />
-              ሰነዱን አውርድ
-            </button>
+            {targetType === 'file' ? (
+              <button 
+                onClick={handleDownloadSingle} 
+                disabled={downloading}
+                className="w-full flex items-center justify-center gap-2 bg-success hover:bg-success/90 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm active:scale-[0.98] disabled:opacity-70"
+              >
+                {downloading ? <IconLoader2 size={20} className="animate-spin" /> : <IconDownload size={20} />}
+                {downloading ? 'በማውረድ ላይ...' : 'ሰነዱን አውርድ'}
+              </button>
+            ) : (
+              <div className="w-full flex flex-col gap-3 max-h-64 overflow-y-auto mt-4 text-left border-t border-border/50 pt-4">
+                <h4 className="text-sm font-semibold text-text-primary mb-2">የተፈቀዱ ሰነዶች፡</h4>
+                {fetchingFiles ? (
+                  <div className="flex justify-center p-4"><IconLoader2 className="animate-spin text-brand-blue" /></div>
+                ) : (
+                  categoryFiles.length > 0 ? categoryFiles.map((cf, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-surface-primary/50 border border-border/50 rounded-xl hover:border-brand-blue/30 transition-colors">
+                      <span className="text-xs font-medium text-text-primary truncate mr-2" title={cf.file.name}>{cf.file.name}</span>
+                      <button onClick={() => downloadFile(cf.doc, cf.file)} className="text-brand-blue hover:text-brand-blue/80 p-2 bg-brand-blue/10 rounded-lg transition-colors shrink-0">
+                        <IconDownload size={16} stroke={2} />
+                      </button>
+                    </div>
+                  )) : (
+                    <div className="text-sm text-text-muted text-center p-4 bg-surface-primary/50 rounded-xl">ምንም ሰነድ አልተገኘም</div>
+                  )
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -226,12 +346,12 @@ export default function RequestAccessPage() {
     <div className="min-h-screen bg-[#F5F3F0] flex flex-col items-center pt-12 sm:pt-24 px-4 font-sans">
       <div className="w-full max-w-md text-center mb-8">
         {/* Minimal logo / header area */}
-        <div className="inline-block p-3 bg-white rounded-2xl shadow-sm border border-border/20 mb-4">
-          <div className="w-8 h-8 rounded bg-brand-blue flex items-center justify-center">
-            <span className="text-white font-bold text-lg leading-none">C</span>
+        <div className="inline-block p-1.5 bg-white rounded-2xl shadow-sm border border-border/20 mb-4 overflow-hidden">
+          <div className="relative w-16 h-16 rounded-xl flex items-center justify-center">
+            <Image src="/logo.jpg" alt="የብልፅግና ኢንስፔክሽን ኮሚሽን" fill className="object-cover rounded-xl" />
           </div>
         </div>
-        <h2 className="text-sm font-bold text-text-secondary uppercase tracking-[0.2em]">CIDMS Platform</h2>
+        <h2 className="text-sm font-bold text-text-secondary tracking-widest">የብልፅግና ፓርቲ ኢንስፔክሽን ኮሚሽን</h2>
       </div>
       
       <Suspense fallback={

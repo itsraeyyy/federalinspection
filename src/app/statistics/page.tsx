@@ -10,7 +10,7 @@ import { useState } from "react";
 const summaryCards = [
   { label: "አጠቃላይ መዋቅር", labelEn: "Total Structure", value: 106174, icon: Layers, color: "#014BAA" },
   { label: "የኮሚሽን አባላት", labelEn: "Commission Members", value: 531894, icon: Users, color: "#FFB800" },
-  { label: "ኃላፊዎች", labelEn: "Responsible Persons", value: 2584, icon: Building2, color: "#10B981" },
+  { label: "የኮሚሽን ኃላፊዎች", labelEn: "Responsible Persons", value: 2584, icon: Building2, color: "#10B981" },
 ];
 
 const coverage = [
@@ -174,6 +174,8 @@ export default function StatisticsPage() {
           </div>
         </section>
 
+
+
         {/* ═══ Summary Cards ═══ */}
         <section className="container-site -mt-12 relative z-20">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -201,20 +203,6 @@ export default function StatisticsPage() {
           </div>
         </section>
 
-        {/* ═══ Coverage Strip ═══ */}
-        <section className="container-site mt-10">
-          <div className="flex flex-wrap items-center justify-center gap-4 rounded-2xl bg-slate-50 px-6 py-5 ring-1 ring-slate-100">
-            <Network className="size-5 text-slate-400" />
-            <span className="text-sm font-bold text-slate-500">የሽፋን፡</span>
-            {coverage.map((c, i) => (
-              <span key={i} className="flex items-center gap-1.5">
-                <span className="text-lg font-bold text-slate-900 tabular-nums">{c.value}</span>
-                <span className="text-sm text-slate-500">{c.label}</span>
-                {i < coverage.length - 1 && <span className="ml-2 text-slate-200">|</span>}
-              </span>
-            ))}
-          </div>
-        </section>
 
         {/* ═══ Bar Chart: Regional Comparison ═══ */}
         <section className="container-site mt-16 lg:mt-24">
@@ -226,19 +214,6 @@ export default function StatisticsPage() {
               <p className="mt-1 text-sm text-slate-500">በመለኪያ የክልል ንጽጽር</p>
             </div>
             <div className="flex gap-2">
-              {(["members", "structure", "kebeles"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setActiveMetric(m)}
-                  className={`rounded-xl px-4 py-2 text-sm font-bold transition-all ${
-                    activeMetric === m
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                  }`}
-                >
-                  {metricConfig[m].label}
-                </button>
-              ))}
             </div>
           </div>
 
@@ -263,8 +238,8 @@ export default function StatisticsPage() {
             
             {/* Donut */}
             <div className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-100 sm:p-8">
-              <h3 className="font-heading text-xl font-bold text-slate-900">የአባላት ስርጭት</h3>
-              <p className="mb-6 text-sm text-slate-500">በክልል የአባላት ስርጭት</p>
+              <h3 className="font-heading text-xl font-bold text-slate-900">የኮሚሽን አባላት ስርጭት</h3>
+              <p className="mb-6 text-sm text-slate-500">በክልል የኮሚሽን አባላት ስርጭት</p>
               <DonutChart
                 data={regionalData.map((r) => ({ label: r.name, value: r.members }))}
                 colors={donutColors}
@@ -274,7 +249,7 @@ export default function StatisticsPage() {
             {/* Top 5 */}
             <div className="rounded-3xl bg-slate-50 p-6 ring-1 ring-slate-100 sm:p-8">
               <h3 className="font-heading text-xl font-bold text-slate-900">ከፍተኛ 5 ክልሎች</h3>
-              <p className="mb-6 text-sm text-slate-500">በአባላት ብዛት ከፍተኛ 5 ክልሎች</p>
+              <p className="mb-6 text-sm text-slate-500">በኮሚሽን አባላት ብዛት ከፍተኛ 5 ክልሎች</p>
               <div className="flex flex-col gap-5">
                 {top5.map((r, i) => {
                   const pct = (r.members / totals.members) * 100;
@@ -326,10 +301,10 @@ export default function StatisticsPage() {
                   <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ዞን</th>
                   <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ወረዳ</th>
                   <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ቀበሌ</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ህብረት</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">መዋቅር</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">አባላት</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ኃላፊዎች</th>
+                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን ህብረት</th>
+                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን መዋቅር</th>
+                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን አባላት</th>
+                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን ኃላፊዎች</th>
                 </tr>
               </thead>
               <tbody>

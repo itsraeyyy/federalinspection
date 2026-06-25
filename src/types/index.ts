@@ -95,15 +95,16 @@ export interface Document {
 export const COMMISSION_POSITIONS = [
   { id: 'chief', nameAm: 'ዋና ኮሚሽነር', nameEn: 'Chief Commissioner' },
   { id: 'deputy', nameAm: 'ምክትል ኮሚሽነር', nameEn: 'Deputy Commissioner' },
-  { id: 'secretary', nameAm: 'ጸሃፊና ጽህፈት ቤት ሃላፊ', nameEn: 'Secretary & Office Head' },
-  { id: 'committee', nameAm: 'ኮሚሽን ኮሚቴ አባላት', nameEn: 'Commission Committee Members' },
-  { id: 'management-committee', nameAm: 'ስራ አመራር ኮሚቴ አባላት', nameEn: 'Work Management Committee Members' },
+  { id: 'secretary', nameAm: 'የኮሚሽን ጸሃፊና ጽህፈት ቤት ሃላፊ', nameEn: 'Secretary & Office Head' },
+  { id: 'member', nameAm: 'ኮሚሽን አባል', nameEn: 'Commission Member' },
+  { id: 'management-committee', nameAm: 'የኮሚሽን ስራ አመራር ኮሚቴ አባላት', nameEn: 'Work Management Committee Members' },
   { id: 'management', nameAm: 'ኮሚሽን ማኔጅመንት አባላት', nameEn: 'Commission Management Members' },
 ] as const;
 
 export const OFFICE_CATEGORIES = [
-  { id: 'main', nameAm: 'ኮሚሽን ጽ/ቤት', nameEn: 'Main Office' },
+  { id: 'main', nameAm: 'ኮሚሽን ዋና ጽ/ቤት', nameEn: 'Main Office' },
   { id: 'branch', nameAm: 'ኮሚሽን ቅርንጫፍ ጽ/ቤት', nameEn: 'Branch Office' },
+  { id: 'commission-members', nameAm: 'ኮሚሽን አባላት', nameEn: 'Commission Members' },
 ] as const;
 
 export interface Personnel {

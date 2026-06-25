@@ -4,26 +4,6 @@ import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { InstitutionalWorkflow } from "@/components/institutional-workflow";
 
-const responsibilities = [
-  { letter: "ሀ", text: "ኮሚሽኑ የፓርቲውን መተዳደሪያ ደንብና መመሪያዎች በሥራ ላይ መዋላቸውን ይከታተላል" },
-  { letter: "ለ", text: "የፓርቲውን የፖለቲካ ጥራት እና የሥነ-ምግባር ጤናማነት ለማረጋገጥ አስፈላጊውን ክትትል ያደርጋል" },
-  { letter: "ሐ", text: "የፓርቲው ገንዘብ፣ ንብረትና ሰነዶች በአግባቡ መጠበቃቸውን ቁጥጥር ያደርጋል፤ የፓርቲው አባላት መዋጮ በወቅቱና በትክክል መሰብሰቡን ይቆጣጠራል" },
-  { letter: "መ", text: "የፓርቲው አባላትና አካላት መብቶች እና ጥቅሞች መከበራቸውን ይከታተላል" },
-  { letter: "ሠ", text: "ከአባላት የሚቀርቡ አቤቱታዎችን ይቀበላል፤ ይመረምራል፤ የእርምት የውሳኔ ሐሳቡን ለሥራ አስፈጻሚ ኮሚቴ እና እንደአግባቡ በየደረጃው ላሉ የፓርቲ አስተባባሪ ኮሚቴዎች ያቀርባል" },
-  { letter: "ረ", text: "በኮሚሽኑ የሚቀርበውን የእርምት ሐሳብ የሥራ አስፈጻሚው ካልተቀበለው ለብልፅግና ምክር ቤት ይቀርባል፤ ምክር ቤቱ በጉዳዩ ላይ የሚሰጠው ውሳኔ እስከ ጉባኤ ድረስ ተፈጻሚ ይሆናል። እንዲሁም በየደረጃው በሚገኙ የኮሚሽን መዋቅር ለፓርቲ አስተባባሪ ኮሚቴ የሚቀርበው የእርምት ሐሳብ ተቀባይነት ካላገኘ ኮሚሽኑ አንድ እርከን ከፍ ብሎ ላለው የፓርቲ አስተባባሪ ኮሚቴ የዲሲፕሊን ክስ ያቀርባል" },
-  { letter: "ሰ", text: "ዝርዝር የፓርቲ የዲሲፕሊን፣ የኢንስፔክሽንና ቁጥጥጥር መመሪያ በማርቀቅ ለብልፅግና ምክር ቤት አቅርቦ ያጸድቃል፣ ተፈጻሚነቱን ይከታተል" },
-  { letter: "ሸ", text: "የፓርቲው አባላትና አካላት የፓርቲውን ሥነ-ምግባር ማክበራቸውን ይከታተላል፣ የፓርቲ አባላትና አመራር ሊኖራቸው የሚገባ የፓርቲ ሥነ-ምግባር ከፓርቲ ጽ/ቤቶች ጋር ግንዛቤ ይሰጣል" },
-  { letter: "ቀ", text: "ሙስናና ብልሹ አሠራር ላይ በፓርቲው ውስጥ ትግል ስለመደረጉ ይከታተላል፣ ያስተባብራል፣ የሙስና ጥፋቶች ሲፈጸሙ ተገቢውን የእርምት እርምጃ እንዲወሰድ ለሚመለከተው የፓርቲ አካላት ያቀርባል፣ አፈጻጸሙን ይከታተላል" },
-  { letter: "በ", text: "የሙስናና ብልሹ አሰራሮች ዙሪያ ጥናቶችን ያደርጋል፣ ግንዛቤ ይሰጣል" },
-  { letter: "ተ", text: "በየደረጃው የሥነ-ምግባር ጥሰቶችን ይመረምራል፣ ተገቢውን የእርምት ርምጃ እንዲወሰድ ያደርጋል" },
-  { letter: "ነ", text: "ከፓርቲው የፖለቲካ አስተባባሪ ኮሚቴዎች በሚሰጥ ተልዕኮ መሠረት አስፈላጊ ሆነው የተገኙ የምርመራ፣ የክትትል እና የቁጥጥር ሥራዎችን ይሠራል" },
-  { letter: "ኘ", text: "በፓርቲው አካላት መካከል ልዩነት ሲኖር ወይም ፓርቲውን የሚመለከቱና መጣራት የሚገባቸው ጉዳዮች ሲኖሩ፤ እንዲሁም በፓርቲው ብልፅግና ምክር ቤት ወይም የሥራ አስፈጻሚ ኮሚቴ በኩል ጥያቄ ሲቀርብለት እንደ አንድ ነጻ አጣሪ አካል ሆኖ ያገለግላል፤ የራሱን የውሳኔ ሀሳብ ያካተተ ሪፖርትም ለብልፅግና ምክር ቤት ወይም ሥራ አስፈጻሚ ኮሚቴ ያቀርባል" },
-  { letter: "አ", text: "ኮሚሽኑ በፓርቲው መተዳደሪያ ደንቡ የተሰጡትን ተግባራትና ኃላፊነቶች አስመልክቶ በየወቅቱ ኢንስፔክሽንና ልዩ ልዩ ጥናቶችን ያካሂዳል፡፡ የጥናቱን ግኝቶች ከውሳኔ ምክረ-ሐሳብ ጋር ለሚመለከታቸው የፓርቲ አካላት ያቀርባል፣ አፈጻጸሙንም ይከታተላል" },
-  { letter: "ከ", text: "ኮሚሽኑ ለሥራ የሚያስፈልገውን ዓመታዊ በጀት በማዘጋጀት እንዲፀድቅ ለብልፅግና ምክር ቤት ያቀርባል፣ ሲፀድቅ ያስተዳድራል፣ ይመራል፣ በየደረጃው የሚገኙ የኮሚሽን መዋቅር ለሥራ የሚያስፈልግ በጀት ትይዩ ለሚገኙ የፓርቲ አስተባባሪ ኮሚቴ ያቀርባሉ፣ ሲጸድቅ ያስተዳድራሉ" },
-  { letter: "ወ", text: "ለፓርቲው ፕሮግራም፣ መተዳደሪያ ደንብና ለኮሚሽኑ መመሪያ ተገዢ ያልሆኑ የኮሚሽን አባላትን በሁለት ሶስተኛ ድምፅ ያግዳል" },
-  { letter: "ዘ", text: "ስለሥራው አፈጻጸም በፌደራል ደረጃ ለፓርቲው ጉባኤ፣ እንዲሁም እንደአግባብነቱ በክልል እና አካባቢያዊ መዋቅሮች አንድ ደረጃ ከፍ ብሎ ላለው ኮሚሽን እና ለኮንፈረንስ ሪፖርት ያቀርባሉ" },
-  { letter: "ዠ", text: "ይህንን መተዳደሪያ ደንብ መሠረት በማድረግ የኮሚሽኑን የውስጥ አሠራር መመሪያዎች ማውጣት ይችላል" },
-];
 
 export default function AboutPage() {
   return (
@@ -88,46 +68,6 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* --- Functions & Responsibilities Section --- */}
-        <section id="responsibilities" className="relative scroll-mt-28 overflow-hidden py-20 lg:py-28" style={{ backgroundColor: "#014BAA" }}>
-          {/* Subtle dot texture */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: "radial-gradient(rgba(255,255,255,0.15) 1.5px, transparent 0)",
-              backgroundSize: "32px 32px",
-            }}
-            aria-hidden="true"
-          />
-
-          <div className="container-site relative z-10">
-            <div className="mx-auto mb-16 max-w-2xl text-center">
-              <h2 className="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                የኮሚሽኑ <span style={{ color: "#FFB800" }}>ተግባርና ኃላፊነት</span>
-              </h2>
-              <div className="mx-auto mt-6 h-0.5 w-10 rounded-full" style={{ backgroundColor: "#FFB800" }} />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {responsibilities.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="group flex items-start gap-5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 py-5 transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.07]"
-                >
-                  <span
-                    className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors duration-200 group-hover:bg-[#FFB800] group-hover:text-[#014BAA]"
-                    style={{ backgroundColor: "rgba(255,184,0,0.12)", color: "#FFB800" }}
-                  >
-                    {item.letter}
-                  </span>
-                  <p className="pt-0.5 text-sm leading-relaxed text-white/70 transition-colors duration-200 group-hover:text-white/90">
-                    {item.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* --- Institutional Structure Section --- */}
         <section className="container-site py-16 lg:py-24">

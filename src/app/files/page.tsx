@@ -61,7 +61,7 @@ export default function FilesPage() {
               <span style={{ color: "#014BAA" }}>ሰነዶች</span>
             </div>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              የፌዴራል ብልፅግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን ሕጎች፣ ደንቦች፣ መመሪያዎች እና ልዩ ልዩ ሪፖርቶች።
+              የብልፅግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን ሕጎች፣ ደንቦች፣ መመሪያዎች እና ልዩ ልዩ ሪፖርቶች።
             </p>
           </div>
         </section>

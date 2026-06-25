@@ -11,11 +11,7 @@ const submissionLinks = [
 ];
 
 const socialLinks = [
-  { href: "https://youtube.com", label: "YouTube", color: "#FF0000" },
-  { href: "https://x.com", label: "X", color: "#000000" },
-  { href: "https://facebook.com", label: "Facebook", color: "#1877F2" },
-  { href: "https://whatsapp.com", label: "WhatsApp", color: "#25D366" },
-  { href: "https://linkedin.com", label: "LinkedIn", color: "#0A66C2" },
+  { href: "https://www.facebook.com/share/1Ejo7j8cf2/", label: "Facebook", color: "#1877F2" },
 ];
 
 export function Footer() {
@@ -38,8 +34,8 @@ export function Footer() {
                 <Image src="/logo.jpg" alt="የብልፅግና ኢንስፔክሽን ኮሚሽን ምልክት" fill className="object-cover" />
               </div>
               <div>
-                <p className="text-sm font-bold leading-tight text-white">የብልፅግና የኢንስፔክሽንና</p>
-                <p className="text-sm font-medium leading-tight text-slate-400">የሥነ-ምግባር ኮሚሽን</p>
+                <p className="text-sm font-bold leading-tight text-white">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር</p>
+                <p className="text-sm font-medium leading-tight text-slate-400">ኮሚሽን ዋና ጽ/ቤት</p>
               </div>
             </Link>
             <p className="mt-4 text-sm font-semibold text-slate-400">
@@ -166,7 +162,7 @@ export function Footer() {
           <p className="text-sm text-slate-500">
             &copy; {year} የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን። ሁሉም መብቶች የተጠበቁ ናቸው።
           </p>
-          <p className="text-xs text-slate-600">የኢትዮጵያ ፌዴራላዊ ዲሞክራሲያዊ ሪፐብሊክ</p>
+          <p className="text-xs text-slate-600">የኢትዮጵያ ዲሞክራሲያዊ ሪፐብሊክ</p>
         </div>
       </div>
     </footer>

@@ -34,7 +34,7 @@ export function ChairmanMessageSection() {
           id: p.id,
           name: p.name_am || p.name,
           title: p.position_am || p.position,
-          org: p.office_category_am || p.office_category || "የፌዴራል ብልፅግና ኢንስፔክሽን ኮሚሽን",
+          org: p.office_category_am || p.office_category || "የብልፅግና ኢንስፔክሽን ኮሚሽን",
           paragraphs: p.message.split('\n').filter((text: string) => text.trim().length > 0),
           photo: p.photo
         }));

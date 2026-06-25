@@ -20,7 +20,6 @@ import { supabase } from "@/lib/supabaseClient";
 
 export function Menubar() {
   const pathname = usePathname() || "/";
-  const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [session, setSession] = useState<any>(null);
 
@@ -38,36 +37,15 @@ export function Menubar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const handleNavClick = () => {
     setMobileOpen(false);
   };
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
-        isScrolled ? "pt-4 px-4" : "pt-6 px-4 sm:px-8"
-      )}
-    >
-      <div
-        className={cn(
-          "mx-auto flex items-center justify-between transition-all duration-500",
-          isScrolled 
-            ? "h-16 max-w-5xl rounded-full border border-slate-200/60 bg-white/70 px-6 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.1)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/60"
-            : "h-20 max-w-7xl rounded-2xl bg-transparent px-2 sm:px-0"
-        )}
-      >
-        <Link
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md shadow-sm">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-8">
+          <Link
           href="/"
           onClick={handleNavClick}
           className="group flex items-center gap-3 transition-transform duration-300 hover:scale-105"
@@ -83,15 +61,15 @@ export function Menubar() {
           </div>
           <div className="hidden sm:block">
             <div className="text-sm font-bold leading-tight text-slate-900">
-              የብልፅግና የኢንስፔክሽንና
+              የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር
             </div>
             <div className="text-sm font-medium leading-tight text-slate-700">
-              የሥነ-ምግባር ኮሚሽን
+              ኮሚሽን ዋና ጽ/ቤት
             </div>
           </div>
         </Link>
 
-        <nav className="hidden md:block absolute left-1/2 -translate-x-1/2">
+        <nav className="hidden md:block">
           <ul className="flex items-center gap-1 rounded-full border border-transparent bg-slate-50/50 p-1 backdrop-blur-sm transition-all hover:bg-slate-50/80" role="list">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -117,21 +95,15 @@ export function Menubar() {
             })}
           </ul>
         </nav>
+        </div>
 
         <div className="flex items-center gap-3">
-          {session ? (
+          {session && (
             <Link
               href="/dashboard"
               className="hidden items-center justify-center rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_0_rgba(0,0,0,0.15)] transition-all duration-300 hover:scale-105 hover:bg-slate-800 hover:shadow-[0_6px_20px_rgba(0,0,0,0.2)] md:flex"
             >
               Dashboard
-            </Link>
-          ) : (
-            <Link
-              href="/contact"
-              className="hidden items-center justify-center rounded-full bg-[#014BAA] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_0_rgba(1,75,170,0.3)] transition-all duration-300 hover:scale-105 hover:bg-blue-800 hover:shadow-[0_6px_20px_rgba(1,75,170,0.4)] md:flex"
-            >
-              ያግኙን
             </Link>
           )}
 
@@ -175,8 +147,8 @@ export function Menubar() {
                     </li>
                   );
                 })}
-                <li className="mt-8 border-t border-slate-100 pt-8">
-                  {session ? (
+                {session && (
+                  <li className="mt-8 border-t border-slate-100 pt-8">
                     <Link
                       href="/dashboard"
                       onClick={handleNavClick}
@@ -184,16 +156,8 @@ export function Menubar() {
                     >
                       Dashboard
                     </Link>
-                  ) : (
-                    <Link
-                      href="/contact"
-                      onClick={handleNavClick}
-                      className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#014BAA] px-4 text-base font-semibold text-white shadow-md transition-all duration-300 hover:bg-blue-800 hover:shadow-lg"
-                    >
-                      ያግኙን
-                    </Link>
-                  )}
-                </li>
+                  </li>
+                )}
               </ul>
             </SheetContent>
           </Sheet>

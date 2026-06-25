@@ -102,7 +102,7 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-semibold text-text-primary text-lg truncate">{rep.users?.full_name || 'Unknown'}</h3>
                 <span className="bg-brand-blue/10 text-brand-blue text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
-                  {rep.region}
+                  {rep.region === 'ፌዴራል ተቋማት' ? 'ተቋማት' : rep.region}
                 </span>
               </div>
               <div className="space-y-2 text-sm text-text-secondary flex-1 mb-4">
@@ -112,7 +112,7 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
                 </div>
                 <div className="flex items-center gap-2">
                   <IconMapPin size={16} className="text-brand-blue/70" />
-                  <span>{rep.region}</span>
+                  <span>{rep.region === 'ፌዴራል ተቋማት' ? 'ተቋማት' : rep.region}</span>
                 </div>
               </div>
               <div className="flex gap-2 pt-3 border-t border-border-light mt-auto">
@@ -216,7 +216,7 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
                     >
                       <option value="">ክልል ይምረጡ</option>
                       {ETHIOPIA_REGIONS.map(r => (
-                        <option key={r} value={r}>{r}</option>
+                        <option key={r} value={r}>{r === 'ፌዴራል ተቋማት' ? 'ተቋማት' : r}</option>
                       ))}
                     </select>
                   </div>

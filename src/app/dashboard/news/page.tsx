@@ -23,8 +23,8 @@ export default function NewsPage() {
   }, []);
 
   const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          article.author.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.author.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || article.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -42,7 +42,7 @@ export default function NewsPage() {
       <div className="flex flex-col gap-8 h-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-light text-text-primary tracking-tight">ዜና እና ሚዲያ</h1>
+            <h1 className="text-3xl font-light text-text-primary tracking-tight">ዜናዎች</h1>
             <p className="text-sm text-text-muted mt-1">ሁለገብ ቋንቋ ዜናዎችን ያስተዳድሩ።</p>
             <div className="flex items-center gap-2 mt-3">
               <div className="h-1 w-8 bg-brand-blue rounded-full"></div>
@@ -52,16 +52,16 @@ export default function NewsPage() {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative flex-1 sm:flex-initial">
               <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input 
-                type="text" 
-                placeholder="ዜና ፈልግ..." 
+              <input
+                type="text"
+                placeholder="ዜና ፈልግ..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-64 bg-surface-primary/50 border border-border/30 rounded-full pl-10 pr-4 py-2.5 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors" 
+                className="w-full sm:w-64 bg-surface-primary/50 border border-border/30 rounded-full pl-10 pr-4 py-2.5 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
               />
             </div>
             <div className="relative">
-              <select 
+              <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as 'all' | 'Published' | 'Draft')}
                 className="bg-surface-primary/50 border border-border/30 rounded-full px-4 py-2.5 text-sm text-text-secondary focus:outline-none focus:border-brand-blue/50 transition-colors appearance-none cursor-pointer pr-10"
@@ -72,8 +72,8 @@ export default function NewsPage() {
               </select>
               <IconSearch size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
             </div>
-            <Link 
-              href="/dashboard/news/create" 
+            <Link
+              href="/dashboard/news/create"
               className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors shadow-sm whitespace-nowrap"
             >
               <IconPlus size={18} />
@@ -134,31 +134,30 @@ export default function NewsPage() {
                       <span className="text-text-muted text-sm">ምንም ምስል የለም</span>
                     </div>
                   )}
-                  
+
                   {article.videoUrl && (
                     <div className="absolute top-3 right-3 bg-danger/90 text-white px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-bold">
                       <IconVideo size={12} />
                       ቪዲዮ
                     </div>
                   )}
-                  
+
                   {article.images && article.images.length > 1 && (
                     <div className="absolute top-3 right-3 bg-brand-blue/90 text-white px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-bold">
                       <IconPhoto size={12} />
                       {article.images.length}
                     </div>
                   )}
-                  
+
                   <div className="absolute top-3 left-3">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${
-                      article.status === 'Published' 
-                        ? 'bg-success/90 text-white' 
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${article.status === 'Published'
+                        ? 'bg-success/90 text-white'
                         : 'bg-brand-yellow/90 text-[#3D352E]'
-                    }`}>
+                      }`}>
                       {article.status === 'Published' ? 'የታተመ' : 'ረቂቅ'}
                     </span>
                   </div>
-                  
+
                   <div className="absolute bottom-3 left-3">
                     <span className="bg-black/60 text-white px-2 py-1 rounded-lg text-[10px] font-medium backdrop-blur-sm">
                       {article.lang}
@@ -173,7 +172,7 @@ export default function NewsPage() {
                   <p className="text-sm text-text-muted mt-2 line-clamp-2">
                     {article.excerpt || 'ምንም መግለጫ የለም።'}
                   </p>
-                  
+
                   <div className="flex items-center gap-4 mt-4 text-[11px] text-text-muted">
                     <span className="flex items-center gap-1">
                       <IconUser size={12} />
@@ -186,21 +185,21 @@ export default function NewsPage() {
                   </div>
 
                   <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/20">
-                    <Link 
+                    <Link
                       href={`/dashboard/news/${article.id}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-brand-blue hover:bg-brand-blue/10 rounded-lg transition-colors"
                     >
                       <IconEye size={14} />
                       ይመልከቱ
                     </Link>
-                    <Link 
+                    <Link
                       href={`/dashboard/news/${article.id}/edit`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-brand-yellow hover:bg-brand-yellow/10 rounded-lg transition-colors"
                     >
                       <IconEdit size={14} />
                       አስተካክሉ
                     </Link>
-                    <button 
+                    <button
                       onClick={() => setDeleteModal({ open: true, article })}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-danger hover:bg-danger/10 rounded-lg transition-colors"
                     >
@@ -220,7 +219,7 @@ export default function NewsPage() {
           <div className="bg-surface-primary rounded-2xl border border-border/30 p-6 max-w-md w-full shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-text-primary">ዜና ሰርዝ</h3>
-              <button 
+              <button
                 onClick={() => setDeleteModal({ open: false, article: null })}
                 className="p-1 hover:bg-surface-secondary rounded-lg transition-colors"
               >
@@ -231,13 +230,13 @@ export default function NewsPage() {
               &quot;{deleteModal.article.title}&quot; ን መሰረዝ ይፈልጋሉ? ይህ ድርጊት ሊቀለበስ አይችልም።
             </p>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setDeleteModal({ open: false, article: null })}
                 className="flex-1 py-2.5 px-4 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary rounded-xl text-sm font-medium transition-colors border border-border/50"
               >
                 ሰርዝ
               </button>
-              <button 
+              <button
                 onClick={handleDelete}
                 className="flex-1 py-2.5 px-4 bg-danger hover:bg-danger/90 text-white rounded-xl text-sm font-medium transition-colors"
               >

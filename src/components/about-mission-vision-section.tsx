@@ -1,8 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, Target, Diamond, MessageSquareText, ChevronRight } from "lucide-react";
+import { Eye, Target, Diamond, MessageSquareText, ChevronRight, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const responsibilities = [
+  { letter: "ሀ", text: "ኮሚሽኑ የፓርቲውን መተዳደሪያ ደንብና መመሪያዎች በሥራ ላይ መዋላቸውን ይከታተላል" },
+  { letter: "ለ", text: "የፓርቲውን የፖለቲካ ጥራት እና የሥነ-ምግባር ጤናማነት ለማረጋገጥ አስፈላጊውን ክትትል ያደርጋል" },
+  { letter: "ሐ", text: "የፓርቲው ገንዘብ፣ ንብረትና ሰነዶች በአግባቡ መጠበቃቸውን ቁጥጥር ያደርጋል፤ የፓርቲው አባላት መዋጮ በወቅቱና በትክክል መሰብሰቡን ይቆጣጠራል" },
+  { letter: "መ", text: "የፓርቲው አባላትና አካላት መብቶች እና ጥቅሞች መከበራቸውን ይከታተላል" },
+  { letter: "ሠ", text: "ከአባላት የሚቀርቡ አቤቱታዎችን ይቀበላል፤ ይመረምራል፤ የእርምት የውሳኔ ሐሳቡን ለሥራ አስፈጻሚ ኮሚቴ እና እንደአግባቡ በየደረጃው ላሉ የፓርቲ አስተባባሪ ኮሚቴዎች ያቀርባል" },
+  { letter: "ረ", text: "በኮሚሽኑ የሚቀርበውን የእርምት ሐሳብ የሥራ አስፈጻሚው ካልተቀበለው ለብልፅግና ምክር ቤት ይቀርባል፤ ምክር ቤቱ በጉዳዩ ላይ የሚሰጠው ውሳኔ እስከ ጉባኤ ድረስ ተፈጻሚ ይሆናል። እንዲሁም በየደረጃው በሚገኙ የኮሚሽን መዋቅር ለፓርቲ አስተባባሪ ኮሚቴ የሚቀርበው የእርምት ሐሳብ ተቀባይነት ካላገኘ ኮሚሽኑ አንድ እርከን ከፍ ብሎ ላለው የፓርቲ አስተባባሪ ኮሚቴ የዲሲፕሊን ክስ ያቀርባል" },
+  { letter: "ሰ", text: "ዝርዝር የፓርቲ የዲሲፕሊን፣ የኢንስፔክሽንና ቁጥጥጥር መመሪያ በማርቀቅ ለብልፅግና ምክር ቤት አቅርቦ ያጸድቃል፣ ተፈጻሚነቱን ይከታተል" },
+  { letter: "ሸ", text: "የፓርቲው አባላትና አካላት የፓርቲውን ሥነ-ምግባር ማክበራቸውን ይከታተላል፣ የፓርቲ አባላትና አመራር ሊኖራቸው የሚገባ የፓርቲ ሥነ-ምግባር ከፓርቲ ጽ/ቤቶች ጋር ግንዛቤ ይሰጣል" },
+  { letter: "ቀ", text: "ሙስናና ብልሹ አሠራር ላይ በፓርቲው ውስጥ ትግል ስለመደረጉ ይከታተላል፣ ያስተባብራል፣ የሙስና ጥፋቶች ሲፈጸሙ ተገቢውን የእርምት እርምጃ እንዲወሰድ ለሚመለከተው የፓርቲ አካላት ያቀርባል፣ አፈጻጸሙን ይከታተላል" },
+  { letter: "በ", text: "የሙስናና ብልሹ አሰራሮች ዙሪያ ጥናቶችን ያደርጋል፣ ግንዛቤ ይሰጣል" },
+  { letter: "ተ", text: "በየደረጃው የሥነ-ምግባር ጥሰቶችን ይመረምራል፣ ተገቢውን የእርምት ርምጃ እንዲወሰድ ያደርጋል" },
+  { letter: "ነ", text: "ከፓርቲው የፖለቲካ አስተባባሪ ኮሚቴዎች በሚሰጥ ተልዕኮ መሠረት አስፈላጊ ሆነው የተገኙ የምርመራ፣ የክትትል እና የቁጥጥር ሥራዎችን ይሠራል" },
+  { letter: "ኘ", text: "በፓርቲው አካላት መካከል ልዩነት ሲኖር ወይም ፓርቲውን የሚመለከቱና መጣራት የሚገባቸው ጉዳዮች ሲኖሩ፤ እንዲሁም በፓርቲው ብልፅግና ምክር ቤት ወይም የሥራ አስፈጻሚ ኮሚቴ በኩል ጥያቄ ሲቀርብለት እንደ አንድ ነጻ አጣሪ አካል ሆኖ ያገለግላል፤ የራሱን የውሳኔ ሀሳብ ያካተተ ሪፖርትም ለብልፅግና ምክር ቤት ወይም ሥራ አስፈጻሚ ኮሚቴ ያቀርባል" },
+  { letter: "አ", text: "ኮሚሽኑ በፓርቲው መተዳደሪያ ደንቡ የተሰጡትን ተግባራትና ኃላፊነቶች አስመልክቶ በየወቅቱ ኢንስፔክሽንና ልዩ ልዩ ጥናቶችን ያካሂዳል፡፡ የጥናቱን ግኝቶች ከውሳኔ ምክረ-ሐሳብ ጋር ለሚመለከታቸው የፓርቲ አካላት ያቀርባል፣ አፈጻጸሙንም ይከታተላል" },
+  { letter: "ከ", text: "ኮሚሽኑ ለሥራ የሚያስፈልገውን ዓመታዊ በጀት በማዘጋጀት እንዲፀድቅ ለብልፅግና ምክር ቤት ያቀርባል፣ ሲፀድቅ ያስተዳድራል፣ ይመራል፣ በየደረጃው የሚገኙ የኮሚሽን መዋቅር ለሥራ የሚያስፈልግ በጀት ትይዩ ለሚገኙ የፓርቲ አስተባባሪ ኮሚቴ ያቀርባሉ፣ ሲጸድቅ ያስተዳድራሉ" },
+  { letter: "ወ", text: "ለፓርቲው ፕሮግራም፣ መተዳደሪያ ደንብና ለኮሚሽኑ መመሪያ ተገዢ ያልሆኑ የኮሚሽን አባላትን በሁለት ሶስተኛ ድምፅ ያግዳል" },
+  { letter: "ዘ", text: "ስለሥራው አፈጻጸም ለፓርቲው ጉባኤ፣ እንዲሁም እንደአግባብነቱ በክልል እና አካባቢያዊ መዋቅሮች አንድ ደረጃ ከፍ ብሎ ላለው ኮሚሽን እና ለኮንፈረንስ ሪፖርት ያቀርባሉ" },
+  { letter: "ዠ", text: "ይህንን መተዳደሪያ ደንብ መሠረት በማድረግ የኮሚሽኑን የውስጥ አሠራር መመሪያዎች ማውጣት ይችላል" },
+];
 
 const TABS = [
   {
@@ -100,6 +121,36 @@ const TABS = [
       </div>
     ),
   },
+  {
+    id: "responsibilities",
+    label: "ተግባርና ኃላፊነት",
+    icon: ClipboardList,
+    accent: "#014BAA",
+    accentSoft: "rgba(1,75,170,0.06)",
+    content: (
+      <div>
+        <h3 className="mt-1 font-heading text-xl font-bold text-slate-900 sm:text-2xl">የኮሚሽኑ ተግባርና ኃላፊነት</h3>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {responsibilities.map((item, idx) => (
+            <div
+              key={idx}
+              className="group flex items-start gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:border-[#014BAA]/20 hover:shadow-md"
+            >
+              <span
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors duration-200 group-hover:bg-[#014BAA] group-hover:text-white"
+                style={{ backgroundColor: "rgba(1,75,170,0.1)", color: "#014BAA" }}
+              >
+                {item.letter}
+              </span>
+              <p className="text-sm leading-relaxed text-slate-600 transition-colors duration-200 group-hover:text-slate-900">
+                {item.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -151,7 +202,7 @@ export function AboutMissionVisionSection() {
         <div
           role="tablist"
           aria-label="ራዕይ፣ ተልዕኮና ዕሴቶች"
-          className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-2"
+          className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 sm:gap-2"
         >
           {TABS.map((tab) => {
             const isActive = tab.id === activeId;
