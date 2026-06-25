@@ -15,7 +15,7 @@ const socialLinks = [
 ];
 
 export function Footer() {
-  const year = new Date().getFullYear();
+  const year = "2018";
 
   return (
     <footer className="relative bg-slate-950">
@@ -158,11 +158,10 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-slate-800 pt-8 sm:flex-row">
-          <p className="text-sm text-slate-500">
-            &copy; {year} የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን። ሁሉም መብቶች የተጠበቁ ናቸው።
+        <div className="mt-12 flex items-center justify-center border-t border-slate-800 pt-8">
+          <p className="text-sm text-slate-500 text-center">
+            &copy; {year} የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት
           </p>
-          <p className="text-xs text-slate-600">የኢትዮጵያ ዲሞክራሲያዊ ሪፐብሊክ</p>
         </div>
       </div>
     </footer>

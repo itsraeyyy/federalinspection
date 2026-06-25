@@ -170,11 +170,7 @@ export default function ContactPage() {
               <div className="mx-auto mt-6 h-1 w-12 rounded-full" style={{ backgroundColor: "#FFB800" }} />
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 {[
-                  { href: "https://youtube.com", label: "YouTube", color: "#FF0000" },
-                  { href: "https://x.com", label: "X", color: "#000000" },
                   { href: "https://facebook.com", label: "Facebook", color: "#1877F2" },
-                  { href: "https://whatsapp.com", label: "WhatsApp", color: "#25D366" },
-                  { href: "https://linkedin.com", label: "LinkedIn", color: "#0A66C2" },
                 ].map((s) => (
                   <Link
                     key={s.label}
