@@ -221,6 +221,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           if (rpcError) throw rpcError;
 
           showToast('ውጤቶች በተሳካ ሁኔታ ፀድቀዋል! (Finalized successfully)', 'success');
+          setSaving(false);
           setTimeout(() => router.refresh(), 1500);
         } catch (err: any) {
           setError(err.message || 'ማፅደቅ አልተሳካም። (Failed to finalize)');
@@ -339,7 +340,10 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                   <th className="px-6 py-5 text-center">
                     አማካይ የገምጋሚ ውጤት <span className="block text-xs font-bold text-text-muted mt-0.5">(20 ነጥብ)</span>
                   </th>
-                  <th className="px-6 py-5 text-center">
+                  <th className="px-6 py-5 text-center border-l border-border/50 bg-brand-blue/5">
+                    ድምር <span className="block text-xs font-bold text-brand-blue/80 mt-0.5">(30 ነጥብ)</span>
+                  </th>
+                  <th className="px-6 py-5 text-center border-l border-border/50 bg-surface-secondary/30">
                     የአጽዳቂ ውጤት <span className="block text-xs font-bold text-brand-yellow mt-0.5">(70 ነጥብ)</span>
                   </th>
                   <th className="px-6 py-5 text-center border-l border-border/50 bg-surface-secondary/30">
@@ -404,7 +408,13 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                         </div>
                       </td>
 
-                      <td className="px-6 py-5 text-center">
+                      <td className="px-6 py-5 text-center border-l border-border/50 bg-brand-blue/5">
+                        <span className="font-mono text-base font-bold text-text-primary">
+                          {parseFloat((s10 + s20).toFixed(2))}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-5 text-center border-l border-border/50 bg-surface-secondary/30">
                         <input
                           type="number"
                           min={0}

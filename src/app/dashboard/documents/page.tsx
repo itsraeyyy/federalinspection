@@ -67,7 +67,7 @@ export default function DocumentsPage() {
   const [publicSelectedFile, setPublicSelectedFile] = useState<File | null>(null);
   const publicFileInputRef = useRef<HTMLInputElement>(null);
   const [publicUploadError, setPublicUploadError] = useState('');
-  const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; fileToDelete: { id: string; url: string } | null; }>({ isOpen: false, fileToDelete: null });
+  const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; fileToDelete: { id: string; url: string; category: PublicFileCategory } | null; }>({ isOpen: false, fileToDelete: null });
 
   const activePublicTab = mainTab === 'website' ? activeWebsiteTab : activeConfidentialTab;
   const currentCategories = mainTab === 'website' ? WEBSITE_CATEGORIES : CONFIDENTIAL_CATEGORIES;
@@ -203,8 +203,8 @@ export default function DocumentsPage() {
 
   const confirmDelete = async () => {
     if (!confirmDialog.fileToDelete) return;
-    const { id, url } = confirmDialog.fileToDelete;
-    const success = await publicFilesService.deleteFile(id, url);
+    const { id, url, category } = confirmDialog.fileToDelete;
+    const success = await publicFilesService.deleteFile(id, url, category);
     if (success) {
       setConfirmDialog({ isOpen: false, fileToDelete: null });
       await loadPublicFiles();
@@ -348,7 +348,7 @@ export default function DocumentsPage() {
             {!loading && viewLevel === 'sub' && selectedMain && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {subs.map((sub) => (
-                  <button key={sub.code} onClick={() => navigateTo('docs', selectedOffice, selectedRegion || undefined, selectedMain, sub.code)} className="group bg-surface-primary rounded-lg border border-border/50 p-4 hover:border-brand-blue/50 transition-all text-left flex items-center gap-3">
+                  <button key={sub.code} onClick={() => navigateTo('docs', selectedOffice || undefined, selectedRegion || undefined, selectedMain || undefined, sub.code)} className="group bg-surface-primary rounded-lg border border-border/50 p-4 hover:border-brand-blue/50 transition-all text-left flex items-center gap-3">
                     <div className="w-8 h-8 rounded-md bg-surface-secondary border border-border flex items-center justify-center shrink-0">
                       <span className="text-[11px] font-bold text-text-secondary group-hover:text-brand-blue transition-colors">{sub.code}</span>
                     </div>
@@ -492,7 +492,7 @@ export default function DocumentsPage() {
                     <div key={file.id} className="bg-surface-primary/40 border border-border/20 rounded-2xl p-5 flex flex-col gap-3 group hover:border-brand-blue/30 transition-all hover:shadow-sm">
                       <div className="flex justify-between items-start">
                         <div className="p-2.5 bg-brand-blue/10 rounded-xl text-brand-blue"><IconFileText size={20} /></div>
-                        <button onClick={() => setConfirmDialog({ isOpen: true, fileToDelete: { id: file.id, url: file.file_url } })} className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="አጥፋ">
+                        <button onClick={() => setConfirmDialog({ isOpen: true, fileToDelete: { id: file.id, url: file.file_url, category: file.category } })} className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="አጥፋ">
                           <IconTrash size={16} />
                         </button>
                       </div>

@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { X, Loader2, Download, UserCircle, Calendar, ShieldAlert, Edit2, Check, Upload, Save, Briefcase, GraduationCap, Building2 } from 'lucide-react';
 import { exportDetailedUserReport } from '@/lib/exportUtils';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface UserProfileDrawerProps {
   isOpen: boolean;
@@ -501,8 +502,16 @@ export function UserProfileDrawer({ isOpen, onClose, userId, periodId }: UserPro
                               ) : (
                                 <Download className="w-4 h-4 text-brand-blue" />
                               )}
-                              ዝርዝር ውጤት አውርድ (Export Details)
+                              ዝርዝር ውጤት ኤክሴል (Excel)
                             </button>
+                            <Link
+                              href={`/dashboard/assessment/teams/${h.periodId}/print-all?user=${userId}`}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue rounded-xl text-sm font-medium transition-colors border border-brand-blue/20 mt-2"
+                              target="_blank"
+                            >
+                              <Printer className="w-4 h-4" />
+                              ፒዲኤፍ አውርድ (Download PDF)
+                            </Link>
                           </div>
                         </div>
                       ))}

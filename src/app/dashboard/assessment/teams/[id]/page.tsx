@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { ArrowLeft, Trash2, ShieldCheck, Loader2, Plus, QrCode, X, AlertCircle, Power, Pencil, Users, Filter, Download, UserCircle2, FileCheck } from 'lucide-react';
+import { ArrowLeft, Trash2, ShieldCheck, Loader2, Plus, QrCode, X, AlertCircle, Power, Pencil, Users, Filter, Download, UserCircle2, FileCheck, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { UserProfileDrawer } from '@/components/assessment/UserProfileDrawer';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -411,8 +411,16 @@ export default function PeriodManagePage() {
                 className="inline-flex items-center justify-center bg-transparent text-brand-blue px-3 py-1.5 rounded-lg font-medium hover:bg-brand-blue/10 transition-all duration-200 text-sm hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Download className="w-4 h-4 mr-1.5" />
-                {selectedUserIds.size > 0 ? `አውርድ (${selectedUserIds.size})` : 'ሁሉንም አውርድ'}
+                {selectedUserIds.size > 0 ? `አውርድ (${selectedUserIds.size})` : 'ኤክሴል (Excel)'}
               </button>
+              
+              <Link
+                href={`/dashboard/assessment/teams/${periodId}/print-all`}
+                className="inline-flex items-center justify-center bg-brand-blue text-white px-3 py-1.5 rounded-lg font-medium hover:bg-brand-blue/90 transition-all duration-200 text-sm hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+              >
+                <Printer className="w-4 h-4 mr-1.5" />
+                ሁሉንም ፒዲኤፍ አውርድ (Download All PDF)
+              </Link>
             </div>
           </div>
 
@@ -567,225 +575,250 @@ export default function PeriodManagePage() {
 
       {/* Add Member Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-surface-primary rounded-3xl w-full max-w-4xl shadow-2xl relative max-h-[95vh] flex flex-col border border-border/50 animate-in zoom-in-95 duration-200 overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="bg-surface-primary rounded-3xl w-full max-w-4xl shadow-2xl relative max-h-[95vh] flex flex-col border border-border/60 overflow-hidden animate-in zoom-in-95 duration-300">
             
             {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-border/50 bg-surface-secondary/30">
+            <div className="px-8 py-6 border-b border-border/50 bg-surface-secondary/50 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-blue/80 to-brand-blue/20"></div>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="absolute top-6 right-6 text-text-muted hover:text-text-primary bg-surface-secondary hover:bg-border p-2 rounded-full transition-all"
+                className="absolute top-6 right-6 text-text-muted hover:text-text-primary bg-surface-primary hover:bg-surface-secondary p-2.5 rounded-full transition-all border border-border/50 hover:shadow-sm"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
 
-              <h2 className="text-2xl font-heading text-text-primary mb-2 flex items-center gap-3">
-                <div className="p-2 bg-brand-blue/10 rounded-xl">
+              <h2 className="text-2xl font-heading font-bold text-text-primary mb-2 flex items-center gap-3">
+                <div className="p-2.5 bg-brand-blue/10 rounded-2xl border border-brand-blue/10">
                   <UserCircle2 className="w-6 h-6 text-brand-blue" />
                 </div>
-                አዲስ አባል ጨምር (Add New Member)
+                አዲስ አባል ጨምር <span className="text-text-muted font-normal text-lg">(Add New Member)</span>
               </h2>
-              <p className="text-sm text-text-secondary ml-11">
-                የአባሉን መረጃ ያስገቡ። ስም፣ ስልክ ቁጥር እና ሚና <span className="text-danger font-medium">ግዴታ</span> ናቸው። የይለፍ ቃል ተፈጥሮ በፅሁፍ መልዕክት (SMS) ይላካል።
+              <p className="text-sm text-text-secondary ml-14 max-w-2xl">
+                የአባሉን መረጃ ያስገቡ። ስም፣ ስልክ ቁጥር እና ሚና <span className="text-danger font-medium bg-danger/10 px-1.5 py-0.5 rounded text-xs ml-1">ግዴታ</span> ናቸው። የይለፍ ቃል ተፈጥሮ በፅሁፍ መልዕክት (SMS) ይላካል።
               </p>
             </div>
 
             {addError && (
-              <div className="mb-6 p-3 bg-danger/10 border border-danger/20 text-danger text-sm rounded-lg">
+              <div className="m-6 mb-0 p-4 bg-danger/10 border-l-4 border-danger text-danger text-sm font-medium rounded-r-xl flex items-center">
+                <div className="mr-3 text-lg">•</div>
                 {addError}
               </div>
             )}
 
             {addSuccess ? (
-              <div className="text-center py-6 flex-1 flex flex-col justify-center">
-                <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheck className="w-8 h-8 text-success" />
+              <div className="text-center py-12 flex-1 flex flex-col justify-center items-center">
+                <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mb-6 border border-success/20">
+                  <ShieldCheck className="w-10 h-10 text-success" />
                 </div>
-                <h3 className="text-xl font-heading text-text-primary mb-2">አባል በተሳካ ሁኔታ ተጨምሯል!</h3>
-                <p className="text-text-secondary text-sm mb-6">
-                  የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ወደ አባሉ ስልክ ተልኳል።
+                <h3 className="text-2xl font-heading font-bold text-text-primary mb-3">አባል በተሳካ ሁኔታ ተጨምሯል!</h3>
+                <p className="text-text-secondary text-base mb-8 max-w-md">
+                  የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ወደ አባሉ ስልክ ተልኳል። አባሉ በዚህ መረጃ በመጠቀም መግባት ይችላል።
                 </p>
                 <button
                   onClick={() => {
                     setShowAddModal(false);
                     setAddSuccess(false);
                   }}
-                  className="w-full max-w-sm mx-auto bg-surface-secondary text-text-primary px-4 py-2.5 rounded-xl font-medium hover:bg-border transition-colors border border-border"
+                  className="w-full max-w-xs bg-brand-blue text-white px-6 py-3 rounded-2xl font-semibold hover:bg-brand-blue/90 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
                 >
-                  ዝጋ
+                  ጨርስ (Done)
                 </button>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-surface-primary">
-                <form onSubmit={handleAddMember} className="space-y-8">
-                  
-                  {/* Mandatory Fields Section */}
-                  <div className="bg-brand-blue/[0.03] p-6 rounded-2xl border border-brand-blue/10 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-brand-blue/40"></div>
-                    <div className="flex items-center gap-2 mb-5">
-                      <ShieldCheck className="w-5 h-5 text-brand-blue" />
-                      <h3 className="text-base font-semibold text-text-primary">አስፈላጊ መረጃዎች (Mandatory Fields)</h3>
-                    </div>
+              <>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-surface-primary/50">
+                  <form id="add-member-form" onSubmit={handleAddMember} className="space-y-10 max-w-3xl mx-auto">
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1.5 flex items-center gap-1">
-                          ሙሉ ስም (Name) <span className="text-danger">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={addFullName}
-                          onChange={(e) => setAddFullName(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-surface-primary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted shadow-sm transition-all"
-                          placeholder="አበበ ከበደ"
-                        />
+                    {/* Mandatory Fields Section */}
+                    <div className="relative">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue shrink-0">
+                          <span className="font-bold text-sm">1</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-text-primary">አስፈላጊ መረጃዎች (Mandatory Fields)</h3>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1.5 flex items-center gap-1">
-                          ስልክ ቁጥር (Phone) <span className="text-danger">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          required
-                          value={addPhone}
-                          onChange={(e) => setAddPhone(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-surface-primary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted shadow-sm transition-all"
-                          placeholder="0911223344"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-text-secondary mb-1.5 flex items-center gap-1">
-                          የምዘና ሚና (Assessment Role) <span className="text-danger">*</span>
-                        </label>
-                        <select
-                          value={addRole}
-                          onChange={(e) => setAddRole(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-surface-primary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 focus:border-brand-blue/50 text-text-primary font-medium shadow-sm transition-all cursor-pointer"
-                        >
-                          {ROLES.map(role => (
-                            <option key={role.value} value={role.value}>{role.label}</option>
-                          ))}
-                        </select>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-primary p-6 rounded-3xl border border-border/80 shadow-sm">
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                            ሙሉ ስም (Name) <span className="text-danger text-lg leading-none">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={addFullName}
+                            onChange={(e) => setAddFullName(e.target.value)}
+                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
+                            placeholder="አበበ ከበደ"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                            ስልክ ቁጥር (Phone) <span className="text-danger text-lg leading-none">*</span>
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            value={addPhone}
+                            onChange={(e) => setAddPhone(e.target.value)}
+                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
+                            placeholder="0911223344"
+                          />
+                        </div>
+                        <div className="md:col-span-2 space-y-2">
+                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                            የምዘና ሚና (Assessment Role) <span className="text-danger text-lg leading-none">*</span>
+                          </label>
+                          <select
+                            value={addRole}
+                            onChange={(e) => setAddRole(e.target.value)}
+                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary font-medium transition-all cursor-pointer hover:border-border/80"
+                          >
+                            {ROLES.map(role => (
+                              <option key={role.value} value={role.value}>{role.label}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Optional Profile Fields Section */}
-                  <div className="bg-surface-secondary/40 p-6 rounded-2xl border border-border shadow-sm">
-                    <div className="flex items-center gap-2 mb-5">
-                      <FileCheck className="w-5 h-5 text-text-muted" />
-                      <h3 className="text-base font-semibold text-text-primary">ተጨማሪ መረጃዎች (Optional Profile Fields)</h3>
+                    <div className="w-full h-px bg-border/40"></div>
+
+                    {/* Optional Profile Fields Section */}
+                    <div className="relative">
+                      <div className="flex items-center gap-3 mb-6 opacity-80">
+                        <div className="w-8 h-8 rounded-full bg-surface-secondary border border-border flex items-center justify-center text-text-muted shrink-0">
+                          <span className="font-bold text-sm">2</span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-text-primary">ተጨማሪ መረጃዎች</h3>
+                          <p className="text-xs text-text-muted">(Optional Profile Fields)</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 bg-surface-primary p-6 rounded-3xl border border-border/60 shadow-sm">
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ፆታ (Gender)</label>
+                          <select
+                            value={addGender}
+                            onChange={(e) => setAddGender(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm transition-all"
+                          >
+                            <option value="">ያልተመረጠ (N/A)</option>
+                            <option value="Male">ወንድ (Male)</option>
+                            <option value="Female">ሴት (Female)</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ዕድሜ (Age)</label>
+                          <input
+                            type="number"
+                            value={addAge}
+                            onChange={(e) => setAddAge(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የትምህርት ደረጃ</label>
+                          <input
+                            type="text"
+                            value={addEducationLevel}
+                            onChange={(e) => setAddEducationLevel(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የትምህርት ዘርፍ</label>
+                          <input
+                            type="text"
+                            value={addProfessionalField}
+                            onChange={(e) => setAddProfessionalField(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የስራ ልምድ/አመት</label>
+                          <input
+                            type="number"
+                            value={addExpProfessional}
+                            onChange={(e) => setAddExpProfessional(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የአመራር ልምድ</label>
+                          <input
+                            type="number"
+                            value={addExpLeadership}
+                            onChange={(e) => setAddExpLeadership(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                        <div className="space-y-2 lg:col-span-3">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ተቋም (Institution)</label>
+                          <input
+                            type="text"
+                            value={addInstitution}
+                            onChange={(e) => setAddInstitution(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                        <div className="space-y-2 lg:col-span-1 sm:col-span-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የመንግስት ኃላፊነት</label>
+                          <input
+                            type="text"
+                            value={addGovResponsibility}
+                            onChange={(e) => setAddGovResponsibility(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                        <div className="space-y-2 lg:col-span-2 sm:col-span-2">
+                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የፓርቲ ኃላፊነት</label>
+                          <input
+                            type="text"
+                            value={addPartyResponsibility}
+                            onChange={(e) => setAddPartyResponsibility(e.target.value)}
+                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                            placeholder="N/A"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">ፆታ (Gender)</label>
-                        <select
-                          value={addGender}
-                          onChange={(e) => setAddGender(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary"
-                        >
-                          <option value="">ያልተመረጠ (N/A)</option>
-                          <option value="Male">ወንድ (Male)</option>
-                          <option value="Female">ሴት (Female)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">ዕድሜ (Age)</label>
-                        <input
-                          type="number"
-                          value={addAge}
-                          onChange={(e) => setAddAge(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">የትምህርት ደረጃ (Education)</label>
-                        <input
-                          type="text"
-                          value={addEducationLevel}
-                          onChange={(e) => setAddEducationLevel(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">የትምህርት ዘርፍ (Field)</label>
-                        <input
-                          type="text"
-                          value={addProfessionalField}
-                          onChange={(e) => setAddProfessionalField(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">የስራ ልምድ/አመት (Experience)</label>
-                        <input
-                          type="number"
-                          value={addExpProfessional}
-                          onChange={(e) => setAddExpProfessional(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">የአመራር ልምድ/አመት (Leadership Exp)</label>
-                        <input
-                          type="number"
-                          value={addExpLeadership}
-                          onChange={(e) => setAddExpLeadership(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">ተቋም (Institution)</label>
-                        <input
-                          type="text"
-                          value={addInstitution}
-                          onChange={(e) => setAddInstitution(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">የመንግስት ኃላፊነት (Gov Responsibility)</label>
-                        <input
-                          type="text"
-                          value={addGovResponsibility}
-                          onChange={(e) => setAddGovResponsibility(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">የፓርቲ ኃላፊነት (Party Responsibility)</label>
-                        <input
-                          type="text"
-                          value={addPartyResponsibility}
-                          onChange={(e) => setAddPartyResponsibility(e.target.value)}
-                          className="w-full px-4 py-2 bg-surface-secondary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
-                          placeholder="N/A"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Sticky Submit Button */}
-                  <div className="sticky bottom-0 pt-4 bg-surface-primary">
+                  </form>
+                </div>
+                
+                {/* Fixed Footer */}
+                <div className="p-6 bg-surface-primary border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+                  <p className="text-sm text-text-muted font-medium hidden sm:block">
+                    አባሉን ከጨመሩ በኋላ የይለፍ ቃል በSMS ይላካል።
+                  </p>
+                  <div className="flex w-full sm:w-auto items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      className="flex-1 sm:flex-none px-6 py-3.5 rounded-2xl font-medium text-text-secondary bg-surface-secondary hover:bg-border/60 hover:text-text-primary transition-all"
+                    >
+                      ሰርዝ (Cancel)
+                    </button>
                     <button
                       type="submit"
+                      form="add-member-form"
                       disabled={addLoading || !addFullName || !addPhone}
-                      className="w-full flex items-center justify-center bg-brand-blue text-white px-6 py-3.5 rounded-xl font-semibold transition-all hover:bg-brand-blue/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-[0.98]"
+                      className="flex-1 sm:flex-none flex items-center justify-center bg-brand-blue text-white px-8 py-3.5 rounded-2xl font-semibold transition-all hover:bg-brand-blue/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                     >
-                      {addLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'መዝግብ እና SMS ላክ (Register & Send SMS)'}
+                      {addLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'መዝግብ እና SMS ላክ'}
                     </button>
                   </div>
-                </form>
-              </div>
+                </div>
+              </>
             )}
           </div>
         </div>

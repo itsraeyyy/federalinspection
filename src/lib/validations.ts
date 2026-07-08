@@ -9,6 +9,7 @@ export const newsSchema = z.object({
   body: z.string().min(10, 'Body content is required.'),
   status: z.enum(['Draft', 'Published']).optional(),
   article_type: z.enum(['News', 'Message']).optional(),
+  videoUrl: z.string().url().optional().or(z.literal('')),
 });
 
 export const documentSchema = z.object({

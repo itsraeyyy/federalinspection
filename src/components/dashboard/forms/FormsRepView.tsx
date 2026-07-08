@@ -5,24 +5,39 @@ import { FormTableRenderer, FormSchema } from "./FormTableRenderer";
 import { IconSend, IconDeviceFloppy, IconLoader2, IconAlertCircle } from "@tabler/icons-react";
 import { saveReportFormAction, submitReportAction } from "@/app/actions/reports";
 import formsSchemaData from "@/data/forms-schema.json";
-import { ReportPeriod } from "@/lib/et-calendar";
+import { ReportPeriod, canSubmitReport, getCurrentFiscalYear } from "@/lib/et-calendar";
 
 interface FormsRepViewProps {
   userProfile: any;
-  initialReport: any;
+  initialReports: any[];
 }
 
-export function FormsRepView({ userProfile, initialReport }: FormsRepViewProps) {
+export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps) {
   const [schemas] = useState<FormSchema[]>(formsSchemaData as FormSchema[]);
-  const [formData, setFormData] = useState<any>(initialReport?.forms_data || {});
+  
+  
+  const periods: ReportPeriod[] = [
+    '1ኛ ሩብ አመት', '2ኛ ሩብ አመት', 'የመጀመሪያ ግማሽ አመት', '3ኛ ሩብ አመት', '4ኛ ሩብ አመት', '2ተኛ ግማሽ አመት', 'የበጀት አመት (ሙሉ)'
+  ];
+
+  const [currentYear, setCurrentYear] = useState<number>(getCurrentFiscalYear());
+  const [currentPeriod, setCurrentPeriod] = useState<ReportPeriod>("1ኛ ሩብ አመት");
+  
+  // Find report for the selected year and period
+  const activeReport = initialReports.find(r => r.year === currentYear && r.period === currentPeriod);
+
+  // Initialize form data from active report or empty
+  const [formData, setFormData] = useState<any>(activeReport?.forms_data || {});
+  
+  // Reset form data when selection changes
+  useEffect(() => {
+    setFormData(activeReport?.forms_data || {});
+  }, [currentYear, currentPeriod, activeReport]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  // For testing, hardcoding period. Ideally, calculate from current Ethiopian date.
-  const currentYear = 2016; 
-  const currentPeriod: ReportPeriod = "Q3";
 
   const handleFormChange = (formId: string, data: any) => {
     setFormData((prev: any) => ({
@@ -36,7 +51,6 @@ export function FormsRepView({ userProfile, initialReport }: FormsRepViewProps) 
     schemas.forEach(schema => {
       const formAns = formData[schema.id];
       if (formAns && Object.keys(formAns).length > 0) {
-        // basic check if at least one field is filled
         completed++;
       }
     });
@@ -44,7 +58,11 @@ export function FormsRepView({ userProfile, initialReport }: FormsRepViewProps) 
   };
 
   const progress = calculateCompletion();
-  const isReadOnly = initialReport?.status === 'submitted' || initialReport?.status === 'reviewed';
+  const isWindowOpen = canSubmitReport(currentPeriod);
+  
+  // They can only view if it's submitted/reviewed. 
+  // If window is closed and it's not submitted, they can't edit either.
+  const isReadOnly = activeReport?.status === 'submitted' || activeReport?.status === 'reviewed' || activeReport?.status === 'approved' || (!isWindowOpen && activeReport?.status !== 'draft');
 
   const handleSaveDraft = async () => {
     setIsSaving(true);
@@ -93,28 +111,45 @@ export function FormsRepView({ userProfile, initialReport }: FormsRepViewProps) 
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header section */}
+      {/* Header section with Dropdowns */}
       <div className="bg-bg-primary rounded-2xl p-6 border border-border-light shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">የክልል ሪፖርት ማቅረቢያ</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="bg-brand-blue/10 text-brand-blue px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">
-              {userProfile.region}
-            </span>
-            <span className="text-sm text-text-secondary">
-              {currentYear} በጀት ዓመት - {currentPeriod === 'Q3' ? 'የዘጠኝ ወራት' : currentPeriod}
-            </span>
+        <div className="flex-1 w-full">
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-4">የ{userProfile?.region} ክልል ሪፖርት ማቅረቢያ</h1>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">በጀት ዓመት (Budget Year)</label>
+              <input 
+                type="number"
+                value={currentYear}
+                onChange={(e) => setCurrentYear(Number(e.target.value))}
+                placeholder="ለምሳሌ፡ 2019"
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">ወቅት (Period)</label>
+              <select 
+                value={currentPeriod}
+                onChange={(e) => setCurrentPeriod(e.target.value as ReportPeriod)}
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none"
+              >
+                {periods.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
         
         {/* Progress Circle or Bar */}
-        <div className="flex items-center gap-4 bg-bg-secondary px-4 py-3 rounded-xl border border-border-light w-full md:w-auto">
-          <div className="flex-1 md:w-32">
-            <div className="flex justify-between text-xs font-medium mb-1.5 text-text-secondary">
-              <span>የተሞላው</span>
+        <div className="flex items-center gap-4 bg-bg-secondary px-4 py-4 rounded-xl border border-border-light w-full md:w-48 shrink-0">
+          <div className="flex-1">
+            <div className="flex justify-between text-xs font-medium mb-2 text-text-secondary">
+              <span>የተሞላው (Progress)</span>
               <span className={progress === 100 ? "text-status-success" : ""}>{progress}%</span>
             </div>
-            <div className="h-2 bg-border-medium rounded-full overflow-hidden">
+            <div className="h-2.5 bg-border-medium rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all duration-500 ${progress === 100 ? 'bg-status-success' : 'bg-brand-blue'}`}
                 style={{ width: `${progress}%` }}
@@ -125,20 +160,32 @@ export function FormsRepView({ userProfile, initialReport }: FormsRepViewProps) 
       </div>
 
       {/* Status banner */}
-      {isReadOnly && (
-        <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-4 flex items-start gap-3">
-          <IconAlertCircle className="text-brand-blue shrink-0 mt-0.5" />
+      {!isWindowOpen && activeReport?.status !== 'submitted' && activeReport?.status !== 'reviewed' && activeReport?.status !== 'approved' && (
+        <div className="bg-status-error/10 border border-status-error/20 rounded-xl p-4 flex items-start gap-3">
+          <IconAlertCircle className="text-status-error shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-brand-blue">ይህ ሪፖርት ተልኳል (Submitted)</h3>
-            <p className="text-sm text-text-secondary mt-1">የተላከ ሪፖርት ላይ ማስተካከያ ማድረግ አይቻልም። እባክዎ ለበለጠ መረጃ አስተዳዳሪውን ያነጋግሩ።</p>
+            <h3 className="font-semibold text-status-error">ማቅረቢያ ጊዜ አይደለም (Window Closed)</h3>
+            <p className="text-sm text-text-secondary mt-1">
+              የ {currentPeriod} ሪፖርት ማቅረብ የሚቻለው በሚመለከተው ወር ከ20 እስከ 25 ብቻ ነው።
+            </p>
           </div>
         </div>
       )}
 
-      {initialReport?.admin_feedback && (
+      {['submitted', 'reviewed', 'approved'].includes(activeReport?.status) && (
+        <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-4 flex items-start gap-3">
+          <IconAlertCircle className="text-brand-blue shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-brand-blue">ይህ ሪፖርት ተልኳል (Submitted)</h3>
+            <p className="text-sm text-text-secondary mt-1">የተላከ ሪፖርት ላይ ማስተካከያ ማድረግ አይቻልም።</p>
+          </div>
+        </div>
+      )}
+
+      {activeReport?.admin_feedback && (
         <div className="bg-status-warning/10 border border-status-warning/20 rounded-xl p-4">
           <h3 className="font-semibold text-status-warning text-sm uppercase tracking-wider mb-2">የአስተዳዳሪ ግብረ መልስ (Admin Feedback)</h3>
-          <p className="text-sm text-text-primary whitespace-pre-wrap">{initialReport.admin_feedback}</p>
+          <p className="text-sm text-text-primary whitespace-pre-wrap">{activeReport.admin_feedback}</p>
         </div>
       )}
 
@@ -166,6 +213,7 @@ export function FormsRepView({ userProfile, initialReport }: FormsRepViewProps) 
                 initialData={formData[schema.id] || {}}
                 onChange={(data) => handleFormChange(schema.id, data)}
                 isCompleted={isCompleted}
+                compact={false}
               />
             </div>
           );
@@ -173,7 +221,7 @@ export function FormsRepView({ userProfile, initialReport }: FormsRepViewProps) 
       </div>
 
       {/* Action Buttons */}
-      {!isReadOnly && (
+      {!isReadOnly && isWindowOpen && (
         <div className="flex flex-col sm:flex-row gap-4 pt-4 sticky bottom-4 z-10">
           <div className="flex-1" />
           <button

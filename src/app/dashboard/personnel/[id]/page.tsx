@@ -247,7 +247,7 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
                     <option key={pos.id} value={pos.id}>{pos.nameAm}</option>
                   ))}
                 </select>
-                {errors.positionId && <span className="text-xs text-danger">{errors.positionId.message}</span>}
+                {errors.positionId && <span className="text-xs text-danger">{errors.positionId.message as string}</span>}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">አደረጃጀት (Category)</label>
@@ -257,7 +257,7 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
                     <option key={off.id} value={off.id}>{off.nameAm}</option>
                   ))}
                 </select>
-                {errors.officeId && <span className="text-xs text-danger">{errors.officeId.message}</span>}
+                {errors.officeId && <span className="text-xs text-danger">{errors.officeId.message as string}</span>}
               </div>
             </div>
             
@@ -295,7 +295,7 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
               <div className="flex flex-col gap-2 col-span-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">የአባሉ ሙሉ ስም</label>
                 <input {...register('fullName')} type="text" placeholder="የአባሉ ሙሉ ስም" className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-yellow/50 transition-colors" />
-                {errors.fullName && <span className="text-xs text-danger">{errors.fullName.message}</span>}
+                {errors.fullName && <span className="text-xs text-danger">{errors.fullName.message as string}</span>}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">የትምህርት አይነት (Department)</label>

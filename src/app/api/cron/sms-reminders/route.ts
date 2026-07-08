@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendSMS } from "@/lib/textbee";
-import { getCurrentPeriod } from "@/lib/et-calendar";
+import { getCurrentPeriod, getCurrentFiscalYear, getCurrentEtDate } from "@/lib/et-calendar";
 
 export async function GET(request: Request) {
   // Simple auth check for the cron job (e.g., using a secret token in header or search params)
@@ -27,8 +27,11 @@ export async function GET(request: Request) {
   try {
     // 1. Check if today is a reporting day
     const period = getCurrentPeriod();
-    if (period === 'NONE') {
-      return NextResponse.json({ message: "Not a reporting day." });
+    const { day } = getCurrentEtDate();
+    
+    // Only send reminders on the 1st day of submission (20th) and the last day (25th)
+    if (period === 'NONE' || (day !== 20 && day !== 25)) {
+      return NextResponse.json({ message: "Not a reminder day." });
     }
 
     // 2. Fetch all representatives
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
     }
 
     // 3. Fetch all reports already submitted for this period
-    const currentYear = 2016; // E.C. (Should be dynamically calculated)
+    const currentYear = getCurrentFiscalYear();
     const { data: submittedReports, error: reportsError } = await supabaseAdmin
       .from('reports')
       .select('user_id')
@@ -69,7 +72,7 @@ export async function GET(request: Request) {
         const name = (rep.users as any)?.full_name;
 
         if (phone) {
-          const message = `ሰላም ${name}፣ የ ${currentYear} በጀት ዓመት ${period === 'Q3' ? 'የዘጠኝ ወራት' : period} ሪፖርት ማቅረቢያ ጊዜ ደርሷል። እባክዎ ወደ ሲስተሙ በመግባት ሪፖርትዎን ይሙሉ (Please submit your report).`;
+          const message = `ሰላም ${name}፣ የ ${currentYear} በጀት ዓመት ${period} ማቅረቢያ ጊዜ ደርሷል። እባክዎ ወደ ሲስተሙ በመግባት ሪፖርትዎን ይሙሉ (Please submit your report).`;
           
           await sendSMS(phone, message);
           notificationsSent.push(phone);

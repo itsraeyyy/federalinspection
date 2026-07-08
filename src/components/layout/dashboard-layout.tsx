@@ -60,6 +60,14 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Auto-collapse sidebar on the forms and assessment pages for better viewing
+  useEffect(() => {
+    if (pathname === '/dashboard/forms' || pathname.startsWith('/dashboard/assessment')) {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(false);
+    }
+  }, [pathname]);
   const navItems = [
     { label: 'ዳሽቦርድ', icon: IconDashboard, href: '/dashboard' },
     { label: 'ዜና', icon: IconNews, href: '/dashboard/news', id: 'news' },
@@ -68,7 +76,6 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     { label: 'ጥቆማ እና አቤቱታ', icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
     { label: 'ምዘና', icon: IconClipboardCheck, href: '/dashboard/assessment', id: 'assessment' },
     { label: 'አስተያየት', icon: IconMessageStar, href: '/dashboard/feedback', id: 'feedback' },
-    { label: 'መረጃ', icon: IconChartBar, href: '/dashboard/statistics', id: 'statistics' },
     { label: 'ቅጾች', icon: IconFileDescription, href: '/dashboard/forms', id: 'forms' },
     { label: 'አስተዳዳሪዎች', icon: IconShieldCheck, href: '/dashboard/admins', id: 'admins' },
   ];

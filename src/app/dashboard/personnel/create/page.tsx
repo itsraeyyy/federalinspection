@@ -203,7 +203,7 @@ export default function CreatePersonnelPage() {
                     <option key={pos.id} value={pos.id}>{pos.nameAm}</option>
                   ))}
                 </select>
-                {errors.positionId && <span className="text-xs text-danger">{errors.positionId.message}</span>}
+                {errors.positionId && <span className="text-xs text-danger">{errors.positionId.message as string}</span>}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">አደረጃጀት (Category)</label>
@@ -213,7 +213,7 @@ export default function CreatePersonnelPage() {
                     <option key={off.id} value={off.id}>{off.nameAm}</option>
                   ))}
                 </select>
-                {errors.officeId && <span className="text-xs text-danger">{errors.officeId.message}</span>}
+                {errors.officeId && <span className="text-xs text-danger">{errors.officeId.message as string}</span>}
               </div>
 
               {/* Conditional Region for Branch Office */}
@@ -241,7 +241,7 @@ export default function CreatePersonnelPage() {
               <div className="flex flex-col gap-2 col-span-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">የአባሉ ሙሉ ስም</label>
                 <input {...register('fullName')} type="text" placeholder="የአባሉ ሙሉ ስም" className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors" />
-                {errors.fullName && <span className="text-xs text-danger">{errors.fullName.message}</span>}
+                {errors.fullName && <span className="text-xs text-danger">{errors.fullName.message as string}</span>}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ፆታ</label>
@@ -250,12 +250,12 @@ export default function CreatePersonnelPage() {
                   <option value="male">ወንድ</option>
                   <option value="female">ሴት</option>
                 </select>
-                {errors.gender && <span className="text-xs text-danger">{errors.gender.message}</span>}
+                {errors.gender && <span className="text-xs text-danger">{errors.gender.message as string}</span>}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ዕድሜ</label>
                 <input {...register('age')} type="number" placeholder="ዕድሜ" className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors" />
-                {errors.age && <span className="text-xs text-danger">{errors.age.message}</span>}
+                {errors.age && <span className="text-xs text-danger">{errors.age.message as string}</span>}
               </div>
               <div className="flex flex-col gap-2 col-span-2">
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ብሔር</label>

@@ -47,7 +47,7 @@ export async function createRepresentativeAction(formData: FormData) {
     const syntheticEmail = `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local`;
 
     let userId;
-    
+
     // Check existing
     const { data: existingUser } = await supabaseAdmin
       .from('users')
@@ -90,13 +90,13 @@ export async function createRepresentativeAction(formData: FormData) {
       });
 
     if (profileError) {
-        return { error: 'Failed to update profile: ' + profileError.message };
+      return { error: 'Failed to update profile: ' + profileError.message };
     }
 
     // Send SMS with password
     const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/representative/login`;
     const smsMessage = `ሰላም ${fullName}፣ የቅጽ አስተዳደር ተወካይ ሆነው ተመዝግበዋል።\nመግቢያ: ${loginUrl}\nስልክ: ${phone}\nየይለፍ ቃል: ${password}\nሲገቡ የይለፍ ቃልዎን መቀየር ግዴታ ነው።`;
-    
+
     await sendSMS(phone, smsMessage);
 
     // Force password change on next login (by saving it in a metadata if we supported that, 
@@ -116,10 +116,10 @@ export async function deleteRepresentativeAction(userId: string) {
     if (error) {
       return { error: error.message };
     }
-    
+
     // Fallback: also try to delete from public.users manually just in case
     await supabaseAdmin.from('users').delete().eq('id', userId);
-    
+
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
@@ -224,6 +224,14 @@ export async function provideAdminFeedbackAction(
   feedback: string
 ) {
   try {
+    const { data: report, error: fetchError } = await supabaseAdmin
+      .from('reports')
+      .select('region, user_id')
+      .eq('id', reportId)
+      .single();
+
+    if (fetchError || !report) return { error: 'Failed to fetch report details' };
+
     const { error } = await supabaseAdmin
       .from('reports')
       .update({
@@ -233,6 +241,22 @@ export async function provideAdminFeedbackAction(
       .eq('id', reportId);
 
     if (error) return { error: error.message };
+
+    // Send SMS notification to representative
+    if (report.user_id) {
+      const { data: user } = await supabaseAdmin
+        .from('users')
+        .select('phone_number, full_name')
+        .eq('id', report.user_id)
+        .single();
+
+      if (user && user.phone_number) {
+        const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/representative/login`;
+        const smsMessage = `ውድ ${user.full_name || 'ተወካይ'}፣ ለ${report.region} ክልል ባስገቡት ሪፖርት ላይ ግብረ መልስ ተሰጥቷል። እባክዎ ዳሽቦርድዎን ይጎብኙ።\nመግቢያ: ${loginUrl}`;
+        await sendSMS(user.phone_number, smsMessage);
+      }
+    }
+
     return { success: true };
   } catch (error: any) {
     return { error: error.message };

@@ -103,7 +103,7 @@ const TABS = [
   },
   {
     id: "motto",
-     label: "መሪ ቃል",
+    label: "መሪ ቃል",
     icon: MessageSquareText,
     accent: "#014BAA",
     accentSoft: "rgba(1,75,170,0.06)",
@@ -192,16 +192,16 @@ export function AboutMissionVisionSection() {
             id="ppv-heading"
             className="font-heading text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
           >
-            ራዕይ፣{" "}
-            <span style={{ color: "#014BAA" }}>ተልዕኮና</span>{" "}
-            <span style={{ color: "#FFB800" }}>ዕሴቶች</span>
+            ራዕይ፣ ተልዕኮ፣{" "}
+            <span style={{ color: "#014BAA" }}>ዕሴቶችና</span>{" "}
+            <span style={{ color: "#FFB800" }}>ተግባርና ኃላፊነት</span>
           </h2>
         </div>
 
         {/* Tab buttons */}
         <div
           role="tablist"
-          aria-label="ራዕይ፣ ተልዕኮና ዕሴቶች"
+          aria-label=" ራዕይ፣ ተልዕኮ፣ ዕሴቶችና ተግባርና ኃላፊነት"
           className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 sm:gap-2"
         >
           {TABS.map((tab) => {

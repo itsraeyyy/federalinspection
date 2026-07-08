@@ -152,7 +152,7 @@ export default function PublicCodeDocumentsPage() {
                 const docCount = docsInOffice.filter(d => d.mainCategory === selectedMain && d.subCategory === sub.code).length;
                 if (docCount === 0) return null;
                 return (
-                  <button key={sub.code} onClick={() => navigateTo('docs', selectedOffice, selectedMain, sub.code)} className="group bg-surface-primary rounded-xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-center gap-4 shadow-sm">
+                  <button key={sub.code} onClick={() => navigateTo('docs', selectedOffice || undefined, selectedMain || undefined, sub.code)} className="group bg-surface-primary rounded-xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-center gap-4 shadow-sm">
                     <div className="w-10 h-10 rounded-lg bg-surface-secondary border border-border flex items-center justify-center shrink-0">
                       <span className="text-xs font-bold text-text-secondary group-hover:text-brand-blue transition-colors">{sub.code}</span>
                     </div>

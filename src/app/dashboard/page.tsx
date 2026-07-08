@@ -6,6 +6,8 @@ import { IconNews, IconFileText, IconUsers, IconMessage2, IconQrcode, IconCheck,
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { PendingQRRequests } from "@/components/dashboard/pending-qr-requests";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
 const formatTimeAgo = (dateString: string) => {
   if (!dateString) return '';
@@ -20,6 +22,24 @@ const formatTimeAgo = (dateString: string) => {
 };
 
 export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/auth/login');
+  }
+
+  // Verify admin access server-side
+  const { data: profile } = await supabaseAdmin
+    .from('admin_profiles')
+    .select('role, status')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || profile.status?.toLowerCase() !== 'active') {
+    redirect('/auth/login?error=unauthorized');
+  }
+
   // Fetch Documents stats
   const [{ count: totalDocs }, { count: publicDocs }] = await Promise.all([
     supabaseAdmin.from('documents').select('*', { count: 'exact', head: true }),

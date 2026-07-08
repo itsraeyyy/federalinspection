@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { IconUsers, IconReportAnalytics } from "@tabler/icons-react";
 import { RepresentativesManager } from "./RepresentativesManager";
-import { AdminReportsView } from "./AdminReportsView";
+import { AdminReportsTabsView } from "./reports/AdminReportsTabsView";
 
 export function FormsAdminView({ initialRepresentatives, initialReports }: { initialRepresentatives: any[], initialReports: any[] }) {
   const [activeTab, setActiveTab] = useState<'reps' | 'reports'>('reps');
@@ -44,7 +44,7 @@ export function FormsAdminView({ initialRepresentatives, initialReports }: { ini
 
       <div className="bg-bg-primary rounded-2xl border border-border-light shadow-sm p-6 overflow-hidden relative">
         {activeTab === 'reps' && <RepresentativesManager initialRepresentatives={initialRepresentatives} />}
-        {activeTab === 'reports' && <AdminReportsView initialReports={initialReports} />}
+        {activeTab === 'reports' && <AdminReportsTabsView initialReports={initialReports} />}
       </div>
     </div>
   );

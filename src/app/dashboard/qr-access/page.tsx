@@ -17,9 +17,9 @@ const accessTypes: { value: AccessType; label: string; icon: typeof IconFolder }
 
 export default function QRAccessPage() {
   const [accessType, setAccessType] = useState<AccessType>('file');
-  const [selectedMain, setSelectedMain] = useState(MAIN_CATEGORIES[0].code);
-  const [selectedSub, setSelectedSub] = useState(SUB_CATEGORIES[MAIN_CATEGORIES[0].code]?.[0]?.code || '');
-  const [selectedDoc, setSelectedDoc] = useState('');
+  const [selectedMain, setSelectedMain] = useState<string>(MAIN_CATEGORIES[0].code);
+  const [selectedSub, setSelectedSub] = useState<string>(SUB_CATEGORIES[MAIN_CATEGORIES[0].code]?.[0]?.code || '');
+  const [selectedDoc, setSelectedDoc] = useState<string>('');
   const [generatedCode, setGeneratedCode] = useState('847291');
   
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);

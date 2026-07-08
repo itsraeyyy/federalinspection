@@ -63,6 +63,7 @@ export interface NewsArticle {
   images?: string[];
   videoUrl?: string;
   excerpt?: string;
+  description?: string;
 }
 
 export interface DocumentFile {
@@ -101,6 +102,7 @@ export const COMMISSION_POSITIONS = [
   { id: 'member', nameAm: 'ኮሚሽን አባል', nameEn: 'Commission Member' },
   { id: 'management-committee', nameAm: 'የኮሚሽን ስራ አመራር ኮሚቴ አባላት', nameEn: 'Work Management Committee Members' },
   { id: 'management', nameAm: 'ኮሚሽን ማኔጅመንት አባላት', nameEn: 'Commission Management Members' },
+  { id: 'branch-head', nameAm: 'ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ', nameEn: 'Branch Office Head' },
 ] as const;
 
 export const OFFICE_CATEGORIES = [

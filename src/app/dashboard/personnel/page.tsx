@@ -78,7 +78,11 @@ export default function PersonnelPage() {
         </div>
         <div className="flex flex-col gap-1">
           <h3 className="font-bold text-text-primary text-lg line-clamp-1">{person.nameAm || person.name}</h3>
-          <p className="text-sm text-brand-blue font-semibold">{person.positionAm || person.position}</p>
+          <p className="text-sm text-brand-blue font-semibold">
+            {person.positionAm === 'ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ' && person.region
+              ? `የ ${person.region} ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ`
+              : person.positionAm || person.position}
+          </p>
         </div>
       </div>
 

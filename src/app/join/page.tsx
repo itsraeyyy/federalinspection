@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { registerUserAction } from '@/app/actions/auth';
 
-export default function JoinPeriodPage() {
+function JoinPeriodContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const periodId = searchParams.get('period_id');
@@ -144,5 +144,17 @@ export default function JoinPeriodPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function JoinPeriodPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-blue" />
+      </div>
+    }>
+      <JoinPeriodContent />
+    </Suspense>
   );
 }

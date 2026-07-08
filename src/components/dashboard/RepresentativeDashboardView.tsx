@@ -16,9 +16,15 @@ export function RepresentativeDashboardView({ userId, region, initialReports }: 
     setEtDate(getCurrentEtDate());
   }, []);
 
+  
   const periods: ReportPeriod[] = [
     '1ኛ ሩብ አመት', '2ኛ ሩብ አመት', 'የመጀመሪያ ግማሽ አመት', '3ኛ ሩብ አመት', '4ኛ ሩብ አመት', '2ተኛ ግማሽ አመት', 'የበጀት አመት (ሙሉ)'
   ];
+  const [selectedYear, setSelectedYear] = useState<number>(getCurrentFiscalYear());
+  const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>('1ኛ ሩብ አመት');
+
+  const isWindowOpen = canSubmitReport(selectedPeriod);
+  const existingReport = reports.find(r => r.period === selectedPeriod && r.year === selectedYear);
 
   const getStatusBadge = (status: string) => {
     switch(status) {
@@ -54,8 +60,7 @@ export function RepresentativeDashboardView({ userId, region, initialReports }: 
         <div className="bg-bg-primary rounded-2xl border border-border-light shadow-sm p-6 overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
            <div className="flex justify-between items-center mb-6 border-b border-border-light pb-4">
               <div>
-                <h2 className="text-xl font-bold text-brand-blue tracking-tight">ቅጽ 01 ሙሌት - {activeFormPeriod}</h2>
-                <p className="text-sm text-text-muted mt-1">በ2018 በጀት ዓመት የዘጠኝ ወራት በየደረጃው የተዋቀረ የኮሚሽን መዋቅር የሚያሳይ ሠንጠረዥ</p>
+                <h2 className="text-xl font-bold text-brand-blue tracking-tight">ቅጽ 01 ሙሌት - {activeFormPeriod} ({selectedYear})</h2>
               </div>
               <button onClick={() => setActiveFormPeriod(null)} className="px-4 py-2 bg-bg-secondary hover:bg-border-light text-text-secondary font-medium rounded-xl transition-colors">
                 ተመለስ
@@ -65,9 +70,9 @@ export function RepresentativeDashboardView({ userId, region, initialReports }: 
            <ReportForm01 
              userId={userId} 
              region={region} 
-             year={etDate?.year ? getCurrentFiscalYear() : 2018} 
+             year={selectedYear} 
              period={activeFormPeriod}
-             existingData={reports.find(r => r.period === activeFormPeriod && r.year === (etDate ? getCurrentFiscalYear() : 2018))?.forms_data}
+             existingData={existingReport?.forms_data}
              onSuccess={() => {
                setActiveFormPeriod(null);
                window.location.reload();
@@ -77,55 +82,101 @@ export function RepresentativeDashboardView({ userId, region, initialReports }: 
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-bg-primary rounded-2xl border border-border-light shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-border-light bg-bg-secondary/30">
-                <h2 className="text-lg font-bold text-text-primary">የሪፖርት ወቅቶች ({etDate ? getCurrentFiscalYear() : '2018'})</h2>
+            
+            <div className="bg-bg-primary rounded-2xl border border-border-light shadow-sm overflow-hidden p-6">
+              <h2 className="text-lg font-bold text-text-primary mb-4">አዲስ ሪፖርት ማቅረቢያ (New Submission)</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">በጀት ዓመት (Budget Year)</label>
+                  <input 
+                    type="number"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    placeholder="ለምሳሌ፡ 2019"
+                    className="w-full px-4 py-2.5 bg-bg-secondary border border-border-medium rounded-xl focus:ring-2 focus:ring-brand-blue/20 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">ወቅት (Period)</label>
+                  <select 
+                    value={selectedPeriod}
+                    onChange={(e) => setSelectedPeriod(e.target.value as ReportPeriod)}
+                    className="w-full px-4 py-2.5 bg-bg-secondary border border-border-medium rounded-xl focus:ring-2 focus:ring-brand-blue/20 outline-none"
+                  >
+                    {periods.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="divide-y divide-border-light">
-                {periods.map(period => {
-                  const isWindowOpen = canSubmitReport(period);
-                  const existingReport = reports.find(r => r.period === period && r.year === (etDate ? getCurrentFiscalYear() : 2018));
-                  
-                  return (
-                    <div key={period} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-bg-secondary/20 transition-colors">
-                      <div>
-                        <h3 className="font-semibold text-text-primary text-base">{period}</h3>
-                        <p className="text-xs text-text-muted mt-1">
-                          {isWindowOpen ? (
-                            <span className="text-status-success flex items-center gap-1"><IconCheck size={14}/> ማቅረቢያ ጊዜው ክፍት ነው</span>
-                          ) : (
-                            <span className="flex items-center gap-1"><IconAlertCircle size={14}/> ማቅረቢያ ጊዜ አይደለም</span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {existingReport && getStatusBadge(existingReport.status)}
-                        
-                        <button
-                          disabled={!isWindowOpen && !existingReport}
-                          onClick={() => setActiveFormPeriod(period)}
-                          className={`px-4 py-2 font-medium rounded-xl text-sm transition-all flex items-center gap-2 ${
-                            existingReport && existingReport.status !== 'draft'
-                              ? 'bg-bg-secondary text-text-secondary hover:bg-border-light' // View mode
-                              : isWindowOpen
-                                ? 'bg-brand-blue text-white shadow-sm hover:bg-brand-blue/90' // Edit/Fill mode
-                                : 'bg-bg-secondary text-text-muted opacity-50 cursor-not-allowed' // Disabled
-                          }`}
-                        >
-                          {existingReport && existingReport.status !== 'draft' ? (
-                            <>ክፈት / እይ</>
-                          ) : existingReport && existingReport.status === 'draft' ? (
-                            <><IconEdit size={16}/> ቀጥል (Draft)</>
-                          ) : (
-                            <>ሙላ (Fill)</>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+
+              <div className="p-4 rounded-xl mb-6 bg-bg-secondary/50 border border-border-light flex items-start gap-3">
+                {isWindowOpen ? (
+                  <IconCheck className="text-status-success shrink-0 mt-0.5" />
+                ) : (
+                  <IconAlertCircle className="text-status-error shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    {isWindowOpen ? "ማቅረቢያ ጊዜው ክፍት ነው።" : "ማቅረቢያ ጊዜ አይደለም።"}
+                  </p>
+                  <p className="text-xs text-text-muted mt-1">
+                    {isWindowOpen 
+                      ? "አሁን ሪፖርትዎን መሙላት እና መላክ ይችላሉ።" 
+                      : `የ ${selectedPeriod} ሪፖርት ማቅረብ የሚቻለው በሚመለከተው ወር ከ20 እስከ 25 ብቻ ነው።`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                {existingReport && (
+                  <div className="mr-auto flex items-center gap-2">
+                    <span className="text-sm font-medium text-text-secondary">ሁኔታ:</span> 
+                    {getStatusBadge(existingReport.status)}
+                  </div>
+                )}
+                
+                <button
+                  disabled={!isWindowOpen && !existingReport}
+                  onClick={() => setActiveFormPeriod(selectedPeriod)}
+                  className={`px-6 py-2.5 font-medium rounded-xl text-sm transition-all flex items-center gap-2 ${
+                    existingReport && existingReport.status !== 'draft'
+                      ? 'bg-bg-secondary text-text-secondary hover:bg-border-light border border-border-medium' // View mode
+                      : isWindowOpen
+                        ? 'bg-brand-blue text-white shadow-sm hover:bg-brand-blue/90' // Edit/Fill mode
+                        : 'bg-bg-secondary text-text-muted opacity-50 cursor-not-allowed border border-border-medium' // Disabled
+                  }`}
+                >
+                  {existingReport && existingReport.status !== 'draft' ? (
+                    <>ክፈት / እይ (View)</>
+                  ) : existingReport && existingReport.status === 'draft' ? (
+                    <><IconEdit size={18}/> ቀጥል (Continue Draft)</>
+                  ) : (
+                    <>ሙላ (Start Filling)</>
+                  )}
+                </button>
               </div>
             </div>
+
+            <div className="bg-bg-primary rounded-2xl border border-border-light shadow-sm overflow-hidden p-6">
+               <h2 className="text-lg font-bold text-text-primary mb-4">የቀድሞ ሪፖርቶች (Past Submissions)</h2>
+               <div className="space-y-3">
+                 {reports.length === 0 ? (
+                   <p className="text-sm text-text-muted text-center py-6">ምንም ሪፖርት አላስገቡም</p>
+                 ) : (
+                   reports.map(r => (
+                     <div key={r.id} className="flex items-center justify-between p-3 border border-border-light rounded-xl hover:bg-bg-secondary/30">
+                       <div>
+                         <p className="text-sm font-medium text-text-primary">{r.period} ({r.year})</p>
+                       </div>
+                       <div>{getStatusBadge(r.status)}</div>
+                     </div>
+                   ))
+                 )}
+               </div>
+            </div>
+
           </div>
           
           <div className="space-y-6">
@@ -140,15 +191,38 @@ export function RepresentativeDashboardView({ userId, region, initialReports }: 
                     ምንም ግብረ መልስ አልተሰጠም
                   </p>
                 ) : (
-                  reports.filter(r => r.admin_feedback).map(r => (
-                    <div key={r.id} className="bg-brand-blue/5 p-4 rounded-xl border border-brand-blue/10 space-y-2">
-                      <div className="flex justify-between items-center text-xs text-text-muted font-medium mb-2">
-                        <span>{r.period} ({r.year})</span>
-                        <span className="bg-white px-2 py-0.5 rounded-full border border-border-light">ከአድሚን</span>
+                  reports.filter(r => r.admin_feedback).map(r => {
+                    let feedbackObj: Record<string, string> = { general: r.admin_feedback };
+                    try {
+                      const parsed = JSON.parse(r.admin_feedback);
+                      if (typeof parsed === 'object' && parsed !== null) {
+                        feedbackObj = parsed;
+                      }
+                    } catch (e) {
+                      // fallback to string
+                    }
+
+                    return (
+                      <div key={r.id} className="bg-brand-blue/5 p-4 rounded-xl border border-brand-blue/10 space-y-3">
+                        <div className="flex justify-between items-center text-xs text-text-muted font-medium mb-2">
+                          <span>{r.period} ({r.year})</span>
+                          <span className="bg-white px-2 py-0.5 rounded-full border border-border-light text-brand-blue font-bold">ከአድሚን (Admin)</span>
+                        </div>
+                        <div className="space-y-3">
+                          {Object.entries(feedbackObj).map(([key, text]) => {
+                            if (!text || (typeof text !== 'string')) return null;
+                            const title = key === 'general' ? 'አጠቃላይ አስተያየት (General Feedback)' : key.replace('form_', 'ቅጽ ');
+                            return (
+                              <div key={key} className="bg-white p-3 rounded-lg border border-border-light shadow-sm">
+                                <p className="text-xs font-bold text-brand-blue mb-1.5 border-b border-border-light pb-1">{title}</p>
+                                <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap">{text}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <p className="text-sm text-text-primary">{r.admin_feedback}</p>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

@@ -1,21 +1,9 @@
 import { FormsRepView } from "@/components/dashboard/forms/FormsRepView";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function RepDashboardPage() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
+  const supabase = await createClient();
 
   const { data: userData } = await supabase.auth.getUser();
   if (!userData?.user) {
@@ -39,13 +27,10 @@ export default async function RepDashboardPage() {
   }
 
   // Rep data fetching
-  const { data: currentReport } = await supabase
+  const { data: currentReports } = await supabase
     .from('reports')
     .select('*')
-    .eq('user_id', profile.user_id)
-    .eq('year', 2016)
-    .eq('period', 'Q3')
-    .single();
+    .eq('user_id', profile.user_id);
 
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] p-4 sm:p-8">
@@ -56,7 +41,7 @@ export default async function RepDashboardPage() {
           </button>
         </form>
       </div>
-      <FormsRepView userProfile={profile} initialReport={currentReport} />
+      <FormsRepView userProfile={profile} initialReports={currentReports || []} />
     </div>
   );
 }

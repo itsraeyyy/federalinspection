@@ -32,28 +32,13 @@ export function MembersSection() {
   const activePersonnel = personnel.filter(p => p.status === 'Active');
 
   const currentOffice = activePersonnel.filter(p => {
-    if (activeTab === 'main') return p.officeCategory === 'Main Office';
-    if (activeTab === 'branch') return p.officeCategory === 'Branch Office';
-    if (activeTab === 'commission-members') return p.officeCategory === 'Commission Members';
+    if (activeTab === 'main') return p.officeCategory === 'Main Office' || p.officeCategoryAm === 'ኮሚሽን ዋና ጽ/ቤት' || p.officeCategoryAm === 'ኮሚሽን ጽ/ቤት';
+    if (activeTab === 'branch') return p.officeCategory === 'Branch Office' || p.officeCategoryAm === 'ኮሚሽን ቅርንጫፍ ጽ/ቤት';
+    if (activeTab === 'commission-members') return p.officeCategory === 'Commission Members' || p.officeCategoryAm === 'ኮሚሽን አባላት';
     return false;
   });
 
-  const groupedByPosition = COMMISSION_POSITIONS
-    .map(pos => ({
-      ...pos,
-      members: currentOffice.filter(m => m.positionAm === pos.nameAm),
-    }))
-    .filter(group => group.members.length > 0);
 
-  // Fallback for commission members tab if they don't have a matching position
-  if (activeTab === 'commission-members' && groupedByPosition.length === 0 && currentOffice.length > 0) {
-    groupedByPosition.push({
-      id: 'member',
-      nameAm: 'ኮሚሽን አባል',
-      nameEn: 'Commission Member',
-      members: currentOffice
-    } as any);
-  }
 
   return (
     <section
@@ -102,105 +87,100 @@ export function MembersSection() {
           </div>
         </div>
 
-        {/* Position Rows */}
+        {/* Members Carousel */}
         {loading ? (
           <div className="flex items-center justify-center h-64 text-slate-400 text-sm">በመጫን ላይ...</div>
-        ) : groupedByPosition.length === 0 ? (
+        ) : currentOffice.length === 0 ? (
           <div className="flex items-center justify-center h-48 text-slate-400 text-sm">ምንም አባላት አልተገኙም።</div>
         ) : (
-          <div className="flex flex-col gap-14 pb-8">
-            {groupedByPosition.map((group) => (
-              <div key={group.id}>
-                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500 mt-6 mb-4">
-                  {group.nameAm}
-                </h3>
-                <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2 px-0.5">
-                  {group.members.map((member) => (
-                    <div key={member.id} className="shrink-0 snap-start w-[85vw] sm:w-[360px] md:w-[400px]">
-                      <div className="group overflow-hidden rounded-3xl bg-white p-2 shadow-[0_4px_20px_-6px_rgba(0,0,0,0.06)] ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.10)]">
-                        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-slate-100">
-                          {member.photo ? (
-                            <Image
-                              src={member.photo}
-                              alt={member.nameAm || member.name}
-                              fill
-                              className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                              sizes="(max-width: 640px) 85vw, 400px"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-                              <div className="flex size-20 items-center justify-center rounded-full bg-white/60 shadow-sm">
-                                <span className="text-3xl font-bold text-slate-400">
-                                  {member.nameAm?.charAt(0) || member.name.charAt(0)}
-                                </span>
-                              </div>
-                              <span className="mt-3 text-sm font-medium text-slate-400">{member.nameAm || member.name}</span>
-                            </div>
-                          )}
+          <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-8 pt-6 px-0.5">
+            {currentOffice.map((member) => (
+              <div key={member.id} className="shrink-0 snap-start w-[85vw] sm:w-[360px] md:w-[400px]">
+                <div className="group overflow-hidden rounded-3xl bg-white p-2 shadow-[0_4px_20px_-6px_rgba(0,0,0,0.06)] ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.10)]">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-slate-100">
+                    {member.photo ? (
+                      <Image
+                        src={member.photo}
+                        alt={member.nameAm || member.name}
+                        fill
+                        className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 640px) 85vw, 400px"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+                        <div className="flex size-20 items-center justify-center rounded-full bg-white/60 shadow-sm">
+                          <span className="text-3xl font-bold text-slate-400">
+                            {member.nameAm?.charAt(0) || member.name.charAt(0)}
+                          </span>
                         </div>
-                        <div className="flex min-h-[120px] flex-col justify-between p-5 sm:p-6">
-                          <div>
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="text-base font-semibold text-slate-900 line-clamp-1">{member.nameAm || member.name}</h3>
-                                <p className="text-sm text-slate-500 mt-1">{member.positionAm}</p>
-                              </div>
-                              <div className="flex gap-2">
-                                  {member.facebook_url && (
-                                    <a 
-                                      href={member.facebook_url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-blue-50"
-                                      aria-label={`${member.nameAm || member.name} Facebook Profile`}
-                                    >
-                                      <IconBrandFacebook size={20} />
-                                    </a>
-                                  )}
-                                  {member.x_url && (
-                                    <a 
-                                      href={member.x_url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-slate-200"
-                                      aria-label={`${member.nameAm || member.name} X (Twitter) Profile`}
-                                    >
-                                      <IconBrandX size={20} />
-                                    </a>
-                                  )}
-                                  {member.linkedin_url && (
-                                    <a 
-                                      href={member.linkedin_url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-slate-400 hover:text-blue-700 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-blue-50"
-                                      aria-label={`${member.nameAm || member.name} LinkedIn Profile`}
-                                    >
-                                      <IconBrandLinkedin size={20} />
-                                    </a>
-                                  )}
-                                  {member.whatsapp_url && (
-                                    <a 
-                                      href={member.whatsapp_url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-slate-400 hover:text-green-600 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-green-50"
-                                      aria-label={`${member.nameAm || member.name} WhatsApp`}
-                                    >
-                                      <IconBrandWhatsapp size={20} />
-                                    </a>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-4 flex items-center gap-1.5">
-                            <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                            {member.officeCategoryAm}
+                        <span className="mt-3 text-sm font-medium text-slate-400">{member.nameAm || member.name}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex min-h-[120px] flex-col justify-between p-5 sm:p-6">
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-base font-semibold text-slate-900 line-clamp-1">{member.nameAm || member.name}</h3>
+                          <p className="text-sm text-slate-500 mt-1">
+                            {member.positionAm === 'ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ' && member.region 
+                              ? `የ ${member.region} ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ` 
+                              : member.positionAm}
                           </p>
+                        </div>
+                        <div className="flex gap-2">
+                            {member.facebook_url && (
+                              <a 
+                                href={member.facebook_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-blue-50"
+                                aria-label={`${member.nameAm || member.name} Facebook Profile`}
+                              >
+                                <IconBrandFacebook size={20} />
+                              </a>
+                            )}
+                            {member.x_url && (
+                              <a 
+                                href={member.x_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-slate-200"
+                                aria-label={`${member.nameAm || member.name} X (Twitter) Profile`}
+                              >
+                                <IconBrandX size={20} />
+                              </a>
+                            )}
+                            {member.linkedin_url && (
+                              <a 
+                                href={member.linkedin_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-slate-400 hover:text-blue-700 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-blue-50"
+                                aria-label={`${member.nameAm || member.name} LinkedIn Profile`}
+                              >
+                                <IconBrandLinkedin size={20} />
+                              </a>
+                            )}
+                            {member.whatsapp_url && (
+                              <a 
+                                href={member.whatsapp_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-slate-400 hover:text-green-600 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-green-50"
+                                aria-label={`${member.nameAm || member.name} WhatsApp`}
+                              >
+                                <IconBrandWhatsapp size={20} />
+                              </a>
+                            )}
                         </div>
                       </div>
                     </div>
-                  ))}
+                    <p className="text-xs text-slate-400 mt-4 flex items-center gap-1.5">
+                      <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                      {member.officeCategoryAm}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}

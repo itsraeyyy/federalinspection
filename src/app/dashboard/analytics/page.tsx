@@ -2,10 +2,27 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import DashboardUI from "./DashboardUI";
 import { Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
 export const revalidate = 0; // Dynamic rendering
 
 export default async function AnalyticsPage(props: { searchParams: Promise<{ range?: string }> }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect('/auth/login');
+
+  const { data: profile } = await supabaseAdmin
+    .from('admin_profiles')
+    .select('role, status')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || profile.status?.toLowerCase() !== 'active') {
+    redirect('/auth/login?error=unauthorized');
+  }
+
   const searchParams = await props.searchParams;
   const range = searchParams.range || "30d";
   

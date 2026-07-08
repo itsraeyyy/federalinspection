@@ -1,5 +1,5 @@
 import React from 'react';
-import { TablerIconsProps, IconTrendingUp, IconTrendingDown, IconDiscountCheckFilled } from '@tabler/icons-react';
+import { IconTrendingUp, IconTrendingDown, IconDiscountCheckFilled } from '@tabler/icons-react';
 
 export type AccentColor = 'yellow' | 'green' | 'purple' | 'red' | 'blue';
 
@@ -10,7 +10,7 @@ interface StatCardProps {
   trendDirection?: 'up' | 'down';
   substats?: { label: string; value: string | number }[];
   accentColor?: AccentColor;
-  icon: React.FC<TablerIconsProps>;
+  icon: React.ElementType<any>;
   badge?: string;
 }
 
