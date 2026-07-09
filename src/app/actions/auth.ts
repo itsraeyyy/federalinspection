@@ -9,10 +9,10 @@ import crypto from 'crypto';
 export async function verifyLoginAttempt() {
   const headersList = await headers();
   const forwardedFor = headersList.get('x-forwarded-for');
-  const ip = forwardedFor ? forwardedFor.split(',')[0] : '127.0.0.1';
+  const ip = forwardedFor ? forwardedFor.split(',')[0] : 'localhost';
 
-  // Limit: 50 login attempts per 15 minutes per IP (Sensible for testing/NAT)
-  const { allowed } = await checkRateLimit(ip, 'login_attempt', 50, 15);
+  // Limit: 5 login attempts per 15 minutes per IP (Mitigate dictionary and brute-force attacks)
+  const { allowed } = await checkRateLimit(ip, 'login_attempt', 5, 15);
   
   if (!allowed) {
     throw new Error("Too many login attempts. Please try again later.");

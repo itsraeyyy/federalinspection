@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { FileText, Send, UploadCloud, CheckCircle2, Copy, ArrowRight, ArrowLeft, X, FileIcon, Search, PlusCircle, MinusCircle, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { complaintService } from "@/services/complaints";
+import { regionsData } from "@/lib/regions-data";
 import Link from "next/link";
 
 type Step = 'personal' | 'details' | 'submitting' | 'success';
@@ -22,6 +23,8 @@ export function TikomaForm() {
   const [groupMembers, setGroupMembers] = useState<string[]>(['', '']); // Default 2 fields for group
   const [serviceName, setServiceName] = useState('');
   const [institution, setInstitution] = useState('');
+  const [targetRegion, setTargetRegion] = useState('');
+  const [targetZone, setTargetZone] = useState('');
   const [mainSubject, setMainSubject] = useState('');
   const [requestedResolution, setRequestedResolution] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -45,6 +48,8 @@ export function TikomaForm() {
 
   const validateDetails = (): boolean => {
     const errs: Record<string, string> = {};
+    if (!targetRegion.trim()) errs.targetRegion = 'ክልል ይምረጡ';
+    if (!targetZone.trim()) errs.targetZone = 'ዞን/ክፍለ ከተማ ይምረጡ';
     if (!serviceName.trim()) errs.serviceName = 'የአገልግሎቱን ስም ያስገቡ';
     if (!institution.trim()) errs.institution = 'የተቋሙን ስም ያስገቡ';
     if (!mainSubject.trim()) errs.mainSubject = 'ዝርዝር ሁኔታውን ያስገቡ';
@@ -98,6 +103,8 @@ export function TikomaForm() {
         groupMembers: submissionType === 'በቡድን' ? groupMembers.filter(m => m.trim()) : undefined,
         institution,
         serviceName,
+        targetRegion,
+        targetZone,
         type: 'Suggestion', // Maps to Tikoma
         subject: institution,
         message: mainSubject,
@@ -404,6 +411,57 @@ export function TikomaForm() {
           )}
 
           <div className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="targetRegion" className="text-sm font-medium text-slate-700">ክልል <span className="text-red-500">*</span></label>
+                <select
+                  id="targetRegion"
+                  value={targetRegion}
+                  onChange={(e) => {
+                    setTargetRegion(e.target.value);
+                    setTargetZone('');
+                    setDetailErrors(p => ({ ...p, targetRegion: '' }));
+                  }}
+                  className={cn(
+                    "block w-full rounded-xl border bg-slate-50 px-4 py-3.5 text-sm focus:bg-white transition-colors",
+                    detailErrors.targetRegion ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-slate-200 focus:border-[#014BAA] focus:ring-[#014BAA]"
+                  )}
+                >
+                  <option value="">ክልል ይምረጡ</option>
+                  {Object.keys(regionsData).map(region => (
+                    <option key={region} value={region}>{region}</option>
+                  ))}
+                </select>
+                {detailErrors.targetRegion && <p className="text-xs text-red-500">{detailErrors.targetRegion}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="targetZone" className="text-sm font-medium text-slate-700">
+                  {targetRegion === 'አዲስ አበባ' ? 'ክፍለ ከተማ' : 'ዞን'} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="targetZone"
+                  value={targetZone}
+                  onChange={(e) => {
+                    setTargetZone(e.target.value);
+                    setDetailErrors(p => ({ ...p, targetZone: '' }));
+                  }}
+                  disabled={!targetRegion}
+                  className={cn(
+                    "block w-full rounded-xl border bg-slate-50 px-4 py-3.5 text-sm transition-colors",
+                    !targetRegion ? "opacity-50 cursor-not-allowed" : "focus:bg-white",
+                    detailErrors.targetZone ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-slate-200 focus:border-[#014BAA] focus:ring-[#014BAA]"
+                  )}
+                >
+                  <option value="">{targetRegion === 'አዲስ አበባ' ? 'ክፍለ ከተማ ይምረጡ' : 'ዞን ይምረጡ'}</option>
+                  {targetRegion && regionsData[targetRegion]?.map(zone => (
+                    <option key={zone} value={zone}>{zone}</option>
+                  ))}
+                </select>
+                {detailErrors.targetZone && <p className="text-xs text-red-500">{detailErrors.targetZone}</p>}
+              </div>
+            </div>
+
             {/* Submission Type */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">{subTypeLabel}</label>

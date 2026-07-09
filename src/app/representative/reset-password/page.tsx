@@ -52,7 +52,7 @@ export default function RepresentativeResetPasswordPage() {
               </p>
               <Link 
                 href="/representative/login"
-                className="w-full inline-flex items-center justify-center bg-bg-secondary text-text-primary px-4 py-3 rounded-xl font-medium transition-colors hover:bg-border-light border border-border"
+                className="w-full inline-flex items-center justify-center bg-surface-secondary text-text-primary px-4 py-3 rounded-xl font-medium transition-colors hover:bg-border-light border border-border"
               >
                 ወደ መግቢያ ይመለሱ (Back to Login)
               </Link>
@@ -82,7 +82,7 @@ export default function RepresentativeResetPasswordPage() {
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-3 bg-bg-secondary border border-border-light rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
+                    className="w-full px-4 py-3 bg-surface-secondary border border-border-light rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
                     placeholder="0911223344"
                   />
                 </div>

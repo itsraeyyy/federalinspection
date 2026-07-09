@@ -5,8 +5,8 @@ import { RepLogoutButton } from "@/components/layout/rep-logout-button";
 
 export default function RepresentativeLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-bg-secondary flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 bg-bg-primary border-r border-border-light flex flex-col">
+    <div className="min-h-screen bg-surface-secondary flex flex-col md:flex-row">
+      <aside className="w-full md:w-64 bg-surface-primary border-r border-border-light flex flex-col">
         <div className="p-6 border-b border-border-light flex items-center justify-center">
           <h1 className="text-xl font-bold text-brand-blue tracking-tight">ክልል ሪፖርት አቅራቢ</h1>
         </div>
@@ -15,7 +15,7 @@ export default function RepresentativeLayout({ children }: { children: ReactNode
             <IconDashboard size={20} />
             ዳሽቦርድ
           </Link>
-          <Link href="/representative/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-bg-secondary hover:text-text-primary transition-colors">
+          <Link href="/representative/dashboard" className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-surface-secondary hover:text-text-primary transition-colors">
             <IconFileDescription size={20} />
             ሪፖርቶች
           </Link>

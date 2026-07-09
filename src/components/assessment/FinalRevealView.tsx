@@ -31,7 +31,7 @@ export function FinalRevealView({ data }: { data: any }) {
       
       let validScores = 0;
       let sumScores = 0;
-      const scores = evaluators.map((ev, idx) => {
+      const scores = evaluators.map((ev: any, idx: number) => {
         const s = ev.responses?.[q.question_id];
         if (s !== undefined && s !== null) {
           evaluatorTotals[idx] += s * w;

@@ -101,7 +101,7 @@ export default function FormsLoginPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="09..."
-                    className="w-full pl-11 pr-4 py-3 bg-bg-secondary border border-border-light rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all text-text-primary text-sm font-medium"
+                    className="w-full pl-11 pr-4 py-3 bg-surface-secondary border border-border-light rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all text-text-primary text-sm font-medium"
                   />
                 </div>
               </div>
@@ -121,7 +121,7 @@ export default function FormsLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-11 pr-4 py-3 bg-bg-secondary border border-border-light rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all text-text-primary text-sm font-medium"
+                    className="w-full pl-11 pr-4 py-3 bg-surface-secondary border border-border-light rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all text-text-primary text-sm font-medium"
                   />
                 </div>
               </div>

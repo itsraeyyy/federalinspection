@@ -30,10 +30,21 @@ export default async function FormsPage() {
     .from('reports')
     .select('*')
     .order('created_at', { ascending: false });
+    
+  const { data: fetchedSchemas } = await supabaseAdmin
+    .from('form_schemas')
+    .select('*')
+    .order('id');
+    
+  const sortedSchemas = (fetchedSchemas || []).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 
   return (
     <DashboardLayout>
-      <FormsAdminView initialRepresentatives={fetchedReps || []} initialReports={fetchedReports || []} />
+      <FormsAdminView 
+        initialRepresentatives={fetchedReps || []} 
+        initialReports={fetchedReports || []} 
+        initialSchemas={sortedSchemas}
+      />
     </DashboardLayout>
   );
 }

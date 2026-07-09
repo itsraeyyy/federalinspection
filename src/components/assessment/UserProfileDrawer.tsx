@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { X, Loader2, Download, UserCircle, Calendar, ShieldAlert, Edit2, Check, Upload, Save, Briefcase, GraduationCap, Building2 } from 'lucide-react';
+import { X, Loader2, Download, UserCircle, Calendar, ShieldAlert, Edit2, Check, Upload, Save, Briefcase, GraduationCap, Building2, Printer } from 'lucide-react';
 import { exportDetailedUserReport } from '@/lib/exportUtils';
 import Image from 'next/image';
 import Link from 'next/link';

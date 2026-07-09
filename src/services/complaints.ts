@@ -26,6 +26,8 @@ function mapRowToComplaint(item: any): Complaint {
     type: item.type,
     subject: item.subject,
     message: item.message,
+    targetRegion: item.target_region,
+    targetZone: item.target_zone,
     requestedResolution: item.requested_resolution,
     attachments: item.attachments || [],
     date: formatECDate(item.created_at),
@@ -96,6 +98,8 @@ export const complaintService = {
     type: 'Complaint' | 'Suggestion';
     subject: string;
     message: string;
+    targetRegion?: string;
+    targetZone?: string;
     requestedResolution?: string;
     files?: File[];
     groupMembers?: string[];
@@ -143,6 +147,8 @@ export const complaintService = {
         type: formData.type,
         subject: formData.institution, // institution as subject context
         message: formData.message,
+        target_region: formData.targetRegion || null,
+        target_zone: formData.targetZone || null,
         requested_resolution: formData.requestedResolution || null,
         group_members: formData.groupMembers || [],
         service_name: formData.serviceName || null,

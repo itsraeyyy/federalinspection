@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { IconMap2, IconTable } from "@tabler/icons-react";
+import Link from "next/link";
+import { IconMap2, IconTable, IconEdit } from "@tabler/icons-react";
 import { RegionReportTab } from "./RegionReportTab";
 import { AggregatedDataTab } from "./AggregatedDataTab";
-import formsSchemaData from "@/data/forms-schema.json";
 import { FormSchema } from "@/components/dashboard/forms/FormTableRenderer";
 
-export function AdminReportsTabsView({ initialReports }: { initialReports: any[] }) {
+export function AdminReportsTabsView({ initialReports, initialSchemas }: { initialReports: any[], initialSchemas: FormSchema[] }) {
   const [activeTab, setActiveTab] = useState<'region' | 'aggregated'>('region');
-  const schemas = formsSchemaData as FormSchema[];
+  const schemas = initialSchemas;
 
   // Note: hardcoded for current year/period in this context, normally from state/DB
   const currentYear = 2016; 
@@ -23,7 +23,7 @@ export function AdminReportsTabsView({ initialReports }: { initialReports: any[]
           <p className="text-sm text-text-muted mt-1">የሪፖርቶችን ዝርዝር እና የተጠቃለለ መረጃ ይመልከቱ</p>
         </div>
         
-        <div className="flex bg-bg-primary p-1 rounded-xl shadow-sm border border-border-light">
+        <div className="flex bg-surface-primary p-1 rounded-xl shadow-sm border border-border-light">
           <button
             onClick={() => setActiveTab('region')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -49,7 +49,7 @@ export function AdminReportsTabsView({ initialReports }: { initialReports: any[]
         </div>
       </div>
 
-      <div className="bg-bg-primary rounded-2xl border border-border-light shadow-sm p-6">
+      <div className="bg-surface-primary rounded-2xl border border-border-light shadow-sm p-6">
         {activeTab === 'region' && (
           <RegionReportTab initialReports={initialReports} schemas={schemas} />
         )}

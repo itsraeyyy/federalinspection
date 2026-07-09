@@ -5,7 +5,7 @@ import { IconUsers, IconReportAnalytics } from "@tabler/icons-react";
 import { RepresentativesManager } from "./RepresentativesManager";
 import { AdminReportsTabsView } from "./reports/AdminReportsTabsView";
 
-export function FormsAdminView({ initialRepresentatives, initialReports }: { initialRepresentatives: any[], initialReports: any[] }) {
+export function FormsAdminView({ initialRepresentatives, initialReports, initialSchemas }: { initialRepresentatives: any[], initialReports: any[], initialSchemas: any[] }) {
   const [activeTab, setActiveTab] = useState<'reps' | 'reports'>('reps');
 
   return (
@@ -16,7 +16,7 @@ export function FormsAdminView({ initialRepresentatives, initialReports }: { ini
           <p className="text-text-muted mt-1">የክልል ሪፖርት አቅራቢዎችን እና ሪፖርቶችን ያስተዳድሩ</p>
         </div>
         
-        <div className="flex bg-bg-primary p-1 rounded-xl shadow-sm border border-border-light">
+        <div className="flex bg-surface-primary p-1 rounded-xl shadow-sm border border-border-light">
           <button
             onClick={() => setActiveTab('reps')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -42,9 +42,9 @@ export function FormsAdminView({ initialRepresentatives, initialReports }: { ini
         </div>
       </div>
 
-      <div className="bg-bg-primary rounded-2xl border border-border-light shadow-sm p-6 overflow-hidden relative">
+      <div className="bg-surface-primary rounded-2xl border border-border-light shadow-sm p-6 overflow-hidden relative">
         {activeTab === 'reps' && <RepresentativesManager initialRepresentatives={initialRepresentatives} />}
-        {activeTab === 'reports' && <AdminReportsTabsView initialReports={initialReports} />}
+        {activeTab === 'reports' && <AdminReportsTabsView initialReports={initialReports} initialSchemas={initialSchemas} />}
       </div>
     </div>
   );

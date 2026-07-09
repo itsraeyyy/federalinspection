@@ -12,7 +12,7 @@ export async function submitFeedback(category: string, rating: string, review: s
 
   const headersList = await headers();
   const forwardedFor = headersList.get('x-forwarded-for');
-  const ip = forwardedFor ? forwardedFor.split(',')[0] : '127.0.0.1';
+  const ip = forwardedFor ? forwardedFor.split(',')[0] : 'localhost';
 
   // Limit: 50 feedback submissions per 120 minutes per IP (Sensible for testing/NAT)
   const { allowed } = await checkRateLimit(ip, 'submit_feedback', 50, 120);

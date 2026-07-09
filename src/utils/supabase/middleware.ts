@@ -44,6 +44,22 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (isProtectedRoute && user) {
+    const needsPasswordChange = user.user_metadata?.force_password_change || user.user_metadata?.requires_password_change;
+    const isChangePasswordRoute = request.nextUrl.pathname.includes('/change-password');
+
+    if (needsPasswordChange && !isChangePasswordRoute) {
+      const url = request.nextUrl.clone();
+      
+      if (request.nextUrl.pathname.startsWith('/representative')) {
+        url.pathname = '/representative/change-password';
+      } else {
+        url.pathname = '/assessment/change-password';
+      }
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (isAuthRoute && user && !request.nextUrl.searchParams.has('error')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'

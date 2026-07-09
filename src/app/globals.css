@@ -37,6 +37,8 @@
   --color-brand-gold-light: var(--brand-gold-light);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-secondary: var(--surface-secondary);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -118,13 +120,13 @@
 
 .dark {
   /* Dark Theme - Premium Deep */
-  --background: #121415;
-  --surface-primary: #1C1F21;
-  --surface-secondary: #232729;
+  --background: #292E2E;
+  --surface-primary: #323838; /* Slightly elevated from background for cards */
+  --surface-secondary: #3D4444; /* Further elevated for inputs/secondary areas */
   --border: rgba(255, 255, 255, 0.08);
   --text-primary: #F0F2F4;
-  --text-secondary: #9AA0A6;
-  --text-muted: #6A7176;
+  --text-secondary: #A1A8AE;
+  --text-muted: #72797E;
   
   --brand-yellow: #FFB800;
   --brand-blue: #014BAA;

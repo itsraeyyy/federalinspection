@@ -165,6 +165,8 @@ export interface Complaint {
   type: 'Complaint' | 'Suggestion';
   subject: string;
   message: string;
+  targetRegion?: string;
+  targetZone?: string;
   requestedResolution?: string;
   attachments: ComplaintAttachment[];
   date: string;

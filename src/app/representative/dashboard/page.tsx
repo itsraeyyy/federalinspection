@@ -32,6 +32,15 @@ export default async function RepDashboardPage() {
     .select('*')
     .eq('user_id', profile.user_id);
 
+  // Fetch dynamic schemas
+  const { data: schemas } = await supabase
+    .from('form_schemas')
+    .select('*')
+    .order('id');
+    
+  // Sort them naturally if they have standard names like form_01, form_02, form_02_1
+  const sortedSchemas = (schemas || []).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] p-4 sm:p-8">
       <div className="max-w-4xl mx-auto mb-6 flex justify-end">
@@ -41,7 +50,7 @@ export default async function RepDashboardPage() {
           </button>
         </form>
       </div>
-      <FormsRepView userProfile={profile} initialReports={currentReports || []} />
+      <FormsRepView userProfile={profile} initialReports={currentReports || []} initialSchemas={sortedSchemas} />
     </div>
   );
 }

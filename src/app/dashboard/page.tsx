@@ -68,6 +68,7 @@ export default async function DashboardPage() {
   ]);
   const onLeavePersonnel = (totalPersonnel || 0) - (activePersonnel || 0);
 
+
   // Fetch Pending QR Requests
   const { data: scanRequests } = await supabaseAdmin.from('scan_requests')
     .select('*')
@@ -173,9 +174,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="w-full pb-8">
-        <RecentActivity />
-      </div>
     </DashboardLayout>
   );
 }

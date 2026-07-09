@@ -2,19 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { FormTableRenderer, FormSchema } from "./FormTableRenderer";
+import { NarrationReportForm } from "../NarrationReportForm";
 import { IconSend, IconDeviceFloppy, IconLoader2, IconAlertCircle } from "@tabler/icons-react";
 import { saveReportFormAction, submitReportAction } from "@/app/actions/reports";
-import formsSchemaData from "@/data/forms-schema.json";
 import { ReportPeriod, canSubmitReport, getCurrentFiscalYear } from "@/lib/et-calendar";
 
 interface FormsRepViewProps {
   userProfile: any;
   initialReports: any[];
+  initialSchemas: FormSchema[];
 }
 
-export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps) {
-  const [schemas] = useState<FormSchema[]>(formsSchemaData as FormSchema[]);
-  
+export function FormsRepView({ userProfile, initialReports, initialSchemas }: FormsRepViewProps) {
+  const [activeTab, setActiveTab] = useState<'structured' | 'narration'>('structured');
   
   const periods: ReportPeriod[] = [
     '1ኛ ሩብ አመት', '2ኛ ሩብ አመት', 'የመጀመሪያ ግማሽ አመት', '3ኛ ሩብ አመት', '4ኛ ሩብ አመት', '2ተኛ ግማሽ አመት', 'የበጀት አመት (ሙሉ)'
@@ -29,10 +29,20 @@ export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps)
   // Initialize form data from active report or empty
   const [formData, setFormData] = useState<any>(activeReport?.forms_data || {});
   
-  // Reset form data when selection changes
+  // Determine schemas: Use snapshot if available, otherwise current latest schemas
+  const activeSchemas = (activeReport?.schema_snapshot && Array.isArray(activeReport.schema_snapshot) && activeReport.schema_snapshot.length > 0) 
+    ? activeReport.schema_snapshot 
+    : initialSchemas;
+
+  const [schemas, setSchemas] = useState<FormSchema[]>(activeSchemas);
+  
+  // Reset form data and schemas when selection changes
   useEffect(() => {
     setFormData(activeReport?.forms_data || {});
-  }, [currentYear, currentPeriod, activeReport]);
+    setSchemas((activeReport?.schema_snapshot && Array.isArray(activeReport.schema_snapshot) && activeReport.schema_snapshot.length > 0) 
+      ? activeReport.schema_snapshot 
+      : initialSchemas);
+  }, [currentYear, currentPeriod, activeReport, initialSchemas]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,7 +122,7 @@ export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps)
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header section with Dropdowns */}
-      <div className="bg-bg-primary rounded-2xl p-6 border border-border-light shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-surface-primary rounded-2xl p-6 border border-border-light shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex-1 w-full">
           <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-4">የ{userProfile?.region} ክልል ሪፖርት ማቅረቢያ</h1>
           
@@ -124,7 +134,7 @@ export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps)
                 value={currentYear}
                 onChange={(e) => setCurrentYear(Number(e.target.value))}
                 placeholder="ለምሳሌ፡ 2019"
-                className="w-full px-3 py-2 bg-bg-secondary border border-border-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none"
+                className="w-full px-3 py-2 bg-surface-secondary border border-border-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none"
               />
             </div>
             <div>
@@ -132,7 +142,7 @@ export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps)
               <select 
                 value={currentPeriod}
                 onChange={(e) => setCurrentPeriod(e.target.value as ReportPeriod)}
-                className="w-full px-3 py-2 bg-bg-secondary border border-border-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none"
+                className="w-full px-3 py-2 bg-surface-secondary border border-border-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none"
               >
                 {periods.map(p => (
                   <option key={p} value={p}>{p}</option>
@@ -143,7 +153,7 @@ export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps)
         </div>
         
         {/* Progress Circle or Bar */}
-        <div className="flex items-center gap-4 bg-bg-secondary px-4 py-4 rounded-xl border border-border-light w-full md:w-48 shrink-0">
+        <div className="flex items-center gap-4 bg-surface-secondary px-4 py-4 rounded-xl border border-border-light w-full md:w-48 shrink-0">
           <div className="flex-1">
             <div className="flex justify-between text-xs font-medium mb-2 text-text-secondary">
               <span>የተሞላው (Progress)</span>
@@ -202,22 +212,60 @@ export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps)
         </div>
       )}
 
+      {/* Tabs Selection */}
+      <div className="flex flex-col sm:flex-row bg-surface-secondary p-1 rounded-xl shadow-sm border border-border-light w-full sm:w-fit mb-4">
+        <button
+          onClick={() => setActiveTab('structured')}
+          className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+            activeTab === 'structured' 
+              ? 'bg-brand-blue text-white shadow-md' 
+              : 'text-text-secondary hover:text-text-primary hover:bg-border-light/50'
+          }`}
+        >
+          የቅጽ ሪፖርት (Structured Report)
+        </button>
+        <button
+          onClick={() => setActiveTab('narration')}
+          className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+            activeTab === 'narration' 
+              ? 'bg-brand-blue text-white shadow-md' 
+              : 'text-text-secondary hover:text-text-primary hover:bg-border-light/50'
+          }`}
+        >
+          የጽሁፍ ሪፖርት (Narration Report)
+        </button>
+      </div>
+
       {/* Forms List */}
-      <div className="space-y-4">
-        {schemas.map(schema => {
-          const isCompleted = formData[schema.id] && Object.keys(formData[schema.id]).length > 0;
-          return (
-            <div key={schema.id} className={isReadOnly ? "opacity-90 pointer-events-none" : ""}>
-              <FormTableRenderer 
-                schema={schema}
-                initialData={formData[schema.id] || {}}
-                onChange={(data) => handleFormChange(schema.id, data)}
-                isCompleted={isCompleted}
-                compact={false}
-              />
-            </div>
-          );
-        })}
+      <div className="space-y-4 relative min-h-[400px]">
+        {activeTab === 'structured' && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {schemas.map(schema => {
+              const isCompleted = formData[schema.id] && Object.keys(formData[schema.id]).length > 0;
+              return (
+                <div key={schema.id} className={isReadOnly ? "opacity-90 pointer-events-none" : ""}>
+                  <FormTableRenderer 
+                    schema={schema}
+                    initialData={formData[schema.id] || {}}
+                    onChange={(data) => handleFormChange(schema.id, data)}
+                    isCompleted={isCompleted}
+                    compact={false}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {activeTab === 'narration' && (
+          <div className={`animate-in fade-in slide-in-from-bottom-2 duration-300 ${isReadOnly ? "opacity-90 pointer-events-none" : ""}`}>
+            <NarrationReportForm
+              initialData={formData['narration_report'] || {}}
+              onChange={(data) => handleFormChange('narration_report', data)}
+              isReadOnly={isReadOnly}
+            />
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
@@ -227,7 +275,7 @@ export function FormsRepView({ userProfile, initialReports }: FormsRepViewProps)
           <button
             onClick={handleSaveDraft}
             disabled={isSaving || isSubmitting}
-            className="px-6 py-3 bg-bg-primary border border-border-medium hover:border-brand-blue hover:text-brand-blue text-text-secondary font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+            className="px-6 py-3 bg-surface-primary border border-border-medium hover:border-brand-blue hover:text-brand-blue text-text-secondary font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
           >
             {isSaving ? <IconLoader2 size={20} className="animate-spin" /> : <IconDeviceFloppy size={20} />}
             አስቀምጥ (Save Draft)

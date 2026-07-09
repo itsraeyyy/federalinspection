@@ -18,7 +18,8 @@ export function ReportForm01({
   year: number, 
   period: ReportPeriod, 
   existingData?: any,
-  onSuccess: () => void 
+  onSuccess: () => void,
+  isReadOnly?: boolean
 }) {
   const [formData, setFormData] = useState<any>(existingData?.form_01 || {
     "ለክልል ተጠሪ የሆኑ ዞን/ከተማ/ልዩ ወረዳ": { "ብዛት": "", "ያዋቀሩ": "", "ያላዋቀሩ": "" },
@@ -104,8 +105,8 @@ export function ReportForm01({
 
       <div className="space-y-6">
         {categories.map((category, idx) => (
-          <div key={idx} className="bg-bg-secondary border border-border-light rounded-xl overflow-hidden shadow-sm">
-            <div className="bg-bg-secondary/80 border-b border-border-light p-4 font-semibold text-text-primary text-sm flex items-center gap-2">
+          <div key={idx} className="bg-surface-secondary border border-border-light rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-surface-secondary/80 border-b border-border-light p-4 font-semibold text-text-primary text-sm flex items-center gap-2">
               <span className="bg-brand-blue text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0">{idx + 1}</span>
               {category}
             </div>
@@ -117,7 +118,8 @@ export function ReportForm01({
                   min="0"
                   value={formData[category]?.["ብዛት"]} 
                   onChange={(e) => handleInputChange(category, "ብዛት", e.target.value)}
-                  className="w-full px-3 py-2 bg-bg-primary border border-border-light rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all"
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 bg-surface-primary border border-border-light rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all ${isReadOnly ? 'opacity-90 cursor-not-allowed' : ''}`}
                 />
               </div>
               <div className="space-y-1.5">
@@ -127,7 +129,8 @@ export function ReportForm01({
                   min="0"
                   value={formData[category]?.["ያዋቀሩ"]} 
                   onChange={(e) => handleInputChange(category, "ያዋቀሩ", e.target.value)}
-                  className="w-full px-3 py-2 bg-bg-primary border border-border-light rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all"
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 bg-surface-primary border border-border-light rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all ${isReadOnly ? 'opacity-90 cursor-not-allowed' : ''}`}
                 />
               </div>
               <div className="space-y-1.5">
@@ -137,7 +140,8 @@ export function ReportForm01({
                   min="0"
                   value={formData[category]?.["ያላዋቀሩ"]} 
                   onChange={(e) => handleInputChange(category, "ያላዋቀሩ", e.target.value)}
-                  className="w-full px-3 py-2 bg-bg-primary border border-border-light rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all"
+                  disabled={isReadOnly}
+                  className={`w-full px-3 py-2 bg-surface-primary border border-border-light rounded-lg focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all ${isReadOnly ? 'opacity-90 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -167,24 +171,26 @@ export function ReportForm01({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-border-light">
-        <button
-          onClick={handleSave}
-          disabled={loading !== null}
-          className="flex-1 px-4 py-3 bg-bg-secondary hover:bg-border-light text-text-secondary font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {loading === 'save' ? <IconLoader2 size={20} className="animate-spin" /> : <IconDeviceFloppy size={20} />}
-          በመሰራት ላይ አቆይ (Save Draft)
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={loading !== null}
-          className="flex-1 px-4 py-3 bg-brand-blue text-white font-bold rounded-xl hover:bg-brand-blue/90 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {loading === 'submit' ? <IconLoader2 size={20} className="animate-spin" /> : <IconSend size={20} />}
-          ወደ አድሚን ላክ (Submit Report)
-        </button>
-      </div>
+      {!isReadOnly && (
+        <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-border-light">
+          <button
+            onClick={handleSave}
+            disabled={loading !== null}
+            className="flex-1 px-4 py-3 bg-surface-secondary hover:bg-border-light text-text-secondary font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 border border-border-medium shadow-sm"
+          >
+            {loading === 'save' ? <IconLoader2 size={20} className="animate-spin" /> : <IconDeviceFloppy size={20} />}
+            በመሰራት ላይ አቆይ (Save Draft)
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading !== null}
+            className="flex-1 px-4 py-3 bg-brand-blue text-white font-bold rounded-xl hover:bg-brand-blue/90 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading === 'submit' ? <IconLoader2 size={20} className="animate-spin" /> : <IconSend size={20} />}
+            ወደ አድሚን ላክ (Submit Report)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

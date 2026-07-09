@@ -12,9 +12,9 @@ import { IconBrandFacebook, IconBrandX, IconBrandLinkedin, IconBrandWhatsapp } f
 // Each position (ዋና ኮሚሽነር, etc.) gets its own horizontal row.
 
 const OFFICE_TABS = [
+  { id: 'commission-members', label: 'ኮሚሽን አባላት', labelEn: 'Commission Members' },
   { id: 'main', label: 'ኮሚሽን ዋና ጽ/ቤት', labelEn: 'Main Office' },
   { id: 'branch', label: 'ኮሚሽን ቅርንጫፍ ጽ/ቤት', labelEn: 'Branch Office' },
-  { id: 'commission-members', label: 'ኮሚሽን አባላት', labelEn: 'Commission Members' },
 ];
 
 export function MembersSection() {

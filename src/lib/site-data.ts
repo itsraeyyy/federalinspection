@@ -86,7 +86,7 @@ export const navLinks: NavLink[] = [
 
   { label: "መነሻ", href: "/" },
 
-  { label: "ስለ እኛ", href: "/about" },
+  { label: "ስለ ኮሚሽኑ", href: "/about" },
 
   { label: "ሰነዶች", href: "/files" },
 

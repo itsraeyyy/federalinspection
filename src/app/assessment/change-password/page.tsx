@@ -12,6 +12,20 @@ export default function ChangePasswordPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
 
+  const checkPasswordStrength = (pass: string) => {
+    return {
+      length: pass.length >= 8,
+      uppercase: /[A-Z]/.test(pass),
+      lowercase: /[a-z]/.test(pass),
+      number: /[0-9]/.test(pass),
+      special: /[^A-Za-z0-9]/.test(pass),
+      notGeneric: !/^(password|12345678|123456789|qwerty|admin|password123)$/i.test(pass),
+    };
+  };
+
+  const strength = checkPasswordStrength(password);
+  const isStrong = Object.values(strength).every(Boolean);
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -38,8 +52,8 @@ export default function ChangePasswordPage() {
       return;
     }
     
-    if (password.length < 6) {
-      setErrorMsg('የይለፍ ቃል ቢያንስ 6 ፊደላት/ቁጥሮች መሆን አለበት (Password must be at least 6 characters)');
+    if (!isStrong) {
+      setErrorMsg('የይለፍ ቃሉ ደካማ ነው (Password does not meet security requirements)');
       return;
     }
 
@@ -94,6 +108,32 @@ export default function ChangePasswordPage() {
                 placeholder="••••••••"
               />
             </div>
+
+            {password && (
+              <div className="bg-surface-secondary p-3 rounded-lg border border-border text-xs space-y-1.5">
+                <p className="font-medium text-text-secondary mb-2">የይለፍ ቃል መስፈርቶች (Requirements):</p>
+                <div className={`flex items-center gap-2 ${strength.length ? 'text-success' : 'text-text-muted'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${strength.length ? 'bg-success' : 'bg-text-muted'}`} /> ቢያንስ 8 ፊደላት (Min 8 characters)
+                </div>
+                <div className={`flex items-center gap-2 ${strength.uppercase ? 'text-success' : 'text-text-muted'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${strength.uppercase ? 'bg-success' : 'bg-text-muted'}`} /> ትልቅ ፊደል (Uppercase letter)
+                </div>
+                <div className={`flex items-center gap-2 ${strength.lowercase ? 'text-success' : 'text-text-muted'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${strength.lowercase ? 'bg-success' : 'bg-text-muted'}`} /> ትንሽ ፊደል (Lowercase letter)
+                </div>
+                <div className={`flex items-center gap-2 ${strength.number ? 'text-success' : 'text-text-muted'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${strength.number ? 'bg-success' : 'bg-text-muted'}`} /> ቁጥር (Number)
+                </div>
+                <div className={`flex items-center gap-2 ${strength.special ? 'text-success' : 'text-text-muted'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${strength.special ? 'bg-success' : 'bg-text-muted'}`} /> ልዩ ምልክት (Special character)
+                </div>
+                {!strength.notGeneric && password.length > 0 && (
+                  <div className="flex items-center gap-2 text-danger mt-2 font-medium">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger" /> በጣም ቀላል የይለፍ ቃል (Password is too common)
+                  </div>
+                )}
+              </div>
+            )}
             
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
@@ -117,7 +157,7 @@ export default function ChangePasswordPage() {
 
             <button
               type="submit"
-              disabled={loading || !password || !confirmPassword}
+              disabled={loading || !password || !confirmPassword || !isStrong}
               className="w-full flex items-center justify-center bg-warning text-white px-4 py-3 rounded-xl font-medium transition-colors hover:bg-warning/90 disabled:opacity-50 disabled:cursor-not-allowed mt-6 shadow-sm"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'ቀይር እና ግባ (Change & Sign In)'}

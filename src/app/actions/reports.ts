@@ -166,6 +166,9 @@ export async function saveReportFormAction(
       return { error: 'ሪፖርት ማቅረቢያ ጊዜ አይደለም። (Not in reporting window)' };
     }
 
+    // Fetch current form schemas to snapshot
+    const { data: schemas } = await supabaseAdmin.from('form_schemas').select('*');
+
     const { error } = await supabaseAdmin
       .from('reports')
       .upsert({
@@ -174,6 +177,7 @@ export async function saveReportFormAction(
         year,
         period,
         forms_data: formsData,
+        schema_snapshot: schemas || [],
         status: 'draft'
       }, {
         onConflict: 'region, year, period'
@@ -198,6 +202,9 @@ export async function submitReportAction(
       return { error: 'ሪፖርት ማቅረቢያ ጊዜ አይደለም። (Not in reporting window)' };
     }
 
+    // Fetch current form schemas to snapshot
+    const { data: schemas } = await supabaseAdmin.from('form_schemas').select('*');
+
     const { error } = await supabaseAdmin
       .from('reports')
       .upsert({
@@ -206,6 +213,7 @@ export async function submitReportAction(
         year,
         period,
         forms_data: formsData,
+        schema_snapshot: schemas || [],
         status: 'submitted',
         submitted_at: new Date().toISOString()
       }, {
