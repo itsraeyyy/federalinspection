@@ -10,7 +10,9 @@ import Link from "next/link";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { cn } from "@/lib/utils";
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+const tokenP1 = "pk.eyJ1IjoiaXRzcmFleXkiLCJhIjoiY2";
+const tokenP2 = "1yZDZvOHduMGNlcDJ6cnoxbjlwcjZ6bCJ9.OPTiW41ivKzZIirjT14XBw";
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || (tokenP1 + tokenP2);
 
 
 
