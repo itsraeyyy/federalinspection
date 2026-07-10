@@ -1,6 +1,8 @@
+import { sendSMS as serverSendSMS } from '@/lib/textbee';
+
 export const smsService = {
   /**
-   * Sends an SMS using the Textbee API.
+   * Sends an SMS using the Textbee API via a Server Action.
    * @param to The recipient's phone number.
    * @param message The SMS message content.
    */
@@ -8,29 +10,10 @@ export const smsService = {
     try {
       if (!to || !message) return false;
       
-      const apiKey = process.env.TEXTBEE_API_KEY;
-      const deviceId = process.env.TEXTBEE_DEVICE_ID;
+      const result = await serverSendSMS(to, message);
       
-      if (!apiKey || !deviceId) {
-        console.warn('Textbee SMS configuration is missing. SMS not sent.');
-        return false;
-      }
-      
-      const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/sendSMS`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          receivers: [to],
-          smsBody: message
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Failed to send SMS to ${to}: ${response.status} ${response.statusText} - ${errorText}`);
+      if (result.error) {
+        console.error(`Failed to send SMS to ${to}:`, result.error);
         return false;
       }
 

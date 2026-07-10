@@ -60,7 +60,7 @@ export default function ComplaintsPage() {
 
   // Committee Modal State
   const [showCommitteeModal, setShowCommitteeModal] = useState(false);
-  const [committeeName, setCommitteeName] = useState('');
+  const [committeeMembers, setCommitteeMembers] = useState<string[]>(['']);
 
   // Export Modal State
   const [showExportModal, setShowExportModal] = useState(false);
@@ -151,10 +151,12 @@ export default function ComplaintsPage() {
   };
 
   const handleCommitteeAssign = async () => {
-    if (!selectedTicket || !committeeName.trim()) return;
+    const validMembers = committeeMembers.filter(m => m.trim());
+    if (!selectedTicket || validMembers.length === 0) return;
     setActionLoading(true);
     
-    const assigned = await complaintService.assignCommittee(selectedTicket.id, committeeName);
+    const assignedStr = validMembers.join('፣ ');
+    const assigned = await complaintService.assignCommittee(selectedTicket.id, assignedStr);
     if (assigned) {
       if (selectedTicket.status === 'New') {
         await complaintService.updateComplaintStatus(selectedTicket.id, 'Processing', adminName);
@@ -163,7 +165,7 @@ export default function ComplaintsPage() {
       const updated = await complaintService.getComplaintById(selectedTicket.id);
       setSelectedTicket(updated);
       setShowCommitteeModal(false);
-      setCommitteeName('');
+      setCommitteeMembers(['']);
     }
     setActionLoading(false);
   };
@@ -775,22 +777,48 @@ export default function ComplaintsPage() {
             </div>
 
             <p className="text-sm text-text-secondary mb-4">
-              ይህን አቤቱታ የሚያጣራውን የኮሚቴ ስም ያስገቡ።
+              ይህን አቤቱታ የሚያጣሩትን የኮሚቴ አባላት ስም ያስገቡ።
             </p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-text-primary mb-2 block">
-                  የኮሚቴ ስም *
-                </label>
-                <input
-                  type="text"
-                  value={committeeName}
-                  onChange={(e) => setCommitteeName(e.target.value)}
-                  className="block w-full rounded-xl border border-border/50 bg-surface-secondary/30 px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
-                  placeholder="ለምሳሌ፡ አጣሪ ኮሚቴ 1"
-                />
-              </div>
+            <div className="space-y-4 max-h-[40vh] overflow-y-auto px-1 pb-2">
+              {committeeMembers.map((member, index) => (
+                <div key={index}>
+                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                    የኮሚቴ አባል {index + 1} *
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={member}
+                      onChange={(e) => {
+                        const newMembers = [...committeeMembers];
+                        newMembers[index] = e.target.value;
+                        setCommitteeMembers(newMembers);
+                      }}
+                      className="block w-full rounded-xl border border-border/50 bg-surface-secondary/30 px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
+                      placeholder={`አባል ${index + 1} ስም`}
+                    />
+                    {committeeMembers.length > 1 && (
+                      <button
+                        onClick={() => {
+                          const newMembers = committeeMembers.filter((_, i) => i !== index);
+                          setCommitteeMembers(newMembers);
+                        }}
+                        className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100 flex-shrink-0"
+                      >
+                        <IconX size={20} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              <button
+                onClick={() => setCommitteeMembers([...committeeMembers, ''])}
+                className="w-full py-3 border-2 border-dashed border-brand-blue/30 text-brand-blue rounded-xl text-sm font-semibold hover:bg-brand-blue/5 transition-colors mt-2"
+              >
+                + ተጨማሪ አባል ያክሉ
+              </button>
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -802,7 +830,7 @@ export default function ComplaintsPage() {
               </button>
               <button
                 onClick={handleCommitteeAssign}
-                disabled={actionLoading || !committeeName.trim()}
+                disabled={actionLoading || !committeeMembers.some(m => m.trim())}
                 className="flex-1 py-2.5 px-4 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 bg-brand-blue hover:bg-brand-blue/90"
               >
                 {actionLoading ? 'በመመደብ ላይ...' : 'መደብ'}

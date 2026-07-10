@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 
-export type PublicFileCategory = 'መተዳደርያ ደንብ' | 'የኮሚሽኑ መመሪያዎች' | 'የፓርቲ መመሪያዎች' | 'የኮሚሽኑ ሚስጥራዊ ሰነዶች';
+export type PublicFileCategory = 'መተዳደርያ ደንብ' | 'የኮሚሽኑ መመሪያዎች' | 'የፓርቲ መመሪያዎች' | 'የኮሚሽኑ ሚስጥራዊ ሰነዶች' | 'ሌላ';
 
 export interface PublicFile {
   id: string;
@@ -46,7 +46,8 @@ export const publicFilesService = {
       const folderMap: Record<string, string> = {
         'መተዳደርያ ደንብ': 'bylaws',
         'የኮሚሽኑ መመሪያዎች': 'commission_directives',
-        'የፓርቲ መመሪያዎች': 'party_directives'
+        'የፓርቲ መመሪያዎች': 'party_directives',
+        'ሌላ': 'other'
       };
       
       const safeFolder = folderMap[category] || 'other';

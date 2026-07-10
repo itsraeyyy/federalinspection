@@ -25,7 +25,7 @@ const defaultFileIcon = { icon: <IconFile size={18} stroke={1.8} />, color: 'tex
 
 type ViewLevel = 'office' | 'region' | 'main' | 'sub' | 'docs';
 
-const WEBSITE_CATEGORIES: PublicFileCategory[] = ['መተዳደርያ ደንብ', 'የኮሚሽኑ መመሪያዎች', 'የፓርቲ መመሪያዎች'];
+const WEBSITE_CATEGORIES: PublicFileCategory[] = ['መተዳደርያ ደንብ', 'የኮሚሽኑ መመሪያዎች', 'የፓርቲ መመሪያዎች', 'ሌላ'];
 const CONFIDENTIAL_CATEGORIES: PublicFileCategory[] = ['የኮሚሽኑ ሚስጥራዊ ሰነዶች'];
 
 export default function DocumentsPage() {

@@ -41,6 +41,12 @@ const nextConfig: NextConfig = {
         port: "54521",
         pathname: "/**",
       },
+      {
+        protocol: "http",
+        hostname: "192.168.3.228",
+        port: "54521",
+        pathname: "/**",
+      },
     ],
   },
 };

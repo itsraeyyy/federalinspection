@@ -1,3 +1,5 @@
+"use server";
+
 export async function sendSMS(to: string, message: string) {
   const apiKey = process.env.TEXTBEE_API_KEY;
   const deviceId = process.env.TEXTBEE_DEVICE_ID;

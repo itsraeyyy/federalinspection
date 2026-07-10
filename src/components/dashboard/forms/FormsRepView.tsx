@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { FormTableRenderer, FormSchema } from "./FormTableRenderer";
 import { NarrationReportForm } from "../NarrationReportForm";
-import { IconSend, IconDeviceFloppy, IconLoader2, IconAlertCircle } from "@tabler/icons-react";
+import { IconSend, IconDeviceFloppy, IconLoader2, IconAlertCircle, IconDownload, IconFileText } from "@tabler/icons-react";
 import { saveReportFormAction, submitReportAction } from "@/app/actions/reports";
 import { ReportPeriod, canSubmitReport, getCurrentFiscalYear } from "@/lib/et-calendar";
 
@@ -11,17 +11,19 @@ interface FormsRepViewProps {
   userProfile: any;
   initialReports: any[];
   initialSchemas: FormSchema[];
+  defaultYear?: number;
+  defaultPeriod?: ReportPeriod;
 }
 
-export function FormsRepView({ userProfile, initialReports, initialSchemas }: FormsRepViewProps) {
+export function FormsRepView({ userProfile, initialReports, initialSchemas, defaultYear, defaultPeriod }: FormsRepViewProps) {
   const [activeTab, setActiveTab] = useState<'structured' | 'narration'>('structured');
   
   const periods: ReportPeriod[] = [
     '1ኛ ሩብ አመት', '2ኛ ሩብ አመት', 'የመጀመሪያ ግማሽ አመት', '3ኛ ሩብ አመት', '4ኛ ሩብ አመት', '2ተኛ ግማሽ አመት', 'የበጀት አመት (ሙሉ)'
   ];
 
-  const [currentYear, setCurrentYear] = useState<number>(getCurrentFiscalYear());
-  const [currentPeriod, setCurrentPeriod] = useState<ReportPeriod>("1ኛ ሩብ አመት");
+  const [currentYear, setCurrentYear] = useState<number>(defaultYear || getCurrentFiscalYear());
+  const [currentPeriod, setCurrentPeriod] = useState<ReportPeriod>(defaultPeriod || "1ኛ ሩብ አመት");
   
   // Find report for the selected year and period
   const activeReport = initialReports.find(r => r.year === currentYear && r.period === currentPeriod);
@@ -43,6 +45,53 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas }: Fo
       ? activeReport.schema_snapshot 
       : initialSchemas);
   }, [currentYear, currentPeriod, activeReport, initialSchemas]);
+
+  const parsedFeedback = (() => {
+    if (!activeReport?.admin_feedback) return null;
+    try {
+      return JSON.parse(activeReport.admin_feedback);
+    } catch (e) {
+      return { general: activeReport.admin_feedback };
+    }
+  })();
+
+  const renderFeedbackContent = (feedbackVal: any) => {
+    if (!feedbackVal) return null;
+    if (typeof feedbackVal === 'string') {
+      return <p className="text-sm text-text-primary whitespace-pre-wrap">{feedbackVal}</p>;
+    }
+    
+    return (
+      <div className="space-y-3">
+        {feedbackVal.html && (
+          <div 
+            className="text-sm text-text-primary prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5"
+            dangerouslySetInnerHTML={{ __html: feedbackVal.html }}
+          />
+        )}
+        {feedbackVal.attachment_url && (
+          <div className="inline-flex items-center justify-between p-3 bg-white/50 border border-status-warning/20 rounded-lg hover:bg-white/80 transition-colors gap-4">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <IconFileText size={18} className="text-status-warning shrink-0" />
+              <span className="text-sm font-medium text-text-primary truncate max-w-[200px]">
+                {feedbackVal.attachment_name || "Attachment"}
+              </span>
+            </div>
+            <a 
+              href={feedbackVal.attachment_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-status-warning hover:text-status-warning/80 flex items-center gap-1 shrink-0"
+            >
+              <IconDownload size={14} /> አውርድ
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const hasAnyFeedback = parsedFeedback && Object.keys(parsedFeedback).length > 0;
 
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -196,10 +245,29 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas }: Fo
         </div>
       )}
 
-      {activeReport?.admin_feedback && (
+      {hasAnyFeedback && (
         <div className="bg-status-warning/10 border border-status-warning/20 rounded-xl p-4">
           <h3 className="font-semibold text-status-warning text-sm uppercase tracking-wider mb-2">የአስተዳዳሪ ግብረ መልስ (Admin Feedback)</h3>
-          <p className="text-sm text-text-primary whitespace-pre-wrap">{activeReport.admin_feedback}</p>
+          
+          <div className="flex flex-col gap-4 mt-3">
+            {Object.entries(parsedFeedback).map(([key, fb]: [string, any]) => {
+              if (key === 'general') return (
+                 <div key={key}>{renderFeedbackContent(fb)}</div>
+              );
+              
+              const schemaTitle = schemas.find(s => s.id === key)?.table_title 
+                || (key === 'narration' ? 'የጽሁፍ ሪፖርት (Narration Report)' : key);
+              
+              if (!fb) return null;
+              
+              return (
+                <div key={key} className="bg-white/40 p-3 rounded-lg border border-status-warning/10">
+                  <div className="text-xs font-bold text-status-warning/80 mb-1">{schemaTitle}</div>
+                  {renderFeedbackContent(fb)}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

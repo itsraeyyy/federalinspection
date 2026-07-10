@@ -308,6 +308,48 @@ export function exportRegionToWord(
   downloadWordDoc(docHTML, `የ_${regionName}_${year}_${period}_ሪፖርት.doc`.replace(/[\/\\]/g, '_'));
 }
 
+export function exportNarrationToWord(
+  regionName: string,
+  year: number,
+  period: string,
+  narrationData: any
+) {
+  let content = `
+    <div class="report-header">
+      <div class="report-title">የ ${regionName} ክልል የጽሁፍ ሪፖርት</div>
+      <div class="report-subtitle">በጀት ዓመት: ${year} | የሪፖርት ጊዜ: ${period}</div>
+    </div>
+    <div class="form-title">የጽሁፍ ሪፖርት (Narration Report)</div>
+    <div style="margin-top: 15px;">
+  `;
+
+  if (narrationData?.html) {
+    content += narrationData.html;
+  } else if (narrationData?.text && typeof narrationData.text === 'string' && narrationData.text.trim() !== '') {
+    // Replace newlines with <br> for word
+    const formattedText = narrationData.text.replace(/\n/g, '<br/>');
+    content += `<p>${formattedText}</p>`;
+  } else if (typeof narrationData === 'string' && narrationData.trim() !== '') {
+    content += `<p>${narrationData}</p>`;
+  } else {
+    content += `<p><em>ምንም የጽሁፍ ሪፖርት አልቀረበም (No narration report provided)</em></p>`;
+  }
+
+  if (narrationData?.attachment_url) {
+    content += `
+      <div style="margin-top: 30px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+        <strong>ተጨማሪ ፋይል (Attachment):</strong> 
+        <a href="${narrationData.attachment_url}">${narrationData.attachment_name || 'ፋይል አውርድ (Download File)'}</a>
+      </div>
+    `;
+  }
+
+  content += `</div>`;
+
+  const docHTML = generateHTMLDocument(`የ ${regionName} የጽሁፍ ሪፖርት`, content);
+  downloadWordDoc(docHTML, `የ_${regionName}_${year}_${period}_የጽሁፍ_ሪፖርት.doc`.replace(/[\/\\]/g, '_'));
+}
+
 export function exportAggregatedToWord(
   year: number,
   period: string,

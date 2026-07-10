@@ -129,7 +129,7 @@
   --text-muted: #72797E;
   
   --brand-yellow: #FFB800;
-  --brand-blue: #014BAA;
+  --brand-blue: #4DA3FF; /* Lighter, more vibrant blue for dark mode contrast */
   --success: #5BAA76;
   --warning: #E0AA2C;
   --danger: #DD6A6A;

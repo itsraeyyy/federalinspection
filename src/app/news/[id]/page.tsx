@@ -54,7 +54,15 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
           <div className="mx-auto max-w-7xl">
             <article className="overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_64px_-24px_rgba(1,75,170,0.10)] ring-1 ring-slate-100/80">
               <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
-                {item.image ? (
+                {item.videoUrl ? (
+                  <iframe
+                    src={item.videoUrl}
+                    title={item.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                ) : item.image ? (
                   <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#014BAA]/5 to-[#FFB800]/5">

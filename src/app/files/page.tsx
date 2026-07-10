@@ -8,7 +8,7 @@ import { publicFilesService, PublicFile, PublicFileCategory } from "@/services/p
 import { IconLoader2 } from "@tabler/icons-react";
 import { formatECDate } from "@/lib/date-formatter";
 
-const CATEGORIES: PublicFileCategory[] = ['መተዳደርያ ደንብ', 'የኮሚሽኑ መመሪያዎች', 'የፓርቲ መመሪያዎች'];
+const CATEGORIES: PublicFileCategory[] = ['መተዳደርያ ደንብ', 'የኮሚሽኑ መመሪያዎች', 'የፓርቲ መመሪያዎች', 'ሌላ'];
 
 export default function FilesPage() {
   const [files, setFiles] = useState<PublicFile[]>([]);

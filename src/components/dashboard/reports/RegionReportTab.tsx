@@ -16,11 +16,15 @@ import {
 import { FormSchema, FormTableRenderer } from "@/components/dashboard/forms/FormTableRenderer";
 import { provideAdminFeedbackAction, approveReportAction } from "@/app/actions/reports";
 import { formatECDate } from "@/lib/date-formatter";
-import { exportRegionToWord } from "@/utils/exportUtils";
+import { exportRegionToWord, exportNarrationToWord } from "@/utils/exportUtils";
+import { RichTextEditor, RichTextValue } from "@/components/ui/RichTextEditor";
 
 interface RegionReportTabProps {
   initialReports: any[];
   schemas: FormSchema[];
+  defaultRegion?: string;
+  defaultYear?: number;
+  defaultPeriod?: string;
 }
 
 const ALL_REGIONS = [
@@ -28,15 +32,20 @@ const ALL_REGIONS = [
   'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬ ዳዋ', 'ፌዴራል ተቋማት'
 ];
 
-export function RegionReportTab({ initialReports, schemas }: RegionReportTabProps) {
+export function RegionReportTab({ initialReports, schemas, defaultRegion, defaultYear, defaultPeriod }: RegionReportTabProps) {
   const [reports, setReports] = useState(initialReports);
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState<string>(defaultRegion || "");
   
-  const [feedbackInputs, setFeedbackInputs] = useState<Record<string, string>>({});
+  const [feedbackInputs, setFeedbackInputs] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [activeTab, setActiveTab] = useState<'forms' | 'narration'>('forms');
   const [expandedFormId, setExpandedFormId] = useState<string | null>(schemas && schemas.length > 0 ? schemas[0].id : null);
+
+  // Hardcode year and period for now as they are filters.
+  // Real app: state variables.
+  const [currentYear, setCurrentYear] = useState<number>(defaultYear || 2016);
+  const [currentPeriod, setCurrentPeriod] = useState<string>(defaultPeriod || "3ኛ ሩብ አመት");
 
   const selectedReport = reports.find(r => r.region === selectedRegion);
   
@@ -73,11 +82,21 @@ export function RegionReportTab({ initialReports, schemas }: RegionReportTabProp
 
   const submitFeedback = async (formId: string) => {
     if (!selectedReport) return;
-    const text = feedbackInputs[formId] ?? parsedFeedback[formId] ?? "";
-    if (!text.trim()) return;
+    const feedbackVal = feedbackInputs[formId] ?? parsedFeedback[formId] ?? null;
+    
+    // Check if empty
+    let isEmpty = true;
+    if (typeof feedbackVal === 'string') {
+      isEmpty = !feedbackVal.trim();
+    } else if (feedbackVal) {
+      const htmlText = feedbackVal.html?.replace(/<[^>]*>?/gm, '').trim();
+      isEmpty = !htmlText && !feedbackVal.attachment_url;
+    }
+    
+    if (isEmpty) return;
 
     setLoading(true);
-    const newFeedbackObj = { ...parsedFeedback, [formId]: text };
+    const newFeedbackObj = { ...parsedFeedback, [formId]: feedbackVal };
     const newFeedbackString = JSON.stringify(newFeedbackObj);
 
     const result = await provideAdminFeedbackAction(selectedReport.id, newFeedbackString);
@@ -269,18 +288,16 @@ export function RegionReportTab({ initialReports, schemas }: RegionReportTabProp
                                 <IconMessageCircle size={14} className="text-brand-blue" />
                                 የዚህ ቅጽ ግብረ መልስ (Form Feedback)
                               </label>
-                              <textarea
+                              <RichTextEditor
                                 value={currentFeedback}
-                                onChange={(e) => setFeedbackInputs({...feedbackInputs, [schema.id]: e.target.value})}
+                                onChange={(val) => setFeedbackInputs({...feedbackInputs, [schema.id]: val})}
                                 placeholder="ለዚህ ቅጽ አስተያየት ካለዎት እዚህ ይፃፉ..."
-                                className="w-full px-4 py-3 bg-surface-secondary/30 border border-border-medium rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all text-sm text-text-primary min-h-[48px] resize-none"
-                                rows={2}
                               />
                             </div>
                             <div className="flex gap-3 shrink-0 items-end w-full md:w-auto pb-1">
                               <button
                                 onClick={() => submitFeedback(schema.id)}
-                                disabled={loading || !currentFeedback.trim() || currentFeedback === (parsedFeedback[schema.id] ?? "")}
+                                disabled={loading}
                                 className="px-6 py-2.5 bg-surface-secondary hover:bg-border-light text-text-primary border border-border-medium font-medium rounded-xl transition-colors disabled:opacity-50 text-sm flex items-center justify-center gap-2"
                               >
                                 {loading ? <IconLoader2 size={18} className="animate-spin" /> : 'ላክ (Send)'}
@@ -312,15 +329,30 @@ export function RegionReportTab({ initialReports, schemas }: RegionReportTabProp
                     <IconFileText size={20} className="text-brand-blue" />
                     የጽሁፍ ሪፖርት (Narration Report)
                   </h3>
-                  {selectedReport.forms_data?.narration_report?.text ? (
-                    <span className="px-3 py-1 bg-status-success/10 text-status-success text-xs font-bold rounded-full flex items-center gap-1 border border-status-success/20">
-                      <IconCircleCheck size={14} /> ተሟልቷል (Completed)
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 bg-surface-secondary text-text-muted text-xs font-bold rounded-full flex items-center gap-1 border border-border-medium">
-                      <IconCircleDashed size={14} /> አልቀረበም (Not Provided)
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {selectedReport.forms_data?.narration_report?.text ? (
+                      <span className="px-3 py-1 bg-status-success/10 text-status-success text-xs font-bold rounded-full flex items-center gap-1 border border-status-success/20">
+                        <IconCircleCheck size={14} /> ተሟልቷል (Completed)
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 bg-surface-secondary text-text-muted text-xs font-bold rounded-full flex items-center gap-1 border border-border-medium">
+                        <IconCircleDashed size={14} /> አልቀረበም (Not Provided)
+                      </span>
+                    )}
+                    <button
+                      onClick={() => {
+                        exportNarrationToWord(
+                          selectedRegion, 
+                          currentYear, 
+                          currentPeriod, 
+                          selectedReport.forms_data?.narration_report
+                        );
+                      }}
+                      className="px-4 py-2 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue font-medium rounded-xl transition-colors text-sm flex items-center justify-center gap-2 border border-brand-blue/20"
+                    >
+                      <IconDownload size={18} /> Export Word
+                    </button>
+                  </div>
                 </div>
 
                 {selectedReport.forms_data?.narration_report?.text ? (
@@ -367,18 +399,16 @@ export function RegionReportTab({ initialReports, schemas }: RegionReportTabProp
                         <IconMessageCircle size={14} className="text-brand-blue" />
                         የዚህ ሪፖርት ግብረ መልስ (Feedback)
                       </label>
-                      <textarea
+                      <RichTextEditor
                         value={feedbackInputs['narration'] ?? parsedFeedback['narration'] ?? ""}
-                        onChange={(e) => setFeedbackInputs({...feedbackInputs, 'narration': e.target.value})}
+                        onChange={(val) => setFeedbackInputs({...feedbackInputs, 'narration': val})}
                         placeholder="ለዚህ ሪፖርት አስተያየት ካለዎት እዚህ ይፃፉ..."
-                        className="w-full px-4 py-3 bg-surface-primary border border-border-medium rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all text-sm text-text-primary min-h-[48px] resize-none"
-                        rows={2}
                       />
                     </div>
                     <div className="flex gap-3 shrink-0 items-end w-full md:w-auto pb-1">
                       <button
                         onClick={() => submitFeedback('narration')}
-                        disabled={loading || !(feedbackInputs['narration'] ?? parsedFeedback['narration'] ?? "").trim() || (feedbackInputs['narration'] ?? "") === (parsedFeedback['narration'] ?? "")}
+                        disabled={loading}
                         className="px-6 py-2.5 bg-brand-blue text-white hover:bg-brand-blue/90 border border-brand-blue font-medium rounded-xl transition-colors disabled:opacity-50 text-sm flex items-center justify-center gap-2 shadow-sm"
                       >
                         {loading ? <IconLoader2 size={18} className="animate-spin" /> : 'ላክ (Send)'}

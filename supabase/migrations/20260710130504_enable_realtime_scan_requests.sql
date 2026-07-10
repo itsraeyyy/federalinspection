@@ -1,0 +1,2 @@
+-- Enable realtime for scan_requests table so the user request-access page updates instantly
+-- ALTER PUBLICATION supabase_realtime ADD TABLE scan_requests;
