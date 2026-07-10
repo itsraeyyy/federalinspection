@@ -72,7 +72,7 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas }: Fo
   
   // They can only view if it's submitted/reviewed. 
   // If window is closed and it's not submitted, they can't edit either.
-  const isReadOnly = activeReport?.status === 'submitted' || activeReport?.status === 'reviewed' || activeReport?.status === 'approved' || (!isWindowOpen && activeReport?.status !== 'draft');
+  const isReadOnly = ['submitted', 'reviewed', 'approved'].includes(activeReport?.status);
 
   const handleSaveDraft = async () => {
     setIsSaving(true);
@@ -96,6 +96,10 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas }: Fo
   };
 
   const handleSubmit = async () => {
+    if (!isWindowOpen) {
+      setError("ማቅረቢያ ጊዜ አይደለም (Window Closed). ማቅረብ የሚቻለው ከ20 እስከ 25 ብቻ ነው።");
+      return;
+    }
     if (!window.confirm("እርግጠኛ ነዎት ይህን ሪፖርት መላክ ይፈልጋሉ? አንዴ ከተላከ ማስተካከል አይቻልም።")) return;
     
     setIsSubmitting(true);
@@ -170,13 +174,13 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas }: Fo
       </div>
 
       {/* Status banner */}
-      {!isWindowOpen && activeReport?.status !== 'submitted' && activeReport?.status !== 'reviewed' && activeReport?.status !== 'approved' && (
+      {!isWindowOpen && !['submitted', 'reviewed', 'approved'].includes(activeReport?.status) && (
         <div className="bg-status-error/10 border border-status-error/20 rounded-xl p-4 flex items-start gap-3">
           <IconAlertCircle className="text-status-error shrink-0 mt-0.5" />
           <div>
             <h3 className="font-semibold text-status-error">ማቅረቢያ ጊዜ አይደለም (Window Closed)</h3>
             <p className="text-sm text-text-secondary mt-1">
-              የ {currentPeriod} ሪፖርት ማቅረብ የሚቻለው በሚመለከተው ወር ከ20 እስከ 25 ብቻ ነው።
+              የ {currentPeriod} ሪፖርት ማቅረብ የሚቻለው በሚመለከተው ወር ከ20 እስከ 25 ብቻ ነው። ሆኖም ግን ሪፖርትዎን ሞልተው ማስቀመጥ (Save Draft) ይችላሉ።
             </p>
           </div>
         </div>
@@ -263,13 +267,15 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas }: Fo
               initialData={formData['narration_report'] || {}}
               onChange={(data) => handleFormChange('narration_report', data)}
               isReadOnly={isReadOnly}
+              year={currentYear}
+              region={userProfile?.region}
             />
           </div>
         )}
       </div>
 
       {/* Action Buttons */}
-      {!isReadOnly && isWindowOpen && (
+      {!isReadOnly && (
         <div className="flex flex-col sm:flex-row gap-4 pt-4 sticky bottom-4 z-10">
           <div className="flex-1" />
           <button
@@ -282,7 +288,8 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas }: Fo
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isSaving || isSubmitting || progress === 0}
+            disabled={isSaving || isSubmitting || progress === 0 || !isWindowOpen}
+            title={!isWindowOpen ? "ማቅረቢያ ጊዜ አይደለም" : ""}
             className="px-6 py-3 bg-brand-blue hover:bg-brand-blue/90 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? <IconLoader2 size={20} className="animate-spin" /> : <IconSend size={20} />}

@@ -1,8 +1,8 @@
-alter table "public"."documents" add column "is_public" boolean default true;
+alter table "public"."documents" add column if not exists "is_public" boolean default true;
 
-alter table "public"."page_views" add column "city" text;
+alter table "public"."page_views" add column if not exists "city" text;
 
-alter table "public"."page_views" add column "country_code" text;
+alter table "public"."page_views" add column if not exists "country_code" text;
 
 set check_function_bodies = off;
 

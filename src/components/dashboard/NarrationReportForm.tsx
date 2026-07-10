@@ -28,7 +28,7 @@ export function NarrationReportForm({
   const [narrationText, setNarrationText] = useState(existingData?.narration_report?.text || "");
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(existingData?.narration_report?.attachment_url || null);
   const [attachmentName, setAttachmentName] = useState<string | null>(existingData?.narration_report?.attachment_name || null);
-  
+
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState<'save' | 'submit' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,11 +85,11 @@ export function NarrationReportForm({
       const url = await uploadAttachment();
       const narrationData = { text: narrationText, attachment_url: url, attachment_name: attachmentName };
       const fullData = { ...existingData, narration_report: narrationData };
-      
+
       const res = await saveReportFormAction(userId, region, year, period, fullData);
       if (res.error) setError(res.error);
       else alert("በተሳካ ሁኔታ ተቀምጧል! (Saved successfully)");
-      
+
       if (!res.error && url && url !== attachmentUrl) {
         setAttachmentUrl(url);
         setFile(null);
@@ -105,16 +105,16 @@ export function NarrationReportForm({
       setError("እባክዎ የጽሁፍ ሪፖርትዎን ያስገቡ (Please enter your narration report text)");
       return;
     }
-    
+
     if (!confirm("እርግጠኛ ነዎት ሪፖርቱን መላክ ይፈልጋሉ? አንዴ ከተላከ በኋላ ማስተካከል አይቻልም።")) return;
-    
+
     setLoading('submit');
     setError(null);
     try {
       const url = await uploadAttachment();
       const narrationData = { text: narrationText, attachment_url: url, attachment_name: attachmentName };
       const fullData = { ...existingData, narration_report: narrationData };
-      
+
       const res = await submitReportAction(userId, region, year, period, fullData);
       if (res.error) {
         setError(res.error);
@@ -154,9 +154,9 @@ export function NarrationReportForm({
           <label className="block text-sm font-semibold text-text-primary mb-3">
             አባሪ ፋይል (Attachment) - እስከ 50MB (Optional)
           </label>
-          
+
           {!file && !attachmentUrl && !isReadOnly ? (
-            <div 
+            <div
               className="border-2 border-dashed border-border-medium hover:border-brand-blue/50 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer bg-surface-secondary/30 hover:bg-brand-blue/5 transition-all group"
               onClick={() => fileInputRef.current?.click()}
             >
@@ -191,7 +191,7 @@ export function NarrationReportForm({
                   </a>
                 )}
                 {!isReadOnly && (
-                  <button 
+                  <button
                     onClick={clearFile}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-text-secondary hover:text-status-error transition-all shrink-0 shadow-sm"
                   >
@@ -205,12 +205,12 @@ export function NarrationReportForm({
               ምንም ፋይል አልተያያዘም (No file attached)
             </div>
           )}
-          
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            className="hidden" 
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
             disabled={isReadOnly}
           />
         </div>
