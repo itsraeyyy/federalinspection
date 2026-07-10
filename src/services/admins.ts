@@ -56,7 +56,7 @@ export const adminService = {
     if (updateData.phone) payload.phone = updateData.phone;
     if (updateData.accessLevel) payload.access_level = updateData.accessLevel;
     if (updateData.groups) payload.groups = updateData.groups;
-    if (updateData.modules) payload.modules = updateData.modules;
+    if (updateData.modules !== undefined) payload.modules = updateData.modules;
     if (updateData.status) payload.status = updateData.status;
 
     const { error } = await supabase.from('admin_profiles').update(payload).eq('id', id);

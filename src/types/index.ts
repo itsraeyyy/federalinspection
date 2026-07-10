@@ -14,20 +14,25 @@ export type PermissionGroupId = 'content' | 'communications' | 'management' | 's
 
 export const PERMISSION_GROUPS: Record<PermissionGroupId, { label: string; labelAm: string; modules: string[] }> = {
   content: { label: 'Content Management', labelAm: 'ይዘት አስተዳደር', modules: ['news', 'documents'] },
-  communications: { label: 'Communications', labelAm: 'ኮሙኒኬሽን', modules: ['complaints', 'feedback'] },
-  management: { label: 'Management', labelAm: 'ማኔጅመንት', modules: ['personnel', 'qr-access', 'statistics', 'assessment'] },
-  system: { label: 'System', labelAm: 'ሲስተም', modules: ['admins', 'settings'] },
+  communications: { label: 'Communications', labelAm: 'ኮሙኒኬሽን', modules: ['complaints', 'feedback', 'map'] },
+  management: { label: 'Management', labelAm: 'ማኔጅመንት', modules: ['personnel', 'qr-access', 'statistics', 'assessment', 'forms', 'admin_forms'] },
+  system: { label: 'System', labelAm: 'ሲስተም', modules: ['dashboard', 'analytics', 'admins', 'settings'] },
 };
 
 export const ALL_MODULES = [
+  { id: 'dashboard', label: 'Dashboard', labelAm: 'ዳሽቦርድ' },
   { id: 'news', label: 'News', labelAm: 'ዜና' },
   { id: 'documents', label: 'Documents', labelAm: 'ሰነዶች' },
-  { id: 'complaints', label: 'Complaints', labelAm: 'ቅሬታዎች' },
+  { id: 'personnel', label: 'Personnel', labelAm: 'የአመራር አካላት' },
+  { id: 'complaints', label: 'Complaints', labelAm: 'ጥቆማ እና አቤቱታ' },
+  { id: 'map', label: 'Map', labelAm: 'ካርታ' },
+  { id: 'assessment', label: 'Assessment', labelAm: 'ምዘና' },
   { id: 'feedback', label: 'Feedback', labelAm: 'አስተያየት' },
-  { id: 'personnel', label: 'Personnel', labelAm: 'ሰራተኞች' },
+  { id: 'forms', label: 'Reports', labelAm: 'ሪፖርት' },
+  { id: 'admin_forms', label: 'Form Editor', labelAm: 'የቅጽ ማስተካከያ' },
+  { id: 'analytics', label: 'Analytics', labelAm: 'አናሊቲክስ' },
   { id: 'qr-access', label: 'QR Access', labelAm: 'QR መዳረሻ' },
   { id: 'statistics', label: 'Statistics', labelAm: 'ስታቲስቲክስ' },
-  { id: 'assessment', label: 'Assessment', labelAm: 'ምዘና' },
   { id: 'admins', label: 'Admins', labelAm: 'አስተዳዳሪዎች' },
   { id: 'settings', label: 'Settings', labelAm: 'ቅንብሮች' },
 ] as const;

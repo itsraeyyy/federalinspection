@@ -69,12 +69,12 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     }
   }, [pathname]);
   const navItems = [
-    { label: 'ዳሽቦርድ', icon: IconDashboard, href: '/dashboard' },
+    { label: 'ዳሽቦርድ', icon: IconDashboard, href: '/dashboard', id: 'dashboard' },
     { label: 'ዜና', icon: IconNews, href: '/dashboard/news', id: 'news' },
     { label: 'ሰነዶች', icon: IconFileText, href: '/dashboard/documents', id: 'documents' },
     { label: 'የአመራር አካላት', icon: IconUsers, href: '/dashboard/personnel', id: 'personnel' },
     { label: 'ጥቆማ እና አቤቱታ', icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
-    { label: 'ካርታ', icon: IconMapPin, href: '/dashboard/map', id: 'complaints' },
+    { label: 'ካርታ', icon: IconMapPin, href: '/dashboard/map', id: 'map' },
     { label: 'ምዘና', icon: IconClipboardCheck, href: '/dashboard/assessment', id: 'assessment' },
     { label: 'አስተያየት', icon: IconMessageStar, href: '/dashboard/feedback', id: 'feedback' },
     { label: 'ሪፖርት', icon: IconFileDescription, href: '/dashboard/forms', id: 'forms' },

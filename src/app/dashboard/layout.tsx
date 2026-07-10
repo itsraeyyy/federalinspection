@@ -68,9 +68,12 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
   if (profile.access_level === 'specific' && profile.role !== 'super_admin' && pathname !== '/dashboard') {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length >= 2 && segments[0] === 'dashboard') {
-      const moduleName = segments[1];
-      // special cases if moduleName doesn't exactly match id
-      // Since all our IDs match the routes (news, documents, complaints, feedback, personnel, qr-access, statistics, assessment, admins, settings)
+      let moduleName = segments[1];
+      // Map multi-segment routes to their module IDs
+      if (moduleName === 'admin' && segments[2] === 'forms') {
+        moduleName = 'admin_forms';
+      }
+      // Since all our IDs match the routes (dashboard, news, documents, complaints, feedback, personnel, qr-access, statistics, assessment, forms, admin_forms, map, analytics, admins, settings)
       if (moduleName && !profile.modules?.includes(moduleName)) {
         return (
           <div className="min-h-screen flex flex-col items-center justify-center bg-[#fafafa] dark:bg-[#0a0a0a]">
