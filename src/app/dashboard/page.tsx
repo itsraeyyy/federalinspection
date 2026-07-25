@@ -56,48 +56,36 @@ export default async function DashboardPage() {
     redirect('/auth/login?error=unauthorized');
   }
 
-  // Fetch Documents stats
-  const [{ count: totalDocs }, { count: publicDocs }] = await Promise.all([
-    supabaseAdmin.from('documents').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('documents').select('*', { count: 'exact', head: true }).eq('visibility', 'public'),
-  ]);
-  const privateDocs = (totalDocs || 0) - (publicDocs || 0);
-
-  // Fetch News stats
-  const [{ count: totalNews }, { count: publishedNews }, { count: draftNews }] = await Promise.all([
-    supabaseAdmin.from('news_articles').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('news_articles').select('*', { count: 'exact', head: true }).eq('status', 'published'),
-    supabaseAdmin.from('news_articles').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
+  // Fetch all dashboard stats in a single RPC call (replaces 10+ individual queries)
+  const [{ data: stats }, { data: scanRequests }] = await Promise.all([
+    supabaseAdmin.rpc('get_dashboard_stats'),
+    supabaseAdmin.from('scan_requests')
+      .select('*')
+      .ilike('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(3),
   ]);
 
-  // Fetch Complaints stats
-  const [{ count: totalComplaints }, { count: resolvedComplaints }] = await Promise.all([
-    supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }).eq('status', 'resolved'),
-  ]);
-  const newComplaints = (totalComplaints || 0) - (resolvedComplaints || 0);
-
-  // Fetch Personnel stats
-  const [{ count: totalPersonnel }, { count: activePersonnel }] = await Promise.all([
-    supabaseAdmin.from('admin_profiles').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('admin_profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-  ]);
-  const onLeavePersonnel = (totalPersonnel || 0) - (activePersonnel || 0);
-
-
-  // Fetch Pending QR Requests
-  const { data: scanRequests } = await supabaseAdmin.from('scan_requests')
-    .select('*')
-    .ilike('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(3);
+  const totalDocs = stats?.total_docs ?? 0;
+  const publicDocs = stats?.public_docs ?? 0;
+  const privateDocs = totalDocs - publicDocs;
+  const totalNews = stats?.total_news ?? 0;
+  const publishedNews = stats?.published_news ?? 0;
+  const draftNews = stats?.draft_news ?? 0;
+  const totalComplaints = stats?.total_complaints ?? 0;
+  const resolvedComplaints = stats?.resolved_complaints ?? 0;
+  const newComplaints = totalComplaints - resolvedComplaints;
+  const totalPersonnel = stats?.total_personnel ?? 0;
+  const activePersonnel = stats?.active_personnel ?? 0;
+  const onLeavePersonnel = totalPersonnel - activePersonnel;
 
   const qrRequests = scanRequests?.map(req => ({
-    id: req.id, // Using the full UUID so actions work
+    id: req.id,
     device: req.requester_device || 'Unknown Device',
     file: req.file_name || 'Unknown File',
     time: formatTimeAgo(req.created_at)
   })) || [];
+
 
   return (
     <DashboardLayout>
