@@ -4,7 +4,6 @@ import { RecentActivity } from "@/components/ui/recent-activity";
 import { Greeting } from "@/components/ui/greeting";
 import { IconNews, IconFileText, IconUsers, IconMessage2, IconQrcode, IconCheck, IconX, IconDeviceMobile, IconChartBar } from '@tabler/icons-react';
 import Link from "next/link";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { PendingQRRequests } from "@/components/dashboard/pending-qr-requests";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
@@ -31,42 +30,32 @@ export default async function DashboardPage() {
     redirect('/auth/login');
   }
 
-  // Verify admin access server-side
-  let { data: profile, error: adminErr } = await supabaseAdmin
+  // Verify admin access cleanly via authenticated session client
+  const { data: profile, error: profileErr } = await supabase
     .from('admin_profiles')
     .select('role, status')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile || adminErr) {
-    // Fallback to querying via the authenticated user's session client (permitted by RLS: uid() = id)
-    const { data: sessionProfile, error: sessionErr } = await supabase
-      .from('admin_profiles')
-      .select('role, status')
-      .eq('id', user.id)
-      .maybeSingle();
-      
-    if (sessionProfile && !sessionErr) {
-      profile = sessionProfile;
-    } else {
-      console.error("[Dashboard Auth Check Failed] User ID:", user.id, "| AdminErr:", adminErr, "| SessionErr:", sessionErr);
-    }
-  }
-
-  if (!profile || profile.status?.toLowerCase() !== 'active') {
-    console.error("[Dashboard Unauthorized Redirect] User ID:", user.id, "| Found Profile:", profile);
+  if (!profile || profileErr || profile.status?.toLowerCase() !== 'active') {
+    console.error("[Dashboard Auth Check Failed] User ID:", user.id, "| Error:", profileErr, "| Found Profile:", profile);
     redirect('/auth/login?error=unauthorized');
   }
 
-  // Fetch all dashboard stats in a single RPC call (replaces 10+ individual queries)
-  const [{ data: stats }, { data: scanRequests }] = await Promise.all([
-    supabaseAdmin.rpc('get_dashboard_stats'),
-    supabaseAdmin.from('scan_requests')
+  // Fetch all dashboard stats in a single RPC call via authenticated session client
+  const [{ data: stats, error: statsErr }, { data: scanRequests }] = await Promise.all([
+    supabase.rpc('get_dashboard_stats'),
+    supabase.from('scan_requests')
       .select('*')
       .ilike('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(3),
   ]);
+
+  if (statsErr) {
+    console.error("[Dashboard Stats Fetch Error]:", statsErr);
+  }
+
 
   const totalDocs = stats?.total_docs ?? 0;
   const publicDocs = stats?.public_docs ?? 0;

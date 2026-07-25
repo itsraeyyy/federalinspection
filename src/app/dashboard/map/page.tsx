@@ -2,7 +2,6 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { ComplaintsHeatmap } from "@/components/dashboard/complaints-heatmap";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateComplaintsGeoJSON } from "@/lib/geojson-utils";
 import { IconActivity, IconAlertTriangle, IconChecklist } from "@tabler/icons-react";
 
@@ -16,34 +15,20 @@ export default async function MapPage() {
     redirect('/auth/login');
   }
 
-  // Verify admin access server-side
-  let { data: profile, error: adminErr } = await supabaseAdmin
+  // Verify admin access cleanly via authenticated session client
+  const { data: profile, error: profileErr } = await supabase
     .from('admin_profiles')
     .select('role, status')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile || adminErr) {
-    const { data: sessionProfile, error: sessionErr } = await supabase
-      .from('admin_profiles')
-      .select('role, status')
-      .eq('id', user.id)
-      .maybeSingle();
-      
-    if (sessionProfile && !sessionErr) {
-      profile = sessionProfile;
-    } else {
-      console.error("[Map Auth Check Failed] User ID:", user.id, "| AdminErr:", adminErr, "| SessionErr:", sessionErr);
-    }
-  }
-
-  if (!profile || profile.status?.toLowerCase() !== 'active') {
-    console.error("[Map Unauthorized Redirect] User ID:", user.id, "| Found Profile:", profile);
+  if (!profile || profileErr || profile.status?.toLowerCase() !== 'active') {
+    console.error("[Map Auth Check Failed] User ID:", user.id, "| Error:", profileErr, "| Found Profile:", profile);
     redirect('/auth/login?error=unauthorized');
   }
 
-  // Fetch real complaints data
-  const { data: complaints, error } = await supabaseAdmin
+  // Fetch real complaints data using authenticated session client
+  const { data: complaints, error } = await supabase
     .from('complaints')
     .select('id, type, target_region, target_zone, created_at, subject, status');
     
