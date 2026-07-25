@@ -36,29 +36,29 @@ export async function createRepresentativeAction(formData: FormData) {
     const password = crypto.randomBytes(4).toString('hex'); // 8 characters
     const syntheticEmail = `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local`;
 
-    let userId;
+    let userId: string | null = null;
 
-    // Check existing
-    const { data: existingUser } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('phone_number', phone)
-      .single();
+    // Check if user already exists in auth.users by email
+    const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+    const existingAuthUser = usersList?.users?.find(u => u.email === syntheticEmail);
 
-    if (existingUser?.id) {
-      userId = existingUser.id;
+    if (existingAuthUser) {
+      userId = existingAuthUser.id;
       const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        email: syntheticEmail, email_confirm: true, password,
+        email: syntheticEmail,
+        email_confirm: true,
+        password: password,
         user_metadata: { full_name: fullName, phone: phone, requires_password_change: true }
       });
-      if (updateErr && !updateErr.message.includes('already been registered')) {
-        return { error: 'Failed to update auth: ' + updateErr.message };
+      if (updateErr) {
+        console.error("Failed to update rep password:", updateErr);
+        return { error: 'Failed to update user password: ' + updateErr.message };
       }
     } else {
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: syntheticEmail,
         email_confirm: true,
-        password,
+        password: password,
         user_metadata: { full_name: fullName, phone: phone, requires_password_change: true }
       });
       if (authError) return { error: authError.message };
@@ -85,7 +85,7 @@ export async function createRepresentativeAction(formData: FormData) {
 
     // Send SMS with password
     const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/representative/login`;
-    const smsMessage = `ሰላም ${fullName}፣ የቅጽ አስተዳደር ተወካይ ሆነው ተመዝግበዋል።\nመግቢያ: ${loginUrl}\nስልክ: ${phone}\nየይለፍ ቃል: ${password}\nሲገቡ የይለፍ ቃልዎን መቀየር ግዴታ ነው።`;
+    const smsMessage = `ሰላም ${fullName}፣ የ${region} ተወካይ ሆነው በየተቀናጀ የኮሚሽን ስራዎች ዲጂታል ስርዓት (ICODiS)  ላይ ለሪፖርት ተመዝግበዋል።\n\nመግቢያ: ${loginUrl}\nስልክ: ${phone}\nየይለፍ ቃል: ${password}\n\nሲገቡ የይለፍ ቃልዎን መቀየር ግዴታ ነው።`;
 
     await sendSMS(phone, smsMessage);
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, Calendar, LayoutTemplate, PlusCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, LayoutTemplate, PlusCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { createAssessmentPeriodAction } from '@/app/actions/assessment';
@@ -13,11 +13,13 @@ export default function CreatePeriodPage() {
   const [periodHalf, setPeriodHalf] = useState('1st');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     const periodName = `${year} ዓ.ም - ${periodHalf === '1st' ? '1ኛ መንፈቀ አመት' : '2ኛ መንፈቀ አመት'}`;
 
@@ -29,7 +31,10 @@ export default function CreatePeriodPage() {
       return;
     }
 
-    router.push(`/dashboard/assessment/teams/${data.id}`);
+    setSuccessMsg('የምዘና ጊዜው በትክክል ተፈጥሯል! (Assessment period created successfully)');
+    setTimeout(() => {
+      router.push(`/dashboard/assessment/teams/${data.id}`);
+    }, 1200);
   };
 
   return (
@@ -67,6 +72,13 @@ export default function CreatePeriodPage() {
             <div className="h-1.5 w-full bg-gradient-to-r from-brand-blue via-brand-blue/80 to-brand-blue/40"></div>
             
             <div className="p-8 md:p-10">
+              {successMsg && (
+                <div className="mb-8 p-4 bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500 text-emerald-700 dark:text-emerald-300 text-sm font-semibold rounded-r-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <div>{successMsg}</div>
+                </div>
+              )}
+
               {error && (
                 <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/10 border-l-4 border-red-500 text-red-600 dark:text-red-400 text-sm font-medium rounded-r-xl flex items-start animate-in fade-in slide-in-from-top-2">
                   <div className="mr-3 mt-0.5">•</div>

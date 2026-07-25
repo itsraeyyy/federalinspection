@@ -22,6 +22,8 @@ const formatTimeAgo = (dateString: string) => {
   return `${Math.floor(diffInSeconds / 86400)} ቀን በፊት`;
 };
 
+import { verifyAdminUser } from "@/lib/adminAuth";
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -30,15 +32,9 @@ export default async function DashboardPage() {
     redirect('/auth/login');
   }
 
-  // Verify admin access cleanly via authenticated session client
-  const { data: profile, error: profileErr } = await supabase
-    .from('admin_profiles')
-    .select('role, status')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (!profile || profileErr || profile.status?.toLowerCase() !== 'active') {
-    console.error("[Dashboard Auth Check Failed] User ID:", user.id, "| Error:", profileErr, "| Found Profile:", profile);
+  // Verify admin access server-side
+  const isAdminAuthorized = await verifyAdminUser(user.id, user.email);
+  if (!isAdminAuthorized) {
     redirect('/auth/login?error=unauthorized');
   }
 

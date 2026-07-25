@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
+import { User } from "lucide-react";
 import { personnelService } from "@/services/personnel";
 import { Personnel, COMMISSION_POSITIONS } from "@/types";
 import { IconBrandFacebook, IconBrandX, IconBrandLinkedin, IconBrandWhatsapp } from "@tabler/icons-react";
@@ -16,6 +17,114 @@ const OFFICE_TABS = [
   { id: 'main', label: 'ኮሚሽን ዋና ጽ/ቤት', labelEn: 'Main Office' },
   { id: 'branch', label: 'ኮሚሽን ቅርንጫፍ ጽ/ቤት', labelEn: 'Branch Office' },
 ];
+
+function MemberCard({ member }: { member: Personnel }) {
+  const [imageError, setImageError] = useState(false);
+
+  const rawPhoto = member.photo?.trim();
+  const isValidUrl = Boolean(
+    rawPhoto && 
+    (rawPhoto.startsWith('/') || rawPhoto.startsWith('http://') || rawPhoto.startsWith('https://'))
+  );
+  const showPhoto = isValidUrl && !imageError;
+
+  return (
+    <div className="w-full sm:w-[320px] md:w-[340px] shrink-0">
+      <div className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white p-3 shadow-[0_4px_20px_-6px_rgba(0,0,0,0.06)] ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_45px_-10px_rgba(0,0,0,0.12)]">
+        {/* Executive Photo Container with Standard 330px Height */}
+        <div className="relative h-[310px] sm:h-[330px] w-full overflow-hidden rounded-2xl bg-slate-100 border border-slate-100">
+          {showPhoto ? (
+            <Image
+              src={rawPhoto!}
+              alt={member.nameAm || member.name}
+              fill
+              className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, 340px"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200/80 p-6 text-center">
+              <div className="flex size-20 items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-slate-200/60">
+                <User size={38} className="text-slate-400" />
+              </div>
+              <span className="mt-4 text-sm font-semibold text-slate-500 line-clamp-1">{member.nameAm || member.name}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Card Details */}
+        <div className="flex flex-1 flex-col justify-between p-4 pt-4">
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-lg font-bold text-slate-900" title={member.nameAm || member.name}>
+                  {member.nameAm || member.name}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500 line-clamp-2">
+                  {member.positionAm === 'ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ' && member.region 
+                    ? `የ ${member.region} ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ` 
+                    : member.positionAm}
+                </p>
+              </div>
+              
+              {/* Social Icons */}
+              <div className="flex shrink-0 gap-1.5 pt-0.5">
+                {member.facebook_url && (
+                  <a 
+                    href={member.facebook_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-slate-50 p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                    aria-label={`${member.nameAm || member.name} Facebook Profile`}
+                  >
+                    <IconBrandFacebook size={18} />
+                  </a>
+                )}
+                {member.x_url && (
+                  <a 
+                    href={member.x_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-slate-50 p-2 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-900"
+                    aria-label={`${member.nameAm || member.name} X (Twitter) Profile`}
+                  >
+                    <IconBrandX size={18} />
+                  </a>
+                )}
+                {member.linkedin_url && (
+                  <a 
+                    href={member.linkedin_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-slate-50 p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                    aria-label={`${member.nameAm || member.name} LinkedIn Profile`}
+                  >
+                    <IconBrandLinkedin size={18} />
+                  </a>
+                )}
+                {member.whatsapp_url && (
+                  <a 
+                    href={member.whatsapp_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="rounded-full bg-slate-50 p-2 text-slate-400 transition-colors hover:bg-green-50 hover:text-green-600"
+                    aria-label={`${member.nameAm || member.name} WhatsApp`}
+                  >
+                    <IconBrandWhatsapp size={18} />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+          <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-slate-400">
+            <svg className="size-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            {member.officeCategoryAm}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function MembersSection() {
   const [activeTab, setActiveTab] = useState(OFFICE_TABS[0].id);
@@ -37,8 +146,6 @@ export function MembersSection() {
     if (activeTab === 'commission-members') return p.officeCategory === 'Commission Members' || p.officeCategoryAm === 'ኮሚሽን አባላት';
     return false;
   });
-
-
 
   return (
     <section
@@ -63,7 +170,7 @@ export function MembersSection() {
           </div>
 
           {/* Office Tabs */}
-          <div role="tablist" aria-label="የኮሚሽን ቢሮዎች" className="flex items-center gap-2">
+          <div role="tablist" aria-label="የኮሚሽን ቢሮዎች" className="flex flex-wrap items-center gap-2">
             {OFFICE_TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -87,102 +194,15 @@ export function MembersSection() {
           </div>
         </div>
 
-        {/* Members Carousel */}
+        {/* Members Grid */}
         {loading ? (
           <div className="flex items-center justify-center h-64 text-slate-400 text-sm">በመጫን ላይ...</div>
         ) : currentOffice.length === 0 ? (
           <div className="flex items-center justify-center h-48 text-slate-400 text-sm">ምንም አባላት አልተገኙም።</div>
         ) : (
-          <div className="flex gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-8 pt-6 px-0.5">
+          <div className="flex flex-wrap gap-6 pb-8 pt-6">
             {currentOffice.map((member) => (
-              <div key={member.id} className="shrink-0 snap-start w-[85vw] sm:w-[360px] md:w-[400px]">
-                <div className="group overflow-hidden rounded-3xl bg-white p-2 shadow-[0_4px_20px_-6px_rgba(0,0,0,0.06)] ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-10px_rgba(0,0,0,0.10)]">
-                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-slate-100">
-                    {member.photo ? (
-                      <Image
-                        src={member.photo}
-                        alt={member.nameAm || member.name}
-                        fill
-                        className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                        sizes="(max-width: 640px) 85vw, 400px"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-                        <div className="flex size-20 items-center justify-center rounded-full bg-white/60 shadow-sm">
-                          <span className="text-3xl font-bold text-slate-400">
-                            {member.nameAm?.charAt(0) || member.name.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="mt-3 text-sm font-medium text-slate-400">{member.nameAm || member.name}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex min-h-[120px] flex-col justify-between p-5 sm:p-6">
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-base font-semibold text-slate-900 line-clamp-1">{member.nameAm || member.name}</h3>
-                          <p className="text-sm text-slate-500 mt-1">
-                            {member.positionAm === 'ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ' && member.region 
-                              ? `የ ${member.region} ኮሚሽን ቅርንጫፍ ጽ/ቤት ኃላፊ` 
-                              : member.positionAm}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                            {member.facebook_url && (
-                              <a 
-                                href={member.facebook_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-blue-50"
-                                aria-label={`${member.nameAm || member.name} Facebook Profile`}
-                              >
-                                <IconBrandFacebook size={20} />
-                              </a>
-                            )}
-                            {member.x_url && (
-                              <a 
-                                href={member.x_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-slate-200"
-                                aria-label={`${member.nameAm || member.name} X (Twitter) Profile`}
-                              >
-                                <IconBrandX size={20} />
-                              </a>
-                            )}
-                            {member.linkedin_url && (
-                              <a 
-                                href={member.linkedin_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-slate-400 hover:text-blue-700 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-blue-50"
-                                aria-label={`${member.nameAm || member.name} LinkedIn Profile`}
-                              >
-                                <IconBrandLinkedin size={20} />
-                              </a>
-                            )}
-                            {member.whatsapp_url && (
-                              <a 
-                                href={member.whatsapp_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-slate-400 hover:text-green-600 transition-colors bg-slate-50 p-1.5 rounded-full hover:bg-green-50"
-                                aria-label={`${member.nameAm || member.name} WhatsApp`}
-                              >
-                                <IconBrandWhatsapp size={20} />
-                              </a>
-                            )}
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-4 flex items-center gap-1.5">
-                      <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                      {member.officeCategoryAm}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <MemberCard key={member.id} member={member} />
             ))}
           </div>
         )}

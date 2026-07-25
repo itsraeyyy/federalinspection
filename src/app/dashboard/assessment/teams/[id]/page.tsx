@@ -18,7 +18,7 @@ export default function PeriodManagePage() {
 
   const [period, setPeriod] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
-  const [scores, setScores] = useState<Record<string, { s10: number, s20: number, s70: number, f100: number }>>({});
+  const [scores, setScores] = useState<Record<string, { s10: number, s20: number, s70: number, f100: number, is20Complete?: boolean, evalProgress?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
   const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({});
@@ -85,21 +85,48 @@ export default function PeriodManagePage() {
       // Fetch scores
       const [selfRes, evalRes, apprRes, finalRes] = await Promise.all([
         supabase.from('self_assessments').select('user_id, score_10').eq('period_id', periodId),
-        supabase.from('evaluations').select('target_user_id, score_20').eq('period_id', periodId),
+        supabase.from('evaluations').select('target_user_id, score_20, is_locked').eq('period_id', periodId),
         supabase.from('approver_evaluations').select('target_user_id, score_70').eq('period_id', periodId),
         supabase.from('final_scores').select('user_id, final_score_100').eq('period_id', periodId)
       ]);
 
-      const scoreMap: Record<string, { s10: number, s20: number, s70: number, f100: number }> = {};
+      const scoreMap: Record<string, { s10: number, s20: number, s70: number, f100: number, is20Complete?: boolean, evalProgress?: string }> = {};
       
       selfRes.data?.forEach(s => {
         if (!scoreMap[s.user_id]) scoreMap[s.user_id] = { s10: 0, s20: 0, s70: 0, f100: 0 };
         scoreMap[s.user_id].s10 = s.score_10;
       });
-      
+
+      const evaluatorMembers = (membersData || []).filter(m => 
+        m.role === 'evaluator' || m.role === 'approver' || m.role === 'leader' || m.role === 'admin'
+      );
+
+      const evalGroups: Record<string, number[]> = {};
       evalRes.data?.forEach(e => {
-        if (!scoreMap[e.target_user_id]) scoreMap[e.target_user_id] = { s10: 0, s20: 0, s70: 0, f100: 0 };
-        scoreMap[e.target_user_id].s20 += Number(e.score_20); // rough aggregate if multiple
+        if (e.is_locked) {
+          if (!evalGroups[e.target_user_id]) evalGroups[e.target_user_id] = [];
+          evalGroups[e.target_user_id].push(Number(e.score_20));
+        }
+      });
+
+      membersData?.forEach(m => {
+        const targetId = m.user_id;
+        if (!scoreMap[targetId]) scoreMap[targetId] = { s10: 0, s20: 0, s70: 0, f100: 0 };
+
+        const eligibleEvaluatorCount = evaluatorMembers.filter(eMem => eMem.user_id !== targetId).length;
+        const submittedScores = evalGroups[targetId] || [];
+        const submittedCount = submittedScores.length;
+        const isComplete = eligibleEvaluatorCount > 0 && submittedCount >= eligibleEvaluatorCount;
+
+        if (isComplete) {
+          const avg = submittedScores.reduce((a, b) => a + b, 0) / submittedCount;
+          scoreMap[targetId].s20 = Number(avg.toFixed(2));
+          scoreMap[targetId].is20Complete = true;
+        } else {
+          scoreMap[targetId].s20 = 0;
+          scoreMap[targetId].is20Complete = false;
+          scoreMap[targetId].evalProgress = `${submittedCount}/${eligibleEvaluatorCount}`;
+        }
       });
       
       apprRes.data?.forEach(a => {
@@ -112,7 +139,7 @@ export default function PeriodManagePage() {
         scoreMap[f.user_id].f100 = f.final_score_100;
       });
 
-      setScores(scoreMap);
+      setScores(scoreMap as any);
 
     } catch (err) {
       console.error(err);
@@ -518,8 +545,12 @@ export default function PeriodManagePage() {
                           )}
                         </td>
                         <td className="px-2 py-3 text-center">
-                          {userScores.s20 > 0 ? (
-                            <span className="text-text-secondary">{userScores.s20}</span>
+                          {userScores.is20Complete ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{userScores.s20}</span>
+                          ) : userScores.evalProgress ? (
+                            <span className="text-amber-700 dark:text-amber-300 text-xs font-semibold px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 rounded border border-amber-200 dark:border-amber-800/50" title="ሁሉም ገምጋሚዎች አልጨረሱም">
+                              {userScores.evalProgress}
+                            </span>
                           ) : (
                             <span className="text-border">-</span>
                           )}

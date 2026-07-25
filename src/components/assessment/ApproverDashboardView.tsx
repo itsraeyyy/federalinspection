@@ -65,21 +65,42 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           .select('*')
           .eq('period_id', periodId);
 
-        // Calculate average for evaluator scores (20)
+        // Identify all evaluators in this period (excluding self for each target member)
+        const evaluatorMembers = (membersData || []).filter(m => 
+          m.role === 'evaluator' || m.role === 'approver' || m.role === 'leader' || m.role === 'admin'
+        );
+
         const evalGroups: Record<string, { scores: number[], is_locked: boolean[], evaluations: any[] }> = {};
         evalData?.forEach(e => {
           if (!evalGroups[e.target_user_id]) evalGroups[e.target_user_id] = { scores: [], is_locked: [], evaluations: [] };
-          evalGroups[e.target_user_id].scores.push(Number(e.score_20));
-          evalGroups[e.target_user_id].is_locked.push(e.is_locked);
+          if (e.is_locked) {
+            evalGroups[e.target_user_id].scores.push(Number(e.score_20));
+            evalGroups[e.target_user_id].is_locked.push(e.is_locked);
+          }
           evalGroups[e.target_user_id].evaluations.push(e);
         });
 
-        const eScores: Record<string, { score: number, is_locked: boolean, evaluations: any[] }> = {};
-        for (const [targetId, group] of Object.entries(evalGroups)) {
-          const avg = group.scores.reduce((a, b) => a + b, 0) / group.scores.length;
-          const allLocked = group.is_locked.every(l => l === true);
-          eScores[targetId] = { score: Number(avg.toFixed(2)), is_locked: allLocked, evaluations: group.evaluations };
-        }
+        const eScores: Record<string, { score: number, is_locked: boolean, is_complete: boolean, submitted_count: number, total_required: number, evaluations: any[] }> = {};
+        
+        (membersData || []).forEach(m => {
+          const targetId = m.user_id;
+          const group = evalGroups[targetId] || { scores: [], is_locked: [], evaluations: [] };
+          
+          // Eligible evaluators for this user (all evaluators in team EXCEPT the target user)
+          const eligibleEvaluatorsCount = evaluatorMembers.filter(eMem => eMem.user_id !== targetId).length;
+          const submittedCount = group.scores.length;
+          const isComplete = eligibleEvaluatorsCount > 0 && submittedCount >= eligibleEvaluatorsCount;
+          const avg = isComplete ? (group.scores.reduce((a, b) => a + b, 0) / submittedCount) : 0;
+          
+          eScores[targetId] = { 
+            score: isComplete ? Number(avg.toFixed(2)) : 0, 
+            is_locked: group.is_locked.length > 0 && group.is_locked.every(l => l === true),
+            is_complete: isComplete,
+            submitted_count: submittedCount,
+            total_required: eligibleEvaluatorsCount,
+            evaluations: group.evaluations 
+          };
+        });
         setEvalScores(eScores);
 
         const { data: appData } = await supabase
@@ -386,9 +407,15 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
                       <td className="px-6 py-5">
                         <div className="flex flex-col items-center gap-2">
-                          <span className="font-mono text-base font-semibold px-3 py-1 bg-surface-secondary rounded-lg border border-border/50 text-text-primary shadow-sm min-w-[50px] text-center">
-                            {s20 > 0 ? s20 : '-'}
-                          </span>
+                          {s20Data?.is_complete ? (
+                            <span className="font-mono text-base font-bold px-3 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-800/50 shadow-sm min-w-[50px] text-center">
+                              {s20}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 rounded-lg border border-amber-200 dark:border-amber-800/50 text-center" title="ሁሉም ገምጋሚዎች አልጨረሱም">
+                              በሂደት ላይ ({s20Data?.submitted_count || 0}/{s20Data?.total_required || 0})
+                            </span>
+                          )}
                           <button
                             onClick={() => setExpandedUser(expandedUser === m.user_id ? null : m.user_id)}
                             className="text-[11px] font-medium text-text-secondary hover:text-brand-blue underline"

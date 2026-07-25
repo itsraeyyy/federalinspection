@@ -194,41 +194,47 @@ export default function AssessmentModulePage() {
 }
 
 function AssessmentDashboardLayout({ membership, period, selfAssessment, allMembers, evaluations }: any) {
-  const [activeTab, setActiveTab] = useState<'self' | 'eval' | 'approve'>(
-    membership.role === 'approver' ? 'approve' : 'eval'
-  );
+  const canEvaluate = membership.role === 'evaluator' || membership.role === 'approver' || membership.role === 'leader' || membership.role === 'admin';
+  const isApprover = membership.role === 'approver' || membership.role === 'admin';
+
+  const defaultTab = isApprover ? 'approve' : canEvaluate ? 'eval' : 'self';
+  const [activeTab, setActiveTab] = useState<'self' | 'eval' | 'approve'>(defaultTab);
 
   return (
     <div className="flex-1 flex flex-col bg-background">
-      <div className="bg-surface-primary border-b border-border/50 sticky top-0 z-30 shadow-sm">
+      <div className="bg-surface-primary border-b border-border/50 sticky top-0 z-30 shadow-sm rounded-2xl mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-6 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setActiveTab('self')}
               className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === 'self'
-                  ? 'border-brand-blue text-brand-blue'
+                  ? 'border-brand-blue text-brand-blue font-semibold'
                   : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
               }`}
             >
               የኔ ግምገማ (My Assessment)
             </button>
-            <button
-              onClick={() => setActiveTab('eval')}
-              className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'eval'
-                  ? 'border-brand-blue text-brand-blue'
-                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-              }`}
-            >
-              ቡድንን ገምግም (Evaluate Team)
-            </button>
-            {membership.role === 'approver' && (
+
+            {canEvaluate && (
+              <button
+                onClick={() => setActiveTab('eval')}
+                className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'eval'
+                    ? 'border-brand-blue text-brand-blue font-semibold'
+                    : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                }`}
+              >
+                ቡድንን ገምግም (Evaluate Team)
+              </button>
+            )}
+
+            {isApprover && (
               <button
                 onClick={() => setActiveTab('approve')}
                 className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === 'approve'
-                    ? 'border-brand-yellow text-brand-yellow'
+                    ? 'border-brand-yellow text-brand-yellow font-semibold'
                     : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
                 }`}
               >
@@ -241,12 +247,25 @@ function AssessmentDashboardLayout({ membership, period, selfAssessment, allMemb
       
       <div className="flex-1 flex flex-col">
         {activeTab === 'self' && (
-          <SelfAssessmentView periodId={period.id} existingData={selfAssessment} readOnly={true} />
+          <div className="space-y-4">
+            {!canEvaluate && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-2xl text-sm text-blue-800 dark:text-blue-200 flex items-center gap-3">
+                <span className="text-xl">✅</span>
+                <div>
+                  <p className="font-semibold">የግል ምዘናዎን በተሳካ ሁኔታ አጠናቀዋል!</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-300">የቡድን አመራሮች ግምገማውን አጠናቀው ውጤት ሲያጸድቁ የመጨረሻው ውጤት እዚህ ይገለጻል።</p>
+                </div>
+              </div>
+            )}
+            <SelfAssessmentView periodId={period.id} existingData={selfAssessment} readOnly={true} />
+          </div>
         )}
-        {activeTab === 'eval' && (
+
+        {activeTab === 'eval' && canEvaluate && (
           <LeadershipEvaluationView periodId={period.id} members={allMembers} evaluations={evaluations} />
         )}
-        {activeTab === 'approve' && membership.role === 'approver' && (
+
+        {activeTab === 'approve' && isApprover && (
           <ApproverDashboardView periodId={period.id} />
         )}
       </div>

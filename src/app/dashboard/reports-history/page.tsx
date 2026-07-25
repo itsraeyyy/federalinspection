@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { AdminHistoryView } from "@/components/dashboard/history/AdminHistoryView";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { verifyAdminUser } from "@/lib/adminAuth";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +12,8 @@ export default async function AdminHistoryPage() {
 
   if (!user) redirect('/auth/login');
 
-  const { data: profile, error: profileErr } = await supabase
-    .from('admin_profiles')
-    .select('role, status')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (!profile || profileErr || profile.status?.toLowerCase() !== 'active') {
-    console.error("[Reports History Auth Check Failed] User ID:", user.id, "| Error:", profileErr, "| Found Profile:", profile);
+  const isAdminAuthorized = await verifyAdminUser(user.id, user.email);
+  if (!isAdminAuthorized) {
     redirect('/auth/login?error=unauthorized');
   }
 

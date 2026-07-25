@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "db.raey.work",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "db.raey.work",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "images.unsplash.com",
       },
       {

@@ -12,6 +12,7 @@ import { useEffect, useState, use } from "react";
 import * as z from "zod";
 import { COMMISSION_POSITIONS, OFFICE_CATEGORIES, Personnel } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 
 const ETHIOPIA_REGIONS = [
   'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤን-ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬ ዳዋ', 'ፌዴራል ተቋማት'
@@ -21,8 +22,8 @@ const editPersonnelSchema = z.object({
   positionId: z.string().min(1, 'ሹመት ያስፈልጋል።'),
   officeId: z.string().min(1, 'ምድብ ያስፈልጋል።'),
   fullName: z.string().min(1, 'ሙሉ ስም ያስፈልጋል።'),
-  gender: z.string().min(1, 'ፆታ ያስፈልጋል።'),
-  age: z.coerce.number().min(18, 'ዕድሜ ያስፈልጋል።'),
+  gender: z.string().optional(),
+  age: z.coerce.number().optional(),
   ethnicity: z.string().optional(),
   educationLevel: z.string().optional(),
   educationType: z.string().optional(),
@@ -94,10 +95,13 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
     });
   }, [id, reset]);
 
+  const [croppedFile, setCroppedFile] = useState<File | null>(null);
+  const [rawImageForCropping, setRawImageForCropping] = useState<string | null>(null);
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPhotoPreview(URL.createObjectURL(file));
+      setRawImageForCropping(URL.createObjectURL(file));
     }
   };
 
@@ -112,7 +116,9 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
       }
 
       let photoUrl = personnelData?.photo || '';
-      if (formData.photoFile && formData.photoFile.length > 0) {
+      if (croppedFile) {
+        photoUrl = await personnelService.uploadPhoto(croppedFile);
+      } else if (formData.photoFile && formData.photoFile.length > 0) {
         photoUrl = await personnelService.uploadPhoto(formData.photoFile[0]);
       }
 
@@ -172,6 +178,19 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
 
   return (
     <DashboardLayout>
+      {rawImageForCropping && (
+        <ImageCropperModal
+          imageSrc={rawImageForCropping}
+          aspectRatio={340 / 330}
+          onCropComplete={(file, previewUrl) => {
+            setCroppedFile(file);
+            setPhotoPreview(previewUrl);
+            setRawImageForCropping(null);
+          }}
+          onCancel={() => setRawImageForCropping(null)}
+        />
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8 h-full max-w-4xl mx-auto pb-10">
         <div className="flex justify-between items-end">
           <div>

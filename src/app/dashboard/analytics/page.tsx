@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { verifyAdminUser } from "@/lib/adminAuth";
 
 export const revalidate = 0; // Dynamic rendering
 
@@ -12,14 +13,8 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ ran
 
   if (!user) redirect('/auth/login');
 
-  const { data: profile, error: profileErr } = await supabase
-    .from('admin_profiles')
-    .select('role, status')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (!profile || profileErr || profile.status?.toLowerCase() !== 'active') {
-    console.error("[Analytics Auth Check Failed] User ID:", user.id, "| Error:", profileErr, "| Found Profile:", profile);
+  const isAdminAuthorized = await verifyAdminUser(user.id, user.email);
+  if (!isAdminAuthorized) {
     redirect('/auth/login?error=unauthorized');
   }
 

@@ -9,6 +9,7 @@ import { personnelSchema } from "@/lib/validations";
 import { personnelService } from "@/services/personnel";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 import * as z from "zod";
 import { COMMISSION_POSITIONS, OFFICE_CATEGORIES, Personnel } from "@/types";
 
@@ -21,8 +22,8 @@ const createPersonnelSchema = z.object({
   positionId: z.string().min(1, 'ሹመት ያስፈልጋል።'),
   officeId: z.string().min(1, 'ምድብ ያስፈልጋል።'),
   fullName: z.string().min(1, 'ሙሉ ስም ያስፈልጋል።'),
-  gender: z.string().min(1, 'ፆታ ያስፈልጋል።'),
-  age: z.coerce.number().min(18, 'ዕድሜ ያስፈልጋል።'),
+  gender: z.string().optional(),
+  age: z.coerce.number().optional(),
   ethnicity: z.string().optional(),
   educationLevel: z.string().optional(),
   educationType: z.string().optional(),
@@ -80,16 +81,16 @@ export default function CreatePersonnelPage() {
   const officeId = watch('officeId');
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [croppedFile, setCroppedFile] = useState<File | null>(null);
+  const [rawImageForCropping, setRawImageForCropping] = useState<string | null>(null);
   
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPhotoPreview(URL.createObjectURL(file));
-      // react-hook-form does not auto bind file inputs easily, we'll manually set it or just let the register handle it
+      setRawImageForCropping(URL.createObjectURL(file));
     }
   };
 
-  // @BACKEND: Replace with real API call — payload fields must match backend schema
   const onSubmit = async (formData: any) => {
     try {
       setStatusMsg(null);
@@ -101,7 +102,9 @@ export default function CreatePersonnelPage() {
       }
 
       let photoUrl = '';
-      if (formData.photoFile && formData.photoFile.length > 0) {
+      if (croppedFile) {
+        photoUrl = await personnelService.uploadPhoto(croppedFile);
+      } else if (formData.photoFile && formData.photoFile.length > 0) {
         photoUrl = await personnelService.uploadPhoto(formData.photoFile[0]);
       }
 
@@ -139,6 +142,19 @@ export default function CreatePersonnelPage() {
 
   return (
     <DashboardLayout>
+      {rawImageForCropping && (
+        <ImageCropperModal
+          imageSrc={rawImageForCropping}
+          aspectRatio={340 / 330}
+          onCropComplete={(file, previewUrl) => {
+            setCroppedFile(file);
+            setPhotoPreview(previewUrl);
+            setRawImageForCropping(null);
+          }}
+          onCancel={() => setRawImageForCropping(null)}
+        />
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8 h-full max-w-4xl mx-auto pb-10">
         <div className="flex justify-between items-end">
           <div>
