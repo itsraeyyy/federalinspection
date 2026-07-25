@@ -1,19 +1,9 @@
 "use server";
 
-import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { sendSMS } from '@/lib/textbee';
 import { canSubmitReport, ReportPeriod } from '@/lib/et-calendar';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function createRepresentativeAction(formData: FormData) {
   try {

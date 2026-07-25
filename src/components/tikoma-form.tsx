@@ -282,6 +282,12 @@ export function TikomaForm() {
       {/* Step 1: Personal Information */}
       {step === 'personal' && (
         <div className="rounded-3xl bg-white p-6 sm:p-10 shadow-sm ring-1 ring-slate-100">
+          <div className="mb-8 rounded-2xl bg-blue-50 border border-blue-100 p-5 sm:p-6">
+            <h1 className="text-base sm:text-lg font-bold text-[#014BAA] leading-relaxed text-center">
+              በብልጽግና የኢንስፔክሽንና ቁጥጥር የአሰራር መመሪያ ቁጥር……/2015” በአንቀፅ 17 የጥቆማ አቀራረብ ስርአት አሰራር መመሪያ መሠረት አድርገው ጥቆማዎን ማቅረብዎን ያረጋግጡ
+            </h1>
+          </div>
+
           <div className="flex items-center gap-3 mb-2">
             <h2 className="text-xl font-bold text-slate-800">
               የግል መረጃ
@@ -308,9 +314,9 @@ export function TikomaForm() {
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="fullName" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <label htmlFor="fullName" className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
                 {submitterLabel} 
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">አማራጭ (Optional)</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500 whitespace-nowrap">አማራጭ (Optional)</span>
               </label>
               <input
                 type="text"
@@ -322,7 +328,7 @@ export function TikomaForm() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="age" className="text-sm font-medium text-slate-700">እድሜ</label>
                 <input
@@ -336,7 +342,7 @@ export function TikomaForm() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">ጾታ</label>
-                <div className="flex h-[50px] items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4">
+                <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="gender" value="ወንድ" checked={gender === 'ወንድ'} onChange={(e) => setGender(e.target.value)} className="text-[#014BAA] focus:ring-[#014BAA]" />
                     <span className="text-sm text-slate-600">ወንድ</span>

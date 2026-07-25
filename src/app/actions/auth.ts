@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { checkRateLimit } from "@/lib/rateLimit";
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendSMS } from '@/lib/textbee';
 import crypto from 'crypto';
 
@@ -20,17 +20,6 @@ export async function verifyLoginAttempt() {
   
   return true;
 }
-
-// Use the service role key to bypass RLS and Auth restrictions
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
 
 export async function registerUserAction(formData: FormData) {
   try {

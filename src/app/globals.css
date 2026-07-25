@@ -18,6 +18,15 @@
     U+AB00-AB2F;
 }
 
+/* Batangas — English/Latin script (public/Batangas-Bold.otf) */
+@font-face {
+  font-family: "Batangas";
+  src: url("/Batangas-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-surface-primary: var(--surface-primary);
   --color-surface-secondary: var(--surface-secondary);
@@ -164,11 +173,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Benaiah", var(--font-sans), ui-sans-serif, sans-serif;
+    font-family: "Benaiah", "Batangas", var(--font-sans), ui-sans-serif, sans-serif;
   }
   html {
     @apply scroll-smooth;
-    font-family: "Benaiah", var(--font-sans), ui-sans-serif, sans-serif;
+    font-family: "Benaiah", "Batangas", var(--font-sans), ui-sans-serif, sans-serif;
   }
   h1,
   h2,
@@ -176,7 +185,7 @@
   h4,
   h5,
   h6 {
-    font-family: "Benaiah", var(--font-heading), ui-serif, serif;
+    font-family: "Benaiah", "Batangas", var(--font-heading), ui-serif, serif;
   }
   ::selection {
     background-color: color-mix(in srgb, var(--brand) 20%, transparent);
@@ -186,10 +195,10 @@
 
 @layer utilities {
   .font-heading {
-    font-family: "Benaiah", var(--font-heading), ui-serif, serif;
+    font-family: "Benaiah", "Batangas", var(--font-heading), ui-serif, serif;
   }
   .font-sans {
-    font-family: "Benaiah", var(--font-sans), ui-sans-serif, sans-serif;
+    font-family: "Benaiah", "Batangas", var(--font-sans), ui-sans-serif, sans-serif;
   }
   .font-amharic {
     font-family: "Benaiah", ui-sans-serif, sans-serif;

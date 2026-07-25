@@ -13,8 +13,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const LINE_1 = "የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን";
-const LINE_2 = "ዋና ጽ/ቤት";
+const LINE_1 = "የተቀናጀ የኮሚሽን ሥራዎች ዲጂታል ሥርዓት";
+const LINE_2 = "(ICODiS)";
 const FULL_TEXT = LINE_1 + "\n" + LINE_2;
 const TYPING_SPEED = 80;
 
@@ -192,7 +192,7 @@ export function HeroSection() {
               <div className="h-1 w-4 rounded-full bg-[#014BAA]/30" />
             </div>
             <p className="text-lg font-bold text-slate-800 sm:text-xl">
-              ጠንካራ ኢንስፔክሽን ለጠንካራ ፓርቲ!
+              ጠንካራ ኢንስፔክሽን ፤ ለጠንካራ ፓርቲ!
             </p>
           </div>
 

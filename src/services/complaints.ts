@@ -165,10 +165,14 @@ export const complaintService = {
     }
 
     if (formData.phone) {
-      smsService.sendSMS(
-        formData.phone,
-        `የእርስዎ ${formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ'} በተሳካ ሁኔታ ቀርቧል። መከታተያ ኮድ: ${trackingCode}`
-      );
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      const typeAmharic = formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
+      const typeEnglish = formData.type === 'Suggestion' ? 'suggestion' : 'complaint';
+      const currentDate = new Date().toLocaleDateString('en-GB');
+
+      const msg = `ሰላም ${formData.name}፣ ${typeAmharic}ዎ በተሳካ ሁኔታ ቀርቧል! (Your ${typeEnglish} is submitted successfully).\nየገባበት ቀን (Date Received): ${currentDate}\nመከታተያ ኮድ (Tracking Code): ${trackingCode}\nመከታተያ ሊንክ (Link): ${siteUrl}/track`;
+      
+      smsService.sendSMS(formData.phone, msg);
     }
 
     const { data: admins } = await supabase
@@ -250,7 +254,7 @@ export const complaintService = {
       .from('complaints')
       .update(updates)
       .eq('id', id)
-      .select('phone, type')
+      .select('name, phone, type')
       .single();
 
     if (error) {
@@ -259,20 +263,36 @@ export const complaintService = {
     }
 
     if (updatedComplaint && updatedComplaint.phone) {
-      let statusMsg = '';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      const typeAmharic = updatedComplaint.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
+      const typeEnglish = updatedComplaint.type === 'Suggestion' ? 'suggestion' : 'complaint';
+
+      let statusMsgAmh = '';
+      let statusMsgEng = '';
       if (newStatus === 'Processing') {
-         statusMsg = 'በመታየት ላይ ነው';
+         statusMsgAmh = 'በመታየት ላይ ነው';
+         statusMsgEng = 'Under Review';
       } else if (newStatus === 'Resolved') {
-         statusMsg = 'ውሳኔ አግኝቷል';
+         statusMsgAmh = 'ውሳኔ አግኝቷል';
+         statusMsgEng = 'Resolved';
       } else if (newStatus === 'Rejected') {
-         statusMsg = 'ውድቅ ተደርጓል';
+         statusMsgAmh = 'ውድቅ ተደርጓል';
+         statusMsgEng = 'Rejected';
       }
       
-      if (statusMsg) {
-         smsService.sendSMS(
-           updatedComplaint.phone,
-           `የእርስዎ ${updatedComplaint.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ'} ${statusMsg}።`
-         );
+      if (statusMsgAmh) {
+         let msg = `ሰላም ${updatedComplaint.name}፣ የ${typeAmharic}ዎ ሁኔታ ተቀይሯል! (Your ${typeEnglish} status has been updated).\n`;
+         msg += `የአሁን ሁኔታ (Status): ${statusMsgAmh} (${statusMsgEng})\n`;
+         
+         if (newStatus === 'Processing') {
+           msg += `እባክዎ መከታተያ ሊንኩን በመጠቀም ሁኔታውን ይከታተሉ፣ በቅርቡ ምላሽ ያገኛሉ። (Please check your status using the link, you will receive results soon).\n`;
+         } else if (resolution?.message) {
+           msg += `የተሰጠው ምላሽ (Resolution): ${resolution.message}\n`;
+         }
+
+         msg += `መከታተያ ሊንክ (Link): ${siteUrl}/track`;
+
+         smsService.sendSMS(updatedComplaint.phone, msg);
       }
     }
 

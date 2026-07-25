@@ -3,7 +3,6 @@ import { Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
-import AgentSightWrapper from "@/components/AgentSightWrapper";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -54,7 +53,6 @@ export default function RootLayout({
           {children}
           <AnalyticsTracker />
         </I18nProvider>
-              {process.env.NODE_ENV === 'development' && <AgentSightWrapper />}
       </body>
     </html>
   );

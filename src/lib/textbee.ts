@@ -10,15 +10,15 @@ export async function sendSMS(to: string, message: string) {
   }
 
   try {
-    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/sendSMS`, {
+    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey
       },
       body: JSON.stringify({
-        receivers: [to],
-        smsBody: message
+        recipients: [to],
+        message: message
       })
     });
 

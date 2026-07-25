@@ -30,13 +30,29 @@ export default async function DashboardPage() {
   }
 
   // Verify admin access server-side
-  const { data: profile } = await supabaseAdmin
+  let { data: profile, error: adminErr } = await supabaseAdmin
     .from('admin_profiles')
     .select('role, status')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
+
+  if (!profile || adminErr) {
+    // Fallback to querying via the authenticated user's session client (permitted by RLS: uid() = id)
+    const { data: sessionProfile, error: sessionErr } = await supabase
+      .from('admin_profiles')
+      .select('role, status')
+      .eq('id', user.id)
+      .maybeSingle();
+      
+    if (sessionProfile && !sessionErr) {
+      profile = sessionProfile;
+    } else {
+      console.error("[Dashboard Auth Check Failed] User ID:", user.id, "| AdminErr:", adminErr, "| SessionErr:", sessionErr);
+    }
+  }
 
   if (!profile || profile.status?.toLowerCase() !== 'active') {
+    console.error("[Dashboard Unauthorized Redirect] User ID:", user.id, "| Found Profile:", profile);
     redirect('/auth/login?error=unauthorized');
   }
 

@@ -10,13 +10,28 @@ export default async function AdminHistoryPage() {
 
   if (!user) redirect('/auth/login');
 
-  const { data: profile } = await supabaseAdmin
+  let { data: profile, error: adminErr } = await supabaseAdmin
     .from('admin_profiles')
     .select('role, status')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
+
+  if (!profile || adminErr) {
+    const { data: sessionProfile, error: sessionErr } = await supabase
+      .from('admin_profiles')
+      .select('role, status')
+      .eq('id', user.id)
+      .maybeSingle();
+      
+    if (sessionProfile && !sessionErr) {
+      profile = sessionProfile;
+    } else {
+      console.error("[Reports History Auth Check Failed] User ID:", user.id, "| AdminErr:", adminErr, "| SessionErr:", sessionErr);
+    }
+  }
 
   if (!profile || profile.status?.toLowerCase() !== 'active') {
+    console.error("[Reports History Unauthorized Redirect] User ID:", user.id, "| Found Profile:", profile);
     redirect('/auth/login?error=unauthorized');
   }
 

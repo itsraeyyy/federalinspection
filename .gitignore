@@ -50,3 +50,11 @@ migration/
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Large archives & database dumps
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+*.dump

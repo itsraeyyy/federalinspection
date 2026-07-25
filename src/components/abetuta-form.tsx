@@ -300,8 +300,12 @@ export function AbetutaForm() {
             </div>
             <h2 className="text-xl font-bold text-slate-800">{tosTitle}</h2>
           </div>
-
           <div className="rounded-2xl bg-slate-50 border border-slate-100 p-5 sm:p-8 mb-6 max-h-[50vh] overflow-y-auto">
+            <div className="mb-6 rounded-xl bg-orange-50 border border-orange-100 p-5">
+              <h1 className="text-base sm:text-lg font-bold text-[#B45309] leading-relaxed text-center">
+                በብልጽግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን የአቤቱታ አቀራረብና አፈታት መመሪያ ቁጥር……4/2016” በአንቀፅ 7(ስባት) , 8 (ስምንት),9 ዘጠኝ እና 10(ዠአስር!) የአቤቱታ አቀራረብ ስርአት አሰራር መመሪያ መሠረት አድርገው ጥቆማዎችን ማቅረብዎን ያረጋግጡ
+              </h1>
+            </div>
             <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed font-amharic" style={{ fontFamily: 'inherit' }}>
               {tosContent}
             </pre>
@@ -366,9 +370,9 @@ export function AbetutaForm() {
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="fullName" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <label htmlFor="fullName" className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
                 የአቤቱታ አቅራቢው ሙሉ ስም 
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">አማራጭ (Optional)</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500 whitespace-nowrap">አማራጭ (Optional)</span>
               </label>
               <input
                 type="text"
@@ -380,7 +384,7 @@ export function AbetutaForm() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="age" className="text-sm font-medium text-slate-700">እድሜ</label>
                 <input
@@ -389,12 +393,12 @@ export function AbetutaForm() {
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
                   className="block w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3.5 text-sm focus:border-[#B45309] focus:ring-[#B45309] focus:bg-white transition-colors"
-                  placeholder="እድሜ"
+              placeholder="እድሜ"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">ጾታ</label>
-                <div className="flex h-[50px] items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4">
+                <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="gender" value="ወንድ" checked={gender === 'ወንድ'} onChange={(e) => setGender(e.target.value)} className="text-[#B45309] focus:ring-[#B45309]" />
                     <span className="text-sm text-slate-600">ወንድ</span>
