@@ -9,6 +9,8 @@ import { PendingQRRequests } from "@/components/dashboard/pending-qr-requests";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 const formatTimeAgo = (dateString: string) => {
   if (!dateString) return '';
   const date = new Date(dateString);

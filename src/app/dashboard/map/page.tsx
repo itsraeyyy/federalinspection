@@ -6,6 +6,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateComplaintsGeoJSON } from "@/lib/geojson-utils";
 import { IconActivity, IconAlertTriangle, IconChecklist } from "@tabler/icons-react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function MapPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
