@@ -89,9 +89,13 @@ async function runTests() {
       
       const { data, error } = await supabaseAdmin.from('reports').insert({
         title: 'Test Report',
+        report_type: 'General',
+        period_category: 'yearly',
+        budget_year: '2017',
+        submitter_id: '00000000-0000-0000-0000-000000000000',
+        submitter_level: 'Federal',
         schema_snapshot: { key: "value" },
-        status: 'draft',
-        form_schema_id: 'form_01'
+        status: 'draft'
       }).select();
       if (error) {
         console.error('❌ Error writing report:', error.message, error.details);
