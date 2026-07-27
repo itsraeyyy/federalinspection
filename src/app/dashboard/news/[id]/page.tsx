@@ -9,6 +9,19 @@ import { NewsArticle } from "@/types";
 import { useRouter } from "next/navigation";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
+function getYouTubeEmbedUrl(url?: string): string | null {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+  if (url.includes('youtube.com/embed/')) {
+    return url;
+  }
+  return null;
+}
+
 export default function ViewNewsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [article, setArticle] = useState<NewsArticle | null>(null);
@@ -40,6 +53,8 @@ export default function ViewNewsPage({ params }: { params: Promise<{ id: string 
   if (loading) return <DashboardLayout><div className="flex justify-center p-10">Loading...</div></DashboardLayout>;
   if (!article) return <DashboardLayout><div className="flex justify-center p-10">Article not found</div></DashboardLayout>;
 
+  const embedVideoUrl = getYouTubeEmbedUrl(article.videoUrl);
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-8 h-full max-w-4xl mx-auto pb-10">
@@ -69,20 +84,37 @@ export default function ViewNewsPage({ params }: { params: Promise<{ id: string 
         </div>
         
         <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 p-8 backdrop-blur-md flex flex-col gap-6">
-          {article.images && article.images.length > 0 ? (
-            <div className="w-full h-64 bg-surface-secondary/50 rounded-2xl border border-border/50 overflow-hidden relative">
-              {/* Using a standard img tag since the mock had a placeholder. Next/image needs domains configured. */}
-              <img src={article.images[0]} alt={article.title} className="object-cover w-full h-full" />
+          {/* YouTube Video Player Embed */}
+          {embedVideoUrl ? (
+            <div className="w-full h-80 rounded-2xl border border-border/50 overflow-hidden relative shadow-sm bg-black">
+              <iframe
+                src={embedVideoUrl}
+                title={article.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
+            </div>
+          ) : article.images && article.images.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              <div className="w-full h-72 bg-surface-secondary/50 rounded-2xl border border-border/50 overflow-hidden relative shadow-sm">
+                <img src={article.image || article.images[0]} alt={article.title} className="object-cover w-full h-full" />
+              </div>
+              {article.images.length > 1 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {article.images.map((img, idx) => (
+                    <div key={idx} className="h-20 rounded-xl border border-border/40 overflow-hidden bg-surface-secondary shadow-sm">
+                      <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : article.image ? (
-            <div className="w-full h-64 bg-surface-secondary/50 rounded-2xl border border-border/50 overflow-hidden relative">
+            <div className="w-full h-72 bg-surface-secondary/50 rounded-2xl border border-border/50 overflow-hidden relative shadow-sm">
               <img src={article.image} alt={article.title} className="object-cover w-full h-full" />
             </div>
-          ) : (
-            <div className="w-full h-64 bg-surface-secondary/50 rounded-2xl border border-border/50 flex items-center justify-center text-text-muted text-sm font-medium">
-              [No Featured Image]
-            </div>
-          )}
+          ) : null}
 
           {article.videoUrl && (
             <div className="w-full h-12 bg-surface-secondary/30 rounded-xl flex items-center px-4">

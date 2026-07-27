@@ -34,9 +34,10 @@ export default function ChangePasswordPage() {
   useEffect(() => {
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
+      const needsPasswordChange = session?.user?.user_metadata?.force_password_change || session?.user?.user_metadata?.requires_password_change;
       if (!session) {
         router.push('/representative/login');
-      } else if (!session.user.user_metadata?.requires_password_change) {
+      } else if (!needsPasswordChange) {
         router.push('/representative/dashboard');
       }
     }
@@ -62,7 +63,7 @@ export default function ChangePasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({
         password: password,
-        data: { requires_password_change: false }
+        data: { force_password_change: false, requires_password_change: false }
       });
 
       if (error) throw error;

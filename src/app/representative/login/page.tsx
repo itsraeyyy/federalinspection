@@ -46,7 +46,8 @@ export default function FormsLoginPage() {
         throw new Error("Access Denied: You are not a registered representative.");
       }
 
-      if (data.user.user_metadata?.requires_password_change) {
+      const needsPasswordChange = data.user.user_metadata?.force_password_change || data.user.user_metadata?.requires_password_change;
+      if (needsPasswordChange) {
         router.push("/representative/change-password");
       } else {
         router.push("/representative/dashboard");

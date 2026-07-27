@@ -114,7 +114,6 @@ export function UserProfileViewer({ userId }: UserProfileViewerProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!profile && <span className="text-xs bg-warning/10 text-warning px-2 py-1 rounded-full border border-warning/20">ያልተሞላ (Incomplete)</span>}
           <span className="text-sm font-medium text-brand-blue">
             {isOpen ? 'ደብቅ (Hide)' : 'አሳይ (Show)'}
           </span>

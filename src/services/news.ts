@@ -23,24 +23,61 @@ export const newsService = {
     })) as NewsArticle[];
   },
   
-  getArticle: async (id: string): Promise<NewsArticle | undefined> => {
-    const { data, error } = await supabase
+  getArticle: async (idOrSlug: string): Promise<NewsArticle | undefined> => {
+    const rawInput = decodeURIComponent(idOrSlug).trim();
+    if (!rawInput) return undefined;
+
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawInput);
+
+    if (isUuid) {
+      const { data, error } = await supabase
+        .from('news_articles')
+        .select('*')
+        .eq('id', rawInput)
+        .maybeSingle();
+
+      if (error || !data) {
+        if (error) console.error('Error fetching article by UUID:', error);
+        return undefined;
+      }
+      return {
+        ...data,
+        videoUrl: data.video_url,
+        images: data.images || [],
+        excerpt: data.excerpt,
+        created: data.created ? formatECDate(data.created) : '-',
+        published: data.published ? formatECDate(data.published) : '-',
+      } as NewsArticle;
+    }
+
+    // Handle slug or short ID fallback
+    const parts = rawInput.split('-');
+    const shortId = parts[parts.length - 1];
+
+    const { data: articles, error } = await supabase
       .from('news_articles')
-      .select('*')
-      .eq('id', id)
-      .single();
-      
-    if (error) {
-      console.error('Error fetching article:', error);
+      .select('*');
+
+    if (error || !articles || articles.length === 0) {
+      if (error) console.error('Error fetching articles list for slug:', error);
       return undefined;
     }
+
+    const found = articles.find((a: any) => 
+      a.id === rawInput ||
+      (shortId && shortId.length >= 8 && a.id.startsWith(shortId)) ||
+      (a.title && rawInput.includes(a.title.trim().slice(0, 10)))
+    );
+
+    if (!found) return undefined;
+
     return {
-      ...data,
-      videoUrl: data.video_url,
-      images: data.images || [],
-      excerpt: data.excerpt,
-      created: data.created ? formatECDate(data.created) : '-',
-      published: data.published ? formatECDate(data.published) : '-',
+      ...found,
+      videoUrl: found.video_url,
+      images: found.images || [],
+      excerpt: found.excerpt,
+      created: found.created ? formatECDate(found.created) : '-',
+      published: found.published ? formatECDate(found.published) : '-',
     } as NewsArticle;
   },
   
@@ -88,5 +125,29 @@ export const newsService = {
       .eq('id', id);
       
     if (error) throw error;
+  },
+
+  uploadImage: async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `news/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('personnel-photos')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const { data } = supabase.storage
+      .from('personnel-photos')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
   }
 };

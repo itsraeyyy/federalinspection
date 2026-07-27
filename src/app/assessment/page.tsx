@@ -33,7 +33,8 @@ export default function AssessmentModulePage() {
         return;
       }
 
-      if (currentSession.user.user_metadata?.force_password_change) {
+      const needsPasswordChange = currentSession.user.user_metadata?.force_password_change || currentSession.user.user_metadata?.requires_password_change;
+      if (needsPasswordChange) {
         router.push('/assessment/change-password');
         return;
       }
@@ -116,7 +117,7 @@ export default function AssessmentModulePage() {
 
       // If locked, load evaluator/approver data
       if (sAssessment?.is_locked) {
-        if (mem.role === 'evaluator' || mem.role === 'approver') {
+        if (mem.role === 'evaluator' || mem.role === 'approver' || mem.role === 'leader' || mem.role === 'admin') {
           // Fetch all members to evaluate
           const { data: membersList } = await supabase
             .from('period_members')

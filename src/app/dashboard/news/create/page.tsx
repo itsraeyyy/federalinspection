@@ -1,7 +1,18 @@
 'use client';
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { IconArrowLeft, IconDeviceFloppy, IconPhotoPlus, IconX, IconVideo } from "@tabler/icons-react";
+import { 
+  IconArrowLeft, 
+  IconDeviceFloppy, 
+  IconPhotoPlus, 
+  IconX, 
+  IconVideo,
+  IconStar,
+  IconStarFilled,
+  IconLink,
+  IconUpload,
+  IconPhoto
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +29,10 @@ export default function CreateNewsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [featuredImage, setFeaturedImage] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const [showUrlModal, setShowUrlModal] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<NewsFormValues>({
     resolver: zodResolver(newsSchema),
@@ -41,19 +56,53 @@ export default function CreateNewsPage() {
 
   const watchedBody = watch("body");
 
-  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setGalleryImages(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+    if (files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const url = await newsService.uploadImage(file);
+        uploadedUrls.push(url);
+      }
+
+      setGalleryImages(prev => [...prev, ...uploadedUrls]);
+      if (!featuredImage && uploadedUrls.length > 0) {
+        setFeaturedImage(uploadedUrls[0]);
+      }
+    } catch (err) {
+      console.error('Failed to upload image', err);
+      alert('ምስሎችን ማስገባት አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleAddUrlImage = () => {
+    if (!urlInput.trim()) return;
+    const cleanUrl = urlInput.trim();
+    setGalleryImages(prev => [...prev, cleanUrl]);
+    if (!featuredImage) {
+      setFeaturedImage(cleanUrl);
+    }
+    setUrlInput('');
+    setShowUrlModal(false);
   };
 
   const removeGalleryImage = (index: number) => {
-    setGalleryImages(prev => prev.filter((_, i) => i !== index));
+    const targetUrl = galleryImages[index];
+    const updated = galleryImages.filter((_, i) => i !== index);
+    setGalleryImages(updated);
+    if (featuredImage === targetUrl) {
+      setFeaturedImage(updated[0] || '');
+    }
+  };
+
+  const handleSetFeatured = (url: string) => {
+    setFeaturedImage(url);
   };
 
   const onSubmit = async (data: NewsFormValues) => {
@@ -64,8 +113,8 @@ export default function CreateNewsPage() {
         status: data.status as any,
         content: data.body,
         article_type: data.article_type,
-        author: 'Current Admin',
-        image: galleryImages[0] || undefined,
+        author: 'ኢሥኮዋጽ',
+        image: featuredImage || (galleryImages[0] || undefined),
         images: galleryImages.length > 0 ? galleryImages : undefined,
         videoUrl: (data as any).videoUrl || undefined,
         excerpt: data.body?.substring(0, 150) + '...',
@@ -125,7 +174,7 @@ export default function CreateNewsPage() {
             {errors.title && <span className="text-xs text-danger">{errors.title.message}</span>}
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-3 gap-6">
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ቋንቋ</label>
               <select 
@@ -156,28 +205,101 @@ export default function CreateNewsPage() {
                 {...register("status")} 
                 className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors appearance-none cursor-pointer"
               >
-                <option value="Draft">ረቂቅ</option>
                 <option value="Published">የታተመ</option>
+                <option value="Draft">ረቂቅ</option>
               </select>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ፎቶዎች</label>
-            
+          <div className="w-full h-[1px] bg-border/20"></div>
+
+          {/* Image CRUD Management */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest flex items-center gap-2">
+                  <IconPhoto size={16} className="text-brand-blue" /> ፎቶዎች (Images CRUD)
+                </label>
+                <p className="text-xs text-text-muted mt-0.5">ፎቶዎችን ይስቀሉ ወይም በሊንክ ያስገቡ።</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUrlModal(true)}
+                  className="flex items-center gap-1 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary px-3 py-1.5 rounded-lg text-xs font-semibold border border-border/40"
+                >
+                  <IconLink size={14} /> በሊንክ ጨምር
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1 bg-brand-blue hover:bg-brand-blue/90 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm"
+                >
+                  <IconUpload size={14} /> {uploading ? 'በመጫን ላይ...' : 'ፎቶ ስቀል'}
+                </button>
+              </div>
+            </div>
+
+            {showUrlModal && (
+              <div className="bg-surface-secondary/60 border border-border/50 rounded-xl p-3 flex items-center gap-2 animate-in fade-in">
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={e => setUrlInput(e.target.value)}
+                  placeholder="የምስል ሊንክ (URL) ያስገቡ..."
+                  className="flex-1 bg-surface-primary border border-border/40 rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddUrlImage}
+                  className="bg-brand-blue text-white px-3 py-2 rounded-lg text-xs font-bold"
+                >
+                  ጨምር
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUrlModal(false)}
+                  className="bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold"
+                >
+                  ተው
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {galleryImages.map((img, idx) => (
-                <div key={idx} className="relative h-28 rounded-xl overflow-hidden border border-border/30 group/image">
-                  <Image src={img} alt={`Gallery ${idx + 1}`} fill className="object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeGalleryImage(idx)}
-                    className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-opacity"
-                  >
-                    <IconX size={14} />
-                  </button>
-                </div>
-              ))}
+              {galleryImages.map((img, idx) => {
+                const isFeatured = featuredImage === img;
+                return (
+                  <div key={idx} className={`relative h-28 rounded-xl overflow-hidden border-2 group/image ${isFeatured ? 'border-brand-blue ring-2 ring-brand-blue/20' : 'border-border/30'}`}>
+                    <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                    {isFeatured && (
+                      <span className="absolute top-1 left-1 bg-brand-blue text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                        ★ ዋና ፎቶ
+                      </span>
+                    )}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                      {!isFeatured && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetFeatured(img)}
+                          title="ዋና ፎቶ አድርግ"
+                          className="p-1.5 bg-white/20 hover:bg-white/40 text-white rounded-lg"
+                        >
+                          <IconStar size={14} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(idx)}
+                        title="አስወግድ"
+                        className="p-1.5 bg-rose-600/80 hover:bg-rose-600 text-white rounded-lg"
+                      >
+                        <IconX size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
               
               <button
                 type="button"
@@ -197,8 +319,6 @@ export default function CreateNewsPage() {
               onChange={handleGalleryChange}
               className="hidden"
             />
-
-
           </div>
 
           <div className="flex flex-col gap-2">
@@ -219,22 +339,12 @@ export default function CreateNewsPage() {
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">
               {watch("article_type") === 'Message' ? 'የመልዕክት ይዘት' : 'የዜና ይዘት'}
             </label>
-            <div className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 flex flex-col">
-              <div className="flex items-center gap-2 border-b border-border/30 pb-3 mb-3">
-                <div className="flex items-center gap-1">
-                  <button type="button" className="px-2 text-sm font-bold text-text-secondary hover:text-text-primary">B</button>
-                  <button type="button" className="px-2 text-sm italic text-text-secondary hover:text-text-primary">I</button>
-                  <button type="button" className="px-2 text-sm underline text-text-secondary hover:text-text-primary">U</button>
-                </div>
-                <div className="w-[1px] h-4 bg-border/50 mx-2"></div>
-                <button type="button" className="text-xs font-medium text-text-secondary hover:text-text-primary">አገናኝ ጨምር</button>
-              </div>
-              <textarea 
-                {...register("body")} 
-                placeholder={watch("article_type") === 'Message' ? "መልዕክትዎን እዚህ ይጻፉ..." : "ዜናዎን እዚህ ይጻፉ..."} 
-                className="w-full h-64 bg-transparent border-none resize-none focus:outline-none text-sm text-text-primary leading-relaxed"
-              ></textarea>
-            </div>
+            <textarea 
+              {...register("body")} 
+              placeholder={watch("article_type") === 'Message' ? "መልዕክትዎን እዚህ ይጻፉ..." : "ዜናዎን እዚህ ይጻፉ..."} 
+              rows={10}
+              className="w-full bg-surface-primary border border-border/50 rounded-2xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors leading-relaxed"
+            ></textarea>
             {errors.body && <span className="text-xs text-danger">{errors.body.message}</span>}
             <div className="text-xs text-text-muted text-right">
               {watchedBody?.length || 0} ፊደላት

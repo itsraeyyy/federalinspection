@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CalendarDays, ArrowRight } from "lucide-react";
+import { createNewsSlug } from "@/lib/slug";
 
 export function NewsMessagesSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -200,7 +201,7 @@ export function NewsMessagesSection() {
                     </p>
                   </div>
                   <Link
-                    href={activeTab === 'Message' ? `/messages/${item.id}` : `/news/${item.id}`}
+                    href={activeTab === 'Message' ? `/messages/${item.id}` : `/news/${createNewsSlug(item.id, item.title)}`}
                     className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold transition-colors"
                     style={{ color: "#014BAA" }}
                     aria-label={`${item.title} ሙሉ ይዘት`}

@@ -42,7 +42,8 @@ export default function AssessmentLoginPage() {
       }
       
       // Force change password on first login
-      if (data.user?.user_metadata?.force_password_change) {
+      const needsPasswordChange = data.user?.user_metadata?.force_password_change || data.user?.user_metadata?.requires_password_change;
+      if (needsPasswordChange) {
         router.push('/assessment/change-password');
       } else {
         router.push('/assessment');

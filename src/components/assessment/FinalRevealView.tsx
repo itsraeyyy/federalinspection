@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Download, FileText, Printer, FileSpreadsheet } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Download, Printer, Loader2 } from 'lucide-react';
 import { SELF_ASSESSMENT_QUESTIONS, LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
-import * as XLSX from 'xlsx';
 import { PrintableReport } from './PrintableReport';
+import { AssessmentReportPDF } from './AssessmentReportPDF';
+import { downloadPDFDocument } from '@/lib/exportToPDF';
 
 export function FinalRevealView({ data }: { data: any }) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
 
   if (!data || !data.details) {
     return <div className="p-8 text-center text-text-muted">No data available</div>;
@@ -101,8 +103,35 @@ export function FinalRevealView({ data }: { data: any }) {
   const grade = getGrade(final100);
 
   // --- EXPORT FUNCTIONS ---
-  const handlePrintPDF = () => {
-    window.print();
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const fileName = `${user?.full_name ? user.full_name.replace(/\s+/g, '_') : 'Assessment'}_Report.pdf`;
+      const docElement = (
+        <AssessmentReportPDF
+          user={user}
+          profile={profile}
+          period={period}
+          evaluators={evaluators}
+          peerRows={peerRows}
+          peerTotalWeight={peerTotalWeight}
+          evaluatorTotals={evaluatorTotals}
+          peerTotalScore={peerTotalScore}
+          peer20={peer20}
+          selfRows={selfRows}
+          selfTotalWeight={selfTotalWeight}
+          self10={self10}
+          sum30={sum30}
+          appr70={appr70}
+          final100={final100}
+          grade={grade}
+          data={data}
+        />
+      );
+      await downloadPDFDocument(docElement, fileName);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -111,8 +140,20 @@ export function FinalRevealView({ data }: { data: any }) {
       <div className="print:hidden flex flex-col sm:flex-row justify-between items-center premium-card p-4 border border-border shadow-sm gap-4">
         <h2 className="text-xl font-heading font-semibold text-text-primary">የግምገማ ሪፖርት ማውረጃ (Report Export)</h2>
         <div className="flex flex-wrap gap-3">
-          <button onClick={handlePrintPDF} className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-            <Printer className="w-4 h-4" /> PDF አውርድ (Export PDF)
+          <button 
+            onClick={handleDownloadPDF} 
+            disabled={downloading}
+            className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md active:scale-95 disabled:opacity-50"
+          >
+            {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {downloading ? 'ፒዲኤፍ በመዘጋጀት ላይ... (Generating PDF...)' : 'PDF አውርድ (Export PDF)'}
+          </button>
+
+          <button 
+            onClick={() => window.print()} 
+            className="flex items-center gap-2 bg-surface-secondary hover:bg-border text-text-primary border border-border px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+          >
+            <Printer className="w-4 h-4" /> ማተሚያ (Print)
           </button>
         </div>
       </div>

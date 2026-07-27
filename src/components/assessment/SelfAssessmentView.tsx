@@ -48,12 +48,12 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
     setLoading(true);
     setError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+      const currentUser: any = (await supabase.auth.getUser()).data?.user || (await supabase.auth.getSession()).data?.session?.user;
+      if (!currentUser) throw new Error('ለማስቀመጥ እባክዎ መጀመሪያ ይግቡ (Not authenticated)');
 
       const payload = {
         period_id: periodId,
-        user_id: session.user.id,
+        user_id: currentUser.id,
         responses,
         score_10: parseFloat(displayScore),
         is_locked: lock

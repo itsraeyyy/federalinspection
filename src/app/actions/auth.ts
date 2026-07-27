@@ -54,26 +54,38 @@ export async function registerUserAction(formData: FormData) {
     
     let userId;
     
-    // First, check if user exists in public.users to prevent split-brain issues
-    const { data: existingUser, error: existErr } = await supabaseAdmin
+    // First, check if user exists in public.users
+    const { data: existingUser } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('phone_number', phone)
-      .single();
+      .maybeSingle();
 
-    if (existingUser?.id) {
-      // User exists from a previous phone registration!
-      userId = existingUser.id;
-      // Update their auth account with the synthetic email and password
+    let existingAuthUserId = existingUser?.id;
+
+    if (!existingAuthUserId) {
+      // Fallback: check if auth user exists by synthetic email
+      const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
+      const authUser = usersList?.users?.find(u => u.email === syntheticEmail);
+      if (authUser) {
+        existingAuthUserId = authUser.id;
+      }
+    }
+
+    if (existingAuthUserId) {
+      // User exists from a previous registration
+      userId = existingAuthUserId;
+      // Update their auth account with the synthetic email, new temp password, and metadata flags
       const updatePayload: any = { 
         email: syntheticEmail, 
         email_confirm: true,
-        user_metadata: { force_password_change: isAdminCreated }
+        user_metadata: { full_name: fullName, phone: phone, force_password_change: isAdminCreated, requires_password_change: isAdminCreated }
       };
       if (password) updatePayload.password = password;
       
       const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, updatePayload);
       if (updateErr && !updateErr.message.includes('already been registered')) {
+        console.error('Failed to update existing user:', updateErr);
         return { error: 'የተጠቃሚ መረጃን ማስተካከል አልተቻለም (Failed to update existing user)' };
       }
     } else {
@@ -82,10 +94,11 @@ export async function registerUserAction(formData: FormData) {
         email: syntheticEmail,
         email_confirm: true,
         password: password,
-        user_metadata: { full_name: fullName, phone: phone, force_password_change: isAdminCreated }
+        user_metadata: { full_name: fullName, phone: phone, force_password_change: isAdminCreated, requires_password_change: isAdminCreated }
       });
 
       if (authError) {
+        console.error('Failed to create user:', authError);
         return { error: 'አዲስ ተጠቃሚ መፍጠር አልተቻለም (Failed to create new user)' };
       }
       userId = authData.user.id;
@@ -241,9 +254,7 @@ export async function resetPasswordAction(rawPhone: string, role: 'assessment' |
     const newPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
 
     // 3. Force update password
-    const userMetadata = role === 'representative' 
-      ? { requires_password_change: true } 
-      : { force_password_change: true };
+    const userMetadata = { force_password_change: true, requires_password_change: true };
 
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword,

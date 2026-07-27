@@ -67,14 +67,16 @@ export default function PublicCodeDocumentsPage() {
   };
 
   const handleBack = () => {
-    if (viewLevel === 'sub') { setSelectedMain(null); setViewLevel('main'); }
+    if (viewLevel === 'main') { setSelectedOffice(null); setViewLevel('office'); }
+    else if (viewLevel === 'sub') { setSelectedMain(null); setViewLevel('main'); }
     else if (viewLevel === 'docs') { setSelectedSub(null); setViewLevel('sub'); }
   };
 
   const getPageTitle = () => {
-    if (viewLevel === 'main') return 'ኮሚሽን ዋና ጽ/ቤት';
-    if (viewLevel === 'sub') return `ኮሚሽን ዋና ጽ/ቤት › ${mainCategory?.name}`;
-    return `ኮሚሽን ዋና ጽ/ቤት › ${mainCategory?.name} › ${subCategory?.name}`;
+    if (viewLevel === 'office') return 'የህዝብ ሰነዶች ማከማቻ';
+    if (viewLevel === 'main') return officeName;
+    if (viewLevel === 'sub') return `${officeName} › ${mainCategory?.name}`;
+    return `${officeName} › ${mainCategory?.name} › ${subCategory?.name}`;
   };
 
   return (
@@ -96,12 +98,12 @@ export default function PublicCodeDocumentsPage() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/30 pb-4">
             <div className="flex items-center gap-3">
-              {(viewLevel === 'sub' || viewLevel === 'docs') && (
+              {viewLevel !== 'office' && (
                 <button onClick={handleBack} className="p-1.5 hover:bg-surface-secondary rounded-lg transition-colors border border-border/40 text-xs font-semibold flex items-center gap-1">
                   <IconChevronLeft size={18} className="text-text-muted" /> ተመለስ
                 </button>
               )}
-              <h1 className="text-xl font-bold text-brand-blue tracking-tight">{getPageTitle()}</h1>
+              <h1 className="text-1xl font-bold text-brand-blue tracking-tight">{getPageTitle()}</h1>
             </div>
             <div className="relative w-full sm:w-64">
               <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -113,12 +115,32 @@ export default function PublicCodeDocumentsPage() {
             <div className="flex items-center justify-center h-40">
               <div className="w-8 h-8 border-4 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin"></div>
             </div>
-          ) : viewLevel === 'main' ? (
+          ) : viewLevel === 'office' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {OFFICES.map((office) => {
+                const docCount = documents.filter(d => d.office === office.code).length;
+                return (
+                  <button key={office.code} onClick={() => navigateTo('main', office.code)} className="group bg-surface-primary rounded-xl border border-border/50 p-6 hover:border-brand-blue/50 transition-all text-left flex items-start gap-4 shadow-sm hover:shadow-md">
+                    <div className="w-12 h-12 rounded-lg bg-brand-blue/5 flex items-center justify-center shrink-0 border border-brand-blue/10 group-hover:bg-brand-blue/10 transition-colors">
+                      {office.code === 'main' ? <IconBuilding size={24} className="text-brand-blue" /> : <IconBuildingEstate size={24} className="text-brand-blue" />}
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-lg font-bold text-text-primary group-hover:text-brand-blue transition-colors">{office.name}</h2>
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-sm text-text-muted">{docCount} ሰነዶች</span>
+                      </div>
+                    </div>
+                    <IconChevronLeft size={20} className="text-text-muted rotate-180 opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
+                  </button>
+                );
+              })}
+            </div>
+          ) : viewLevel === 'main' && selectedOffice ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {MAIN_CATEGORIES.map((cat) => {
                 const docCount = docsInOffice.filter(d => d.mainCategory === cat.code).length;
                 return (
-                  <button key={cat.code} onClick={() => navigateTo('sub', 'main', cat.code)} className="group bg-surface-primary rounded-2xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-start gap-4 shadow-sm hover:shadow-md">
+                  <button key={cat.code} onClick={() => navigateTo('sub', selectedOffice, cat.code)} className="group bg-surface-primary rounded-2xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-start gap-4 shadow-sm hover:shadow-md">
                     <div className="w-12 h-12 rounded-xl bg-surface-secondary border border-border/40 flex items-center justify-center shrink-0">
                       <span className="text-base font-bold text-text-secondary group-hover:text-brand-blue transition-colors">{cat.code}</span>
                     </div>

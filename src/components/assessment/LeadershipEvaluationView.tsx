@@ -106,8 +106,8 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
+      const currentUser: any = (await supabase.auth.getUser()).data?.user || (await supabase.auth.getSession()).data?.session?.user;
+      if (!currentUser) throw new Error('ለማስቀመጥ እባክዎ መጀመሪያ ይግቡ (Not authenticated)');
 
       const payload = members.map(m => {
         const memResp = responses[m.user_id] || {};
@@ -123,7 +123,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
 
         return {
           period_id: periodId,
-          evaluator_id: session.user.id,
+          evaluator_id: currentUser.id,
           target_user_id: m.user_id,
           score_20: parseFloat(score_20.toFixed(2)),
           responses: memResp,
@@ -172,25 +172,31 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
         </div>
       )}
       <div className="max-w-4xl w-full flex-grow flex flex-col">
-        <div className="mb-8 sticky top-0 bg-background/95 backdrop-blur-md py-4 z-20 border-b border-border/50">
-          <div className="flex items-center justify-between mb-2">
+        {/* NON-STICKY Title & Instructions */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
             <h1 className="text-2xl font-heading text-text-primary">የአመራር ግምገማ (Leadership Evaluation)</h1>
-            <span className="text-sm font-medium text-text-muted bg-surface-secondary px-3 py-1 rounded-full">
-              {currentIndex + 1} / {members.length}
+            <span className="text-xs font-semibold text-brand-blue bg-brand-blue/10 px-3 py-1 rounded-full border border-brand-blue/20">
+              {currentIndex + 1} ከ {members.length} አባላት
             </span>
           </div>
           
-          <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-4 mb-4 text-left">
-            <h3 className="font-semibold text-brand-blue flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-5 h-5" />
+          <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-2xl p-4 text-left shadow-sm">
+            <h3 className="font-semibold text-brand-blue flex items-center gap-2 mb-1.5 text-sm">
+              <CheckCircle2 className="w-4 h-4" />
               መመሪያ (Instructions):
             </h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
+            <p className="text-xs text-text-secondary leading-relaxed">
               1. ከታች ያሉትን አባላት በመምረጥ ለእያንዳንዱ አባል ከ1 እስከ 5 ውጤት ይስጡ (Select members below and score them 1 to 5).<br/>
               2. የሁሉንም አባላት ግምገማ ሲያጠናቅቁ "ሁሉንም ግምገማዎች ላክ" የሚለውን ይጫኑ (Click 'Submit All' when everyone is evaluated).
             </p>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar snap-x">
+        </div>
+
+        {/* COMPACT STICKY HEADER for Member Selection & Current Score */}
+        <div className="sticky top-[76px] z-20 mb-6 bg-surface-primary/95 backdrop-blur-md border border-border/80 rounded-2xl p-3 shadow-md transition-all">
+          {/* Member Selection Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-2.5 no-scrollbar snap-x border-b border-border/40 mb-2.5">
             {members.map((m, idx) => {
               const memResp = responses[m.user_id] || {};
               const isComplete = Object.keys(memResp).length === totalQuestions;
@@ -200,51 +206,52 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                 <button
                   key={m.user_id}
                   onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     setCurrentIndex(idx);
                   }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl whitespace-nowrap transition-all border snap-start shrink-0 ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl whitespace-nowrap transition-all border snap-start shrink-0 text-xs ${
                     isActive
-                      ? 'bg-brand-blue text-white border-brand-blue shadow-md'
+                      ? 'bg-brand-blue text-white border-brand-blue shadow-md font-semibold'
                       : isComplete
-                      ? 'bg-success/10 text-success border-success/20 hover:bg-success/20'
-                      : 'bg-surface-secondary text-text-secondary border-border hover:bg-border/50'
+                      ? 'bg-success/10 text-success border-success/30 hover:bg-success/20 font-medium'
+                      : 'bg-surface-secondary text-text-secondary border-border/60 hover:bg-border/50 font-medium'
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                     isActive ? 'bg-white/20' : isComplete ? 'bg-success/20' : 'bg-black/10 dark:bg-white/10'
                   }`}>
                     {m.users?.full_name?.charAt(0) || '?'}
                   </div>
-                  <span className="font-medium text-sm">{m.users?.full_name?.split(' ')[0]}</span>
-                  {isComplete && <CheckCircle2 className="w-4 h-4 ml-1 shrink-0" />}
+                  <span>{m.users?.full_name?.split(' ')[0]}</span>
+                  {isComplete && <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
                 </button>
               );
             })}
           </div>
 
           {readOnly && (
-            <div className="mb-4 bg-brand-blue/10 text-brand-blue px-4 py-2 rounded-lg text-sm font-medium border border-brand-blue/20 text-center flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 mr-2" /> ይህ ግምገማ ተልኳል እና ተቆልፏል (This evaluation is submitted and locked)
+            <div className="mb-2 bg-brand-blue/10 text-brand-blue px-3 py-1.5 rounded-lg text-xs font-medium border border-brand-blue/20 text-center flex items-center justify-center">
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> ይህ ግምገማ ተልኳል እና ተቆልፏል (This evaluation is submitted and locked)
             </div>
           )}
-          
-          <div className="flex flex-col sm:flex-row sm:items-center bg-surface-primary border border-border p-4 rounded-xl shadow-sm gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-brand-blue/10 rounded-full flex items-center justify-center text-brand-blue text-lg font-heading uppercase shrink-0">
+
+          {/* Active Member Details + Score */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-brand-blue/10 border border-brand-blue/20 rounded-full flex items-center justify-center text-brand-blue text-sm font-bold uppercase shrink-0">
                 {currentMember.users?.full_name?.charAt(0) || '?'}
               </div>
-              <div>
-                <h2 className="text-lg font-heading font-semibold text-text-primary">
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-text-primary truncate leading-tight">
                   {currentMember.users?.full_name}
                 </h2>
-                <p className="text-xs text-text-secondary">{currentMember.title || 'የቡድን አባል (Team Member)'}</p>
+                <p className="text-[11px] text-text-muted truncate">{currentMember.title || 'የቡድን አባል (Team Member)'}</p>
               </div>
             </div>
-            <div className="sm:ml-auto text-left sm:text-right bg-surface-secondary sm:bg-transparent p-3 sm:p-0 rounded-lg">
-              <span className="text-sm text-text-secondary block sm:inline sm:mr-2">የአሁኑ ውጤት (Current Score):</span>
-              <span className="text-2xl font-heading font-bold text-brand-blue">{displayScore}</span>
-              <span className="text-sm text-text-muted ml-1">/ 20</span>
+
+            <div className="flex items-center gap-1.5 bg-surface-secondary px-3 py-1.5 rounded-xl border border-border/50 shrink-0">
+              <span className="text-xs text-text-secondary hidden sm:inline">የአሁኑ ውጤት:</span>
+              <span className="text-base font-heading font-extrabold text-brand-blue">{displayScore}</span>
+              <span className="text-xs text-text-muted">/ 20</span>
             </div>
           </div>
         </div>
