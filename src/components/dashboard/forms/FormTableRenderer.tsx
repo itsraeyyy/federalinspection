@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { IconChevronDown, IconChevronUp, IconCheck } from "@tabler/icons-react";
+import { computeFormCalculations, isCalculatedField } from "@/utils/formCalculations";
 
 export interface FormSchema {
   id: string;
@@ -23,8 +24,11 @@ interface FormTableRendererProps {
 export function FormTableRenderer({ schema, initialData = {}, onChange, isCompleted, compact = false }: FormTableRendererProps) {
   const [isOpen, setIsOpen] = useState(compact ? true : false);
   
+  // Automatically calculate totals, differences, and percentages on the fly
+  const computedData = computeFormCalculations(schema, initialData);
+
   const handleInputChange = (colKey: string, subKey: string, value: string) => {
-    const newData = { ...initialData };
+    const newData = { ...computedData };
     if (!newData[colKey]) {
       newData[colKey] = {};
     }
@@ -35,7 +39,9 @@ export function FormTableRenderer({ schema, initialData = {}, onChange, isComple
       newData[colKey] = value;
     }
     
-    onChange(newData);
+    // Run automated calculations immediately after user entry
+    const recalculated = computeFormCalculations(schema, newData);
+    onChange(recalculated);
   };
 
   const tableBody = (
@@ -62,32 +68,61 @@ export function FormTableRenderer({ schema, initialData = {}, onChange, isComple
               <td className="px-4 py-3">
                 {col.subKeys.length > 0 ? (
                   <div className="flex gap-3">
-                    {col.subKeys.map(subKey => (
-                      <div key={subKey} className="flex-1 space-y-1.5">
-                        <label className="text-xs text-text-muted block md:hidden">{subKey}</label>
-                        <div className="relative group">
-                          <span className="absolute -top-2.5 left-2 bg-surface-primary px-1 text-[10px] text-text-muted font-medium hidden md:block z-10">
-                            {subKey}
-                          </span>
-                          <input
-                            type="number"
-                            value={initialData[col.key]?.[subKey] || ''}
-                            onChange={(e) => handleInputChange(col.key, subKey, e.target.value)}
-                            className="w-full px-3 py-2.5 bg-surface-primary border border-border-medium rounded-lg text-sm text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-all"
-                            placeholder="0"
-                          />
+                    {col.subKeys.map(subKey => {
+                      const isComputed = isCalculatedField(col.key, subKey, col.subKeys, schema.columns);
+                      const displayVal = computedData[col.key]?.[subKey] ?? '';
+                      return (
+                        <div key={subKey} className="flex-1 space-y-1.5">
+                          <label className="text-xs text-text-muted block md:hidden">{subKey}</label>
+                          <div className="relative group">
+                            <span className="absolute -top-2.5 left-2 bg-surface-primary px-1 text-[10px] text-text-muted font-medium hidden md:block z-10">
+                              {subKey}
+                            </span>
+                            <input
+                              type={isComputed && (subKey.includes("%") || col.key === "ያዋቀሩ%") ? "text" : "number"}
+                              readOnly={isComputed}
+                              disabled={isComputed}
+                              value={displayVal}
+                              onChange={(e) => !isComputed && handleInputChange(col.key, subKey, e.target.value)}
+                              className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
+                                isComputed
+                                  ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
+                                  : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
+                              }`}
+                              placeholder={isComputed ? "0" : "0"}
+                            />
+                            {isComputed && (
+                              <span className="absolute right-2 top-2 text-[10px] font-bold text-brand-blue/70 pointer-events-none uppercase hidden group-hover:inline-block transition-opacity">
+                                አውቶ
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <input
-                    type="text"
-                    value={initialData[col.key] || ''}
-                    onChange={(e) => handleInputChange(col.key, '', e.target.value)}
-                    className="w-full px-3 py-2.5 bg-surface-primary border border-border-medium rounded-lg text-sm text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue transition-all"
-                    placeholder="-"
-                  />
+                  (() => {
+                    const isComputed = isCalculatedField(col.key, "", [], schema.columns);
+                    const displayVal = computedData[col.key] ?? '';
+                    return (
+                      <div className="relative group">
+                        <input
+                          type={isComputed ? "text" : "text"}
+                          readOnly={isComputed}
+                          disabled={isComputed}
+                          value={displayVal}
+                          onChange={(e) => !isComputed && handleInputChange(col.key, '', e.target.value)}
+                          className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
+                            isComputed
+                              ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
+                              : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
+                          }`}
+                          placeholder={isComputed ? "0" : "-"}
+                        />
+                      </div>
+                    );
+                  })()
                 )}
               </td>
             </tr>
