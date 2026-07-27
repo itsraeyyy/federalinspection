@@ -19,13 +19,23 @@ type ViewLevel = 'office' | 'main' | 'sub' | 'docs';
 export default function PublicCodeDocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewLevel, setViewLevel] = useState<ViewLevel>('office');
-  const [selectedOffice, setSelectedOffice] = useState<string | null>(null);
+  const [viewLevel, setViewLevel] = useState<ViewLevel>('main');
+  const [selectedOffice, setSelectedOffice] = useState<string | null>('main');
   const [selectedMain, setSelectedMain] = useState<string | null>(null);
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    // Check URL params for specific office (defaulting to 'main' for Headquarters)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const officeParam = params.get('office');
+      if (officeParam) {
+        setSelectedOffice(officeParam);
+        setViewLevel('main');
+      }
+    }
+
     documentService.getDocuments().then(data => {
       // Filter only public documents
       setDocuments(data.filter(d => d.is_public));
@@ -39,12 +49,12 @@ export default function PublicCodeDocumentsPage() {
     return d.title.toLowerCase().includes(q) || (d.description?.toLowerCase().includes(q) ?? false);
   });
 
-  const officeName = OFFICES.find(o => o.code === selectedOffice)?.name || '';
+  const officeName = OFFICES.find(o => o.code === selectedOffice)?.name || 'ኮሚሽን ዋና ጽ/ቤት';
   const mainCategory = MAIN_CATEGORIES.find(m => m.code === selectedMain);
   const subs = selectedMain ? (SUB_CATEGORIES[selectedMain] || []) : [];
   const subCategory = subs.find(s => s.code === selectedSub);
 
-  const docsInOffice = selectedOffice ? filtered.filter(d => d.office === selectedOffice) : [];
+  const docsInOffice = selectedOffice ? filtered.filter(d => d.office === selectedOffice) : filtered;
   const docsInMain = docsInOffice.filter(d => d.mainCategory === selectedMain);
   const docsInSub = docsInMain.filter(d => d.subCategory === selectedSub);
   const yearsInSub = [...new Set(docsInSub.map(d => d.year))].sort((a, b) => b.localeCompare(a));
@@ -57,16 +67,14 @@ export default function PublicCodeDocumentsPage() {
   };
 
   const handleBack = () => {
-    if (viewLevel === 'main') { setSelectedOffice(null); setViewLevel('office'); }
-    else if (viewLevel === 'sub') { setSelectedMain(null); setViewLevel('main'); }
+    if (viewLevel === 'sub') { setSelectedMain(null); setViewLevel('main'); }
     else if (viewLevel === 'docs') { setSelectedSub(null); setViewLevel('sub'); }
   };
 
   const getPageTitle = () => {
-    if (viewLevel === 'office') return 'የህዝብ ሰነዶች ማከማቻ';
-    if (viewLevel === 'main') return officeName;
-    if (viewLevel === 'sub') return `${officeName} › ${mainCategory?.name}`;
-    return `${officeName} › ${mainCategory?.name} › ${subCategory?.name}`;
+    if (viewLevel === 'main') return 'ኮሚሽን ዋና ጽ/ቤት';
+    if (viewLevel === 'sub') return `ኮሚሽን ዋና ጽ/ቤት › ${mainCategory?.name}`;
+    return `ኮሚሽን ዋና ጽ/ቤት › ${mainCategory?.name} › ${subCategory?.name}`;
   };
 
   return (
@@ -78,8 +86,8 @@ export default function PublicCodeDocumentsPage() {
             <Image src="/logo.jpg" alt="Commission Logo" fill className="object-cover" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold leading-tight">የህዝብ ኮድ ሰነዶች</span>
-            <span className="text-xs text-text-muted leading-tight">ለህዝብ ክፍት የሆኑ ሰነዶች ማውጫ</span>
+            <span className="text-sm font-bold leading-tight">የኮሚሽን ዋና ጽ/ቤት ህዝባዊ ሰነዶች</span>
+            <span className="text-xs text-text-muted leading-tight">ለህዝብ ክፍት የሆኑ የኮሚሽኑ ሰነዶች ማውጫ</span>
           </div>
         </div>
       </header>
@@ -88,9 +96,9 @@ export default function PublicCodeDocumentsPage() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/30 pb-4">
             <div className="flex items-center gap-3">
-              {viewLevel !== 'office' && (
-                <button onClick={handleBack} className="p-1 hover:bg-surface-secondary rounded-md transition-colors border border-transparent hover:border-border/50">
-                  <IconChevronLeft size={20} className="text-text-muted" />
+              {(viewLevel === 'sub' || viewLevel === 'docs') && (
+                <button onClick={handleBack} className="p-1.5 hover:bg-surface-secondary rounded-lg transition-colors border border-border/40 text-xs font-semibold flex items-center gap-1">
+                  <IconChevronLeft size={18} className="text-text-muted" /> ተመለስ
                 </button>
               )}
               <h1 className="text-xl font-bold text-brand-blue tracking-tight">{getPageTitle()}</h1>
@@ -105,35 +113,13 @@ export default function PublicCodeDocumentsPage() {
             <div className="flex items-center justify-center h-40">
               <div className="w-8 h-8 border-4 border-brand-blue/30 border-t-brand-blue rounded-full animate-spin"></div>
             </div>
-          ) : viewLevel === 'office' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {OFFICES.map((office) => {
-                const docCount = documents.filter(d => d.office === office.code).length;
-                if (docCount === 0 && searchQuery) return null; // Hide empty offices when searching
-                return (
-                  <button key={office.code} onClick={() => navigateTo('main', office.code)} className="group bg-surface-primary rounded-xl border border-border/50 p-6 hover:border-brand-blue/50 transition-all text-left flex items-start gap-4 shadow-sm hover:shadow-md">
-                    <div className="w-12 h-12 rounded-lg bg-brand-blue/5 flex items-center justify-center shrink-0 border border-brand-blue/10 group-hover:bg-brand-blue/10 transition-colors">
-                      {office.code === 'main' ? <IconBuilding size={24} className="text-brand-blue" /> : <IconBuildingEstate size={24} className="text-brand-blue" />}
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-lg font-bold text-text-primary group-hover:text-brand-blue transition-colors">{office.name}</h2>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-sm text-text-muted">{docCount} ሰነዶች</span>
-                      </div>
-                    </div>
-                    <IconChevronLeft size={20} className="text-text-muted rotate-180 opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
-                  </button>
-                );
-              })}
-            </div>
-          ) : viewLevel === 'main' && selectedOffice ? (
+          ) : viewLevel === 'main' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {MAIN_CATEGORIES.map((cat) => {
                 const docCount = docsInOffice.filter(d => d.mainCategory === cat.code).length;
-                if (docCount === 0) return null;
                 return (
-                  <button key={cat.code} onClick={() => navigateTo('sub', selectedOffice, cat.code)} className="group bg-surface-primary rounded-xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-start gap-4 shadow-sm">
-                    <div className="w-12 h-12 rounded-lg bg-surface-secondary border border-border flex items-center justify-center shrink-0">
+                  <button key={cat.code} onClick={() => navigateTo('sub', 'main', cat.code)} className="group bg-surface-primary rounded-2xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-start gap-4 shadow-sm hover:shadow-md">
+                    <div className="w-12 h-12 rounded-xl bg-surface-secondary border border-border/40 flex items-center justify-center shrink-0">
                       <span className="text-base font-bold text-text-secondary group-hover:text-brand-blue transition-colors">{cat.code}</span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -150,10 +136,9 @@ export default function PublicCodeDocumentsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {subs.map((sub) => {
                 const docCount = docsInOffice.filter(d => d.mainCategory === selectedMain && d.subCategory === sub.code).length;
-                if (docCount === 0) return null;
                 return (
-                  <button key={sub.code} onClick={() => navigateTo('docs', selectedOffice || undefined, selectedMain || undefined, sub.code)} className="group bg-surface-primary rounded-xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-center gap-4 shadow-sm">
-                    <div className="w-10 h-10 rounded-lg bg-surface-secondary border border-border flex items-center justify-center shrink-0">
+                  <button key={sub.code} onClick={() => navigateTo('docs', selectedOffice || undefined, selectedMain || undefined, sub.code)} className="group bg-surface-primary rounded-2xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all text-left flex items-center gap-4 shadow-sm hover:shadow-md">
+                    <div className="w-10 h-10 rounded-xl bg-surface-secondary border border-border/40 flex items-center justify-center shrink-0">
                       <span className="text-xs font-bold text-text-secondary group-hover:text-brand-blue transition-colors">{sub.code}</span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -168,47 +153,54 @@ export default function PublicCodeDocumentsPage() {
             </div>
           ) : viewLevel === 'docs' && selectedMain && selectedSub ? (
             <div className="flex flex-col gap-8">
-              {yearsInSub.map(year => (
-                <div key={year} className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2 border-b border-border/30 pb-2">
-                    <IconCalendar size={20} className="text-brand-blue" />
-                    <h2 className="text-lg font-bold text-text-primary">{year} ዓ.ም</h2>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {docsInSub.filter(d => d.year === year).map((doc) => (
-                      <div key={doc.id} className="bg-surface-primary rounded-xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all flex flex-col gap-4 shadow-sm hover:shadow-md">
-                        <div className="flex items-start gap-4 min-w-0">
-                          <div className="mt-0.5 p-2 bg-brand-blue/10 rounded-lg"><IconFileText size={20} className="text-brand-blue" /></div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="text-base font-bold text-text-primary truncate">{doc.title}</h3>
-                            {doc.description && <p className="text-sm text-text-muted mt-1.5 line-clamp-2">{doc.description}</p>}
-                            <div className="flex items-center gap-2 mt-3">
-                              <span className="text-xs font-medium text-text-muted bg-surface-secondary px-2 py-1 rounded-md">{doc.uploadDate}</span>
+              {docsInSub.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 bg-surface-primary rounded-3xl border border-border/40 text-center gap-3">
+                  <IconFileText size={40} className="text-text-muted/40" />
+                  <p className="text-sm font-semibold text-text-muted">በዚህ ምድብ እስካሁን ምንም ክፍት ሰነዶች አልተጫኑም።</p>
+                </div>
+              ) : (
+                yearsInSub.map(year => (
+                  <div key={year} className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2 border-b border-border/30 pb-2">
+                      <IconCalendar size={20} className="text-brand-blue" />
+                      <h2 className="text-lg font-bold text-text-primary">{year} ዓ.ም</h2>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {docsInSub.filter(d => d.year === year).map((doc) => (
+                        <div key={doc.id} className="bg-surface-primary rounded-xl border border-border/50 p-5 hover:border-brand-blue/50 transition-all flex flex-col gap-4 shadow-sm hover:shadow-md">
+                          <div className="flex items-start gap-4 min-w-0">
+                            <div className="mt-0.5 p-2 bg-brand-blue/10 rounded-lg"><IconFileText size={20} className="text-brand-blue" /></div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-base font-bold text-text-primary truncate">{doc.title}</h3>
+                              {doc.description && <p className="text-sm text-text-muted mt-1.5 line-clamp-2">{doc.description}</p>}
+                              <div className="flex items-center gap-2 mt-3">
+                                <span className="text-xs font-medium text-text-muted bg-surface-secondary px-2 py-1 rounded-md">{doc.uploadDate}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex flex-col gap-2 pt-4 border-t border-border/30">
-                          {doc.files.map((file) => {
-                            const meta = fileTypeMeta[file.fileType] || defaultFileIcon;
-                            return (
-                              <div key={file.id} className="flex items-center gap-3 bg-surface-secondary/50 p-3 rounded-lg border border-transparent hover:border-border/50 group/file transition-colors">
-                                <span className={meta.color}>{meta.icon}</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-text-primary truncate">{file.name}</div>
-                                  <div className="text-xs text-text-muted mt-0.5">{file.fileType} • {file.fileSize}</div>
+                          <div className="flex flex-col gap-2 pt-4 border-t border-border/30">
+                            {doc.files.map((file) => {
+                              const meta = fileTypeMeta[file.fileType] || defaultFileIcon;
+                              return (
+                                <div key={file.id} className="flex items-center gap-3 bg-surface-secondary/50 p-3 rounded-lg border border-transparent hover:border-border/50 group/file transition-colors">
+                                  <span className={meta.color}>{meta.icon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-text-primary truncate">{file.name}</div>
+                                    <div className="text-xs text-text-muted mt-0.5">{file.fileType} • {file.fileSize}</div>
+                                  </div>
+                                  <a href={documentService.getFileUrl ? documentService.getFileUrl({ office: doc.office, year: doc.year }, file.id) : '#'} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-white border border-border/50 text-text-primary text-xs font-semibold px-3 py-1.5 rounded hover:bg-surface-secondary transition-colors shadow-sm">
+                                    <IconDownload size={14} /> አውርድ
+                                  </a>
                                 </div>
-                                <a href={documentService.getFileUrl ? documentService.getFileUrl({ office: doc.office, year: doc.year }, file.id) : '#'} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 bg-white border border-border/50 text-text-primary text-xs font-semibold px-3 py-1.5 rounded hover:bg-surface-secondary transition-colors shadow-sm">
-                                  <IconDownload size={14} /> አውርድ
-                                </a>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           ) : null}
         </div>

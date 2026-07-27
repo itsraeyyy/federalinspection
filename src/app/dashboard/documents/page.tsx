@@ -657,13 +657,13 @@ export default function DocumentsPage() {
               <QRCodeSVG 
                 value={mainTab === 'confidential' 
                   ? `${typeof window !== 'undefined' ? window.location.origin : ''}/request-access?targetType=confidential&target=የኮሚሽኑ ሚስጥራዊ ሰነዶች`
-                  : `${typeof window !== 'undefined' ? window.location.origin : ''}/public/code-documents`} 
+                  : `${typeof window !== 'undefined' ? window.location.origin : ''}/public/code-documents?office=main`} 
                 size={200} 
                 fgColor="#1a1a2e" 
               />
             </div>
             {mainTab !== 'confidential' && (
-              <a href="/public/code-documents" target="_blank" className="text-brand-blue text-sm font-semibold hover:underline">ሊንኩን ይክፈቱ</a>
+              <a href="/public/code-documents?office=main" target="_blank" className="text-brand-blue text-sm font-semibold hover:underline">ሊንኩን ይክፈቱ</a>
             )}
             {mainTab === 'confidential' && (
               <a href="/request-access?targetType=confidential&target=የኮሚሽኑ ሚስጥራዊ ሰነዶች" target="_blank" className="text-brand-blue text-sm font-semibold hover:underline">ሊንኩን ይክፈቱ</a>

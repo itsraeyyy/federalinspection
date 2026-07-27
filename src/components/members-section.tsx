@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-
-import { User } from "lucide-react";
+import { User, ChevronLeft, ChevronRight } from "lucide-react";
 import { personnelService } from "@/services/personnel";
-import { Personnel, COMMISSION_POSITIONS } from "@/types";
+import { Personnel } from "@/types";
 import { IconBrandFacebook, IconBrandX, IconBrandLinkedin, IconBrandWhatsapp } from "@tabler/icons-react";
 
 // @BACKEND: This section reads from the personnel service.
-// Members are grouped by office tab, then by position row.
-// Each position (ዋና ኮሚሽነር, etc.) gets its own horizontal row.
+// Members are grouped by office tab in a 1-row slidable carousel.
 
 const OFFICE_TABS = [
   { id: 'commission-members', label: 'ኮሚሽን አባላት', labelEn: 'Commission Members' },
@@ -131,6 +129,10 @@ export function MembersSection() {
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
   useEffect(() => {
     personnelService.getPersonnel().then(data => {
       setPersonnel(data);
@@ -146,6 +148,33 @@ export function MembersSection() {
     if (activeTab === 'commission-members') return p.officeCategory === 'Commission Members' || p.officeCategoryAm === 'ኮሚሽን አባላት';
     return false;
   });
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 5);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScroll);
+    checkScroll();
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [currentOffice, activeTab]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollAmount = direction === 'left' ? -350 : 350;
+    el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  };
 
   return (
     <section
@@ -169,40 +198,78 @@ export function MembersSection() {
             <div className="mt-5 h-1 w-12 rounded-full" style={{ backgroundColor: "#FFB800" }} />
           </div>
 
-          {/* Office Tabs */}
-          <div role="tablist" aria-label="የኮሚሽን ቢሮዎች" className="flex flex-wrap items-center gap-2">
-            {OFFICE_TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
+          {/* Office Tabs + Slide Navigation Buttons */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div role="tablist" aria-label="የኮሚሽን ቢሮዎች" className="flex flex-wrap items-center gap-2">
+              {OFFICE_TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveTab(tab.id)}
+                    className="inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300"
+                    style={{
+                      backgroundColor: isActive ? "#014BAA" : "white",
+                      color: isActive ? "white" : "#64748b",
+                      boxShadow: isActive ? "0 4px 16px rgba(1,75,170,0.25)" : "none",
+                      border: isActive ? "2px solid #014BAA" : "2px solid #e2e8f0",
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Slide Navigation Buttons */}
+            {currentOffice.length > 0 && (
+              <div className="flex items-center gap-2">
                 <button
-                  key={tab.id}
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold transition-all duration-300"
-                  style={{
-                    backgroundColor: isActive ? "#014BAA" : "white",
-                    color: isActive ? "white" : "#64748b",
-                    boxShadow: isActive ? "0 4px 16px rgba(1,75,170,0.25)" : "none",
-                    border: isActive ? "2px solid #014BAA" : "2px solid #e2e8f0",
-                  }}
+                  onClick={() => handleScroll('left')}
+                  disabled={!canScrollLeft}
+                  aria-label="Previous Slide"
+                  className={`flex size-10 items-center justify-center rounded-full border bg-white shadow-sm transition-all duration-300 ${
+                    canScrollLeft
+                      ? "border-slate-200 text-slate-800 hover:bg-[#014BAA] hover:text-white hover:border-[#014BAA] cursor-pointer"
+                      : "border-slate-100 text-slate-300 cursor-not-allowed opacity-40"
+                  }`}
                 >
-                  {tab.label}
+                  <ChevronLeft className="size-5" />
                 </button>
-              );
-            })}
+                <button
+                  onClick={() => handleScroll('right')}
+                  disabled={!canScrollRight}
+                  aria-label="Next Slide"
+                  className={`flex size-10 items-center justify-center rounded-full border bg-white shadow-sm transition-all duration-300 ${
+                    canScrollRight
+                      ? "border-slate-200 text-slate-800 hover:bg-[#014BAA] hover:text-white hover:border-[#014BAA] cursor-pointer"
+                      : "border-slate-100 text-slate-300 cursor-not-allowed opacity-40"
+                  }`}
+                >
+                  <ChevronRight className="size-5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Members Grid */}
+        {/* Slidable 1-Row Members Container */}
         {loading ? (
           <div className="flex items-center justify-center h-64 text-slate-400 text-sm">በመጫን ላይ...</div>
         ) : currentOffice.length === 0 ? (
           <div className="flex items-center justify-center h-48 text-slate-400 text-sm">ምንም አባላት አልተገኙም።</div>
         ) : (
-          <div className="flex flex-wrap gap-6 pb-8 pt-6">
+          <div
+            ref={scrollRef}
+            className="flex items-stretch gap-6 overflow-x-auto scroll-smooth pb-8 pt-6 snap-x snap-mandatory scrollbar-none"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {currentOffice.map((member) => (
-              <MemberCard key={member.id} member={member} />
+              <div key={member.id} className="snap-start shrink-0">
+                <MemberCard member={member} />
+              </div>
             ))}
           </div>
         )}

@@ -15,13 +15,14 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 
 const ETHIOPIA_REGIONS = [
-  'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤን-ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬ ዳዋ', 'ፌዴራል ተቋማት'
+  'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤኒሻንጉል ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 
+  'ደቡብ ምዕራብ ኢትዮጵያ', 'ደቡብ ኢትዮጵያ', 'ማዕከላዊ ኢትዮጵያ', 'አዲስ አበባ', 'ድሬዳዋ', 'ፌዴራል ተቋማት'
 ];
 
 const editPersonnelSchema = z.object({
-  positionId: z.string().min(1, 'ሹመት ያስፈልጋል።'),
-  officeId: z.string().min(1, 'ምድብ ያስፈልጋል።'),
-  fullName: z.string().min(1, 'ሙሉ ስም ያስፈልጋል።'),
+  positionId: z.string().optional(),
+  officeId: z.string().optional(),
+  fullName: z.string().optional(),
   gender: z.string().optional(),
   age: z.coerce.number().optional(),
   ethnicity: z.string().optional(),
@@ -36,11 +37,11 @@ const editPersonnelSchema = z.object({
   phone: z.string().optional(),
   message: z.string().optional(),
   photoFile: z.any().optional(),
-  facebookUrl: z.string().url('ትክክለኛ የፌስቡክ ሊንክ ያስገቡ').optional().or(z.literal('')),
-  xUrl: z.string().url('ትክክለኛ የX (Twitter) ሊንክ ያስገቡ').optional().or(z.literal('')),
-  linkedinUrl: z.string().url('ትክክለኛ የLinkedIn ሊንክ ያስገቡ').optional().or(z.literal('')),
-  whatsappUrl: z.string().url('ትክክለኛ የWhatsApp ሊንክ ያስገቡ').optional().or(z.literal('')),
-  status: z.enum(['Active', 'Inactive', 'Archived']).optional(),
+  facebookUrl: z.string().optional().or(z.literal('')),
+  xUrl: z.string().optional().or(z.literal('')),
+  linkedinUrl: z.string().optional().or(z.literal('')),
+  whatsappUrl: z.string().optional().or(z.literal('')),
+  status: z.string().optional(),
   region: z.string().optional(),
 });
 
@@ -67,24 +68,51 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
     personnelService.getPersonnelById(id).then(data => {
       if (data) {
         setPersonnelData(data);
-        const pos = COMMISSION_POSITIONS.find(p => p.nameEn === data.position) || COMMISSION_POSITIONS[0];
-        const off = OFFICE_CATEGORIES.find(o => o.nameEn === data.officeCategory) || OFFICE_CATEGORIES[0];
+        const pos = COMMISSION_POSITIONS.find(p => 
+          p.id === data.position || 
+          p.id === (data as any).position_id ||
+          p.nameEn.toLowerCase() === (data.position || '').toLowerCase() || 
+          p.nameAm === data.positionAm || 
+          p.nameAm === (data as any).position_am ||
+          p.nameAm === data.position
+        ) || COMMISSION_POSITIONS[0];
+
+        const off = OFFICE_CATEGORIES.find(o => 
+          o.id === data.officeCategory || 
+          o.id === (data as any).office_category ||
+          o.id === (data as any).office_id ||
+          o.nameEn.toLowerCase() === (data.officeCategory || (data as any).office_category || '').toLowerCase() || 
+          o.nameAm === data.officeCategoryAm || 
+          o.nameAm === (data as any).office_category_am ||
+          o.nameAm === data.officeCategory
+        ) || OFFICE_CATEGORIES[0];
+
+        const rawReg = data.region || '';
+        const matchedRegion = ETHIOPIA_REGIONS.find(r => 
+          r === rawReg || 
+          r.replace(/\s+/g, '') === rawReg.replace(/\s+/g, '') ||
+          (rawReg.includes('ማዕከላዊ') && r.includes('ማዕከላዊ')) ||
+          (rawReg.includes('ደቡብ ምዕራብ') && r.includes('ደቡብ ምዕራብ')) ||
+          (rawReg.includes('ደቡብ ኢ') && r.includes('ደቡብ ኢ')) ||
+          (rawReg.includes('ድሬ') && r.includes('ድሬ')) ||
+          (rawReg.includes('ቤን') && r.includes('ቤን'))
+        ) || rawReg;
         
         reset({
           positionId: pos.id,
           officeId: off.id,
-          fullName: data.nameAm || data.name,
-          gender: 'male', // default or derived if existed
-          age: 30, // default or derived
-          educationType: data.department,
-          phone: data.phone,
+          fullName: data.nameAm || data.name || '',
+          gender: 'male',
+          age: 30,
+          educationType: data.department || '',
+          phone: data.phone || '',
           facebookUrl: data.facebook_url || '',
           xUrl: data.x_url || '',
           linkedinUrl: data.linkedin_url || '',
           whatsappUrl: data.whatsapp_url || '',
           message: data.message || '',
-          status: data.status,
-          region: data.region || '',
+          status: data.status || 'Active',
+          region: matchedRegion,
         });
 
         if (data.photo) {
@@ -108,12 +136,11 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
   const onSubmit = async (formData: any) => {
     try {
       setStatusMsg(null);
-      const pos = COMMISSION_POSITIONS.find(p => p.id === formData.positionId);
-      const off = OFFICE_CATEGORIES.find(o => o.id === formData.officeId);
-      if (!pos || !off) {
-        setStatusMsg({ type: 'error', text: 'እባክዎ ሹመት እና ምድብ በትክክል ይምረጡ።' });
-        return;
-      }
+      const pos = COMMISSION_POSITIONS.find(p => p.id === formData.positionId) || 
+                  COMMISSION_POSITIONS[0];
+                  
+      const off = OFFICE_CATEGORIES.find(o => o.id === formData.officeId) || 
+                  OFFICE_CATEGORIES[0];
 
       let photoUrl = personnelData?.photo || '';
       if (croppedFile) {
@@ -123,11 +150,11 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
       }
 
       const payload = {
-        name: formData.fullName,
-        nameAm: formData.fullName,
+        name: formData.fullName || personnelData?.name || '',
+        nameAm: formData.fullName || personnelData?.nameAm || '',
         position: pos.nameEn,
         positionAm: pos.nameAm,
-        officeCategory: off.nameEn,
+        officeCategory: off.id,
         officeCategoryAm: off.nameAm,
         department: formData.educationType || '',
         phone: formData.phone || '',
@@ -138,7 +165,7 @@ export default function EditPersonnelPage({ params }: { params: Promise<{ id: st
         whatsapp_url: formData.whatsappUrl || '',
         message: pos.id === 'chief' ? formData.message : undefined,
         status: formData.status || 'Active',
-        region: off.id === 'branch' ? formData.region : undefined,
+        region: off.id === 'branch' ? (formData.region || personnelData?.region) : undefined,
       };
       await personnelService.updatePersonnel(id, payload);
       setStatusMsg({ type: 'success', text: 'መረጃው በትክክል ተሻሽሏል!' });

@@ -14,7 +14,8 @@ import * as z from "zod";
 import { COMMISSION_POSITIONS, OFFICE_CATEGORIES, Personnel } from "@/types";
 
 const ETHIOPIA_REGIONS = [
-  'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤን-ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬ ዳዋ', 'ፌዴራል ተቋማት'
+  'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤኒሻንጉል ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 
+  'ደቡብ ምዕራብ ኢትዮጵያ', 'ደቡብ ኢትዮጵያ', 'ማዕከላዊ ኢትዮጵያ', 'አዲስ አበባ', 'ድሬዳዋ', 'ፌዴራል ተቋማት'
 ];
 
 // @BACKEND: Independent validation schema for personnel creation matching the form fields.

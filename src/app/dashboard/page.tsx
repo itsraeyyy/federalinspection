@@ -1,28 +1,21 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { StatCard } from "@/components/ui/stat-card";
-import { RecentActivity } from "@/components/ui/recent-activity";
 import { Greeting } from "@/components/ui/greeting";
-import { IconNews, IconFileText, IconUsers, IconMessage2, IconQrcode, IconCheck, IconX, IconDeviceMobile, IconChartBar } from '@tabler/icons-react';
+import { 
+  IconNews, 
+  IconFileText, 
+  IconUsers, 
+  IconMessage2, 
+  IconChartBar, 
+  IconBuilding,
+  IconArrowUpRight
+} from '@tabler/icons-react';
 import Link from "next/link";
-import { PendingQRRequests } from "@/components/dashboard/pending-qr-requests";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { verifyAdminUser } from "@/lib/adminAuth";
 
 export const dynamic = 'force-dynamic';
-
-const formatTimeAgo = (dateString: string) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return `አሁን`;
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} ደቂቃ በፊት`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} ሰዓት በፊት`;
-  return `${Math.floor(diffInSeconds / 86400)} ቀን በፊት`;
-};
-
-import { verifyAdminUser } from "@/lib/adminAuth";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -38,44 +31,43 @@ export default async function DashboardPage() {
     redirect('/auth/login?error=unauthorized');
   }
 
-  // Fetch all dashboard stats in a single RPC call via authenticated session client
-  const [{ data: stats, error: statsErr }, { data: scanRequests }] = await Promise.all([
-    supabase.rpc('get_dashboard_stats'),
-    supabase.from('scan_requests')
-      .select('*')
-      .ilike('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(3),
+  // Fetch real analytics data from Supabase
+  const [
+    { count: totalComplaintsCount },
+    { count: resolvedComplaintsCount },
+    { count: newComplaintsCount },
+    { count: totalPersonnelCount },
+    { count: branchCount },
+    { count: commissionMembersCount },
+    { count: totalPeriodsCount },
+    { data: branchLeaders }
+  ] = await Promise.all([
+    supabase.from('complaints').select('*', { count: 'exact', head: true }),
+    supabase.from('complaints').select('*', { count: 'exact', head: true }).ilike('status', 'resolved'),
+    supabase.from('complaints').select('*', { count: 'exact', head: true }).or('status.ilike.new,status.ilike.processing,status.is.null'),
+    supabase.from('personnel').select('*', { count: 'exact', head: true }).eq('status', 'Active'),
+    supabase.from('personnel').select('*', { count: 'exact', head: true }).eq('office_category', 'branch'),
+    supabase.from('personnel').select('*', { count: 'exact', head: true }).eq('office_category', 'commission-members'),
+    supabase.from('assessment_periods').select('*', { count: 'exact', head: true }),
+    supabase.from('personnel').select('region, name_am, position_am, status').eq('office_category', 'branch').order('created_at', { ascending: true })
   ]);
 
-  if (statsErr) {
-    console.error("[Dashboard Stats Fetch Error]:", statsErr);
-  }
+  const totalComplaints = totalComplaintsCount ?? 0;
+  const resolvedComplaints = resolvedComplaintsCount ?? 0;
+  const newComplaints = newComplaintsCount ?? 0;
+  const totalPersonnel = totalPersonnelCount ?? 0;
+  const totalBranches = branchCount ?? 0;
+  const totalCommissionMembers = commissionMembersCount ?? 0;
+  const totalPeriods = totalPeriodsCount ?? 0;
 
-
-  const totalDocs = stats?.total_docs ?? 0;
-  const publicDocs = stats?.public_docs ?? 0;
-  const privateDocs = totalDocs - publicDocs;
-  const totalNews = stats?.total_news ?? 0;
-  const publishedNews = stats?.published_news ?? 0;
-  const draftNews = stats?.draft_news ?? 0;
-  const totalComplaints = stats?.total_complaints ?? 0;
-  const resolvedComplaints = stats?.resolved_complaints ?? 0;
-  const newComplaints = totalComplaints - resolvedComplaints;
-  const totalPersonnel = stats?.total_personnel ?? 0;
-  const activePersonnel = stats?.active_personnel ?? 0;
-  const onLeavePersonnel = totalPersonnel - activePersonnel;
-
-  const qrRequests = scanRequests?.map(req => ({
-    id: req.id,
-    device: req.requester_device || 'Unknown Device',
-    file: req.file_name || 'Unknown File',
-    time: formatTimeAgo(req.created_at)
-  })) || [];
-
+  // Resolution Rate %
+  const resolutionRate = totalComplaints > 0 
+    ? ((resolvedComplaints / totalComplaints) * 100).toFixed(1)
+    : '0.0';
 
   return (
     <DashboardLayout>
+      {/* Header - Original Design */}
       <div className="flex flex-col mb-10 pt-6">
         <h1 className="text-4xl font-light text-text-primary mb-2 tracking-tight flex items-center gap-3">
           <span className="text-brand-yellow drop-shadow-md">☕</span> <Greeting />, አስተዳዳሪ
@@ -83,88 +75,155 @@ export default async function DashboardPage() {
         <p className="text-text-secondary text-sm">የዛሬው የስርዓት አጠቃላይ እይታ።</p>
       </div>
 
+      {/* Stat Cards - Original Grid Layout with New Accurate Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
-          label="ሰነዶች"
-          value={(totalDocs || 0).toLocaleString()}
-          accentColor="yellow"
-          icon={IconFileText}
-          substats={[
-            { label: 'ህዝባዊ', value: (publicDocs || 0).toString() },
-            { label: 'የግል', value: privateDocs.toString() }
-          ]}
-          badge="ተመሳስሏል"
-        />
-        <StatCard
-          label="ዜናዎች"
-          value={(totalNews || 0).toLocaleString()}
-          accentColor="green"
-          icon={IconNews}
-          substats={[
-            { label: 'ታተመ', value: (publishedNews || 0).toString() },
-            { label: 'ረቂቅ', value: (draftNews || 0).toString() }
-          ]}
-          badge="ንቁ"
-        />
-        <StatCard
-          label="ጥቆማዎች"
-          value={(totalComplaints || 0).toLocaleString()}
+          label="ጥቆማዎችና አቤቱታዎች"
+          value={totalComplaints.toLocaleString()}
+          description={`${totalComplaints} አጠቃላይ የቀረቡ ጉዳዮች`}
           accentColor="purple"
           icon={IconMessage2}
-          substats={[
-            { label: 'አዲስ', value: newComplaints.toString() },
-            { label: 'ተፈቷል', value: (resolvedComplaints || 0).toString() }
-          ]}
-          badge="ቅድመ ተሰጥዎ"
         />
         <StatCard
-          label="የተመዘገቡ ተቆጣጣሪዎች "
-          value={(totalPersonnel || 0).toLocaleString()}
-          accentColor="red"
+          label="የመፍትሔ አሰጣጥ ምጣኔ"
+          value={`${resolutionRate}%`}
+          description={`${resolvedComplaints} የተፈቱ • ${newComplaints} በሂደት ላይ`}
+          accentColor="green"
+          icon={IconChartBar}
+        />
+        <StatCard
+          label="የአመራር አካላት"
+          value={totalPersonnel.toLocaleString()}
+          description={`${totalBranches} ቅርንጫፍ ኃላፊዎች • ${totalCommissionMembers} ኮሚሽን አባላት`}
+          accentColor="blue"
           icon={IconUsers}
-          substats={[
-            { label: 'ንቁ', value: (activePersonnel || 0).toString() },
-            { label: 'በዕረፍት', value: onLeavePersonnel.toString() }
-          ]}
-          badge="ተረጋግጧል"
+        />
+        <StatCard
+          label="የምዘና ወቅቶች"
+          value={totalPeriods.toLocaleString()}
+          description={`${totalPeriods} active assessment cycles`}
+          accentColor="yellow"
+          icon={IconFileText}
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-        <div className="xl:col-span-2 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
-              በመጠባበቅ ላይ ያሉ QR ጥያቄዎች
-            </h2>
-            <Link href="/dashboard/qr-access" className="text-[10px] font-bold uppercase tracking-widest text-brand-blue hover:underline">
-              ሁሉንም →
+      {/* Main Analytics Content */}
+      <div className="flex flex-col gap-6 mb-8 w-full">
+        {/* Complaints & Whistleblowing Detailed Analytics Panel */}
+        <div className="premium-card p-6 bg-surface-primary/60 border-border/40 rounded-3xl w-full">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
+                <IconMessage2 size={18} className="text-brand-purple" />
+                የጥቆማዎችና አቤቱታዎች አጠቃላይ ሁኔታ
+              </h2>
+              <p className="text-xs text-text-secondary mt-0.5">የቀረቡ አቤቱታዎችና ጥቆማዎች የሂደት ሁኔታ ክፍፍል</p>
+            </div>
+            <Link href="/dashboard/complaints" className="text-xs font-bold text-brand-blue hover:underline flex items-center gap-1">
+              ዝርዝር ይመልከቱ <IconArrowUpRight size={14} />
             </Link>
           </div>
-          <div className="flex flex-col gap-3">
-            <PendingQRRequests initialRequests={qrRequests} />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Card 1: New / Incoming */}
+            <div className="p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-text-muted">አዲስ ጥቆማዎችና አቤቱታዎች</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-500/10 text-blue-600">አዲስ</span>
+              </div>
+              <div className="text-2xl font-bold text-text-primary">{newComplaints}</div>
+              <div className="w-full bg-border/30 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div className="bg-blue-500 h-full rounded-full" style={{ width: totalComplaints > 0 ? `${(newComplaints / totalComplaints) * 100}%` : '0%' }} />
+              </div>
+            </div>
+
+            {/* Card 2: In Progress */}
+            <div className="p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-text-muted">በምርመራ ላይ ያሉ</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-600">በሂደት</span>
+              </div>
+              <div className="text-2xl font-bold text-text-primary">0</div>
+              <div className="w-full bg-border/30 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div className="bg-amber-500 h-full rounded-full" style={{ width: '0%' }} />
+              </div>
+            </div>
+
+            {/* Card 3: Resolved */}
+            <div className="p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-text-muted">የተፈቱና መፍትሔ ያገኙ</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600">ተፈቷል</span>
+              </div>
+              <div className="text-2xl font-bold text-text-primary">{resolvedComplaints}</div>
+              <div className="w-full bg-border/30 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div className="bg-emerald-500 h-full rounded-full" style={{ width: totalComplaints > 0 ? `${(resolvedComplaints / totalComplaints) * 100}%` : '0%' }} />
+              </div>
+            </div>
+
+            {/* Card 4: Rejected / Closed */}
+            <div className="p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-text-muted">ውድቅ የተደረጉ / የተዘጉ</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/10 text-rose-600">የተዘገ</span>
+              </div>
+              <div className="text-2xl font-bold text-text-primary">0</div>
+              <div className="w-full bg-border/30 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div className="bg-rose-500 h-full rounded-full" style={{ width: '0%' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Overall Resolution Bar */}
+          <div className="p-4 rounded-2xl bg-brand-blue/5 border border-brand-blue/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-brand-blue/10 text-brand-blue">
+                <IconChartBar size={20} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-text-primary">የአቤቱታ መፍትሔ አሰጣጥ ምጣኔ</h4>
+                <p className="text-[11px] text-text-secondary mt-0.5">የቀረቡ አቤቱታዎችና ጥቆማዎች አጠቃላይ ምላሽ አሰጣጥ አፈጻጸም</p>
+              </div>
+            </div>
+            <div className="text-right whitespace-nowrap">
+              <span className="text-xl font-bold text-brand-blue">{resolutionRate}%</span>
+              <p className="text-[10px] text-text-muted font-medium">የስርዓቱ አጠቃላይ አፈጻጸም</p>
+            </div>
           </div>
         </div>
 
-        <div className="xl:col-span-1 flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-widest">ፈጣን እርምጃዎች</h2>
-          <div className="bg-surface-primary/30 rounded-[2rem] border border-border/20 p-5 backdrop-blur-md flex flex-col gap-3 flex-1">
-            <Link href="/dashboard/personnel/create" className="w-full py-3 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue rounded-xl text-sm font-medium transition-colors border border-brand-blue/20 flex items-center justify-center gap-2">
-              <IconUsers size={16} /> አዲስ አባል ጨምር
+        {/* Regional Offices Breakdown Panel */}
+        <div className="premium-card p-6 bg-surface-primary/60 border-border/40 rounded-3xl w-full">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
+                <IconBuilding size={18} className="text-brand-blue" />
+                የኮሚሽኑ ቅርንጫፍ ጽሕፈት ቤቶች አወቃቀር
+              </h2>
+              <p className="text-xs text-text-secondary mt-0.5">በ 13 ቱም ክልሎችና አስተዳደሮች ያሉ የቅርንጫፍ ጽ/ቤት ኃላፊዎች</p>
+            </div>
+            <Link href="/dashboard/personnel" className="text-xs font-bold text-brand-blue hover:underline flex items-center gap-1">
+              አመራሮችን ማስተዳደር <IconArrowUpRight size={14} />
             </Link>
-            <Link href="/dashboard/news/create" className="w-full py-3 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary rounded-xl text-sm font-medium transition-colors border border-border/50 flex items-center justify-center gap-2">
-              <IconNews size={16} /> ዜና ጽሁፍ ፍጠር
-            </Link>
-            <Link href="/dashboard/qr-access" className="w-full py-3 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary rounded-xl text-sm font-medium transition-colors border border-border/50 flex items-center justify-center gap-2">
-              <IconQrcode size={16} /> QR ኮዶችን ያስተዳድሩ
-            </Link>
-            <Link href="/dashboard/statistics" className="w-full py-3 bg-brand-yellow/10 hover:bg-brand-yellow/20 text-brand-yellow rounded-xl text-sm font-medium transition-colors border border-brand-yellow/20 flex items-center justify-center gap-2">
-              <IconChartBar size={16} /> መረጃ ይመልከቱ
-            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {branchLeaders && branchLeaders.length > 0 ? (
+              branchLeaders.map((leader, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-surface-secondary/30 border border-border/20 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-text-primary">{leader.region}</p>
+                    <p className="text-[11px] text-text-muted truncate max-w-[150px]" title={leader.name_am}>{leader.name_am}</p>
+                  </div>
+                  <span className="size-2.5 rounded-full bg-emerald-500 shadow-sm shrink-0" title="Active Head" />
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-8 text-center text-xs text-text-muted">ምንም ቅርንጫፍ ኃላፊዎች አልተገኙም።</div>
+            )}
           </div>
         </div>
       </div>
-
     </DashboardLayout>
   );
 }
