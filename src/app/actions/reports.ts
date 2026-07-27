@@ -84,7 +84,7 @@ export async function createRepresentativeAction(formData: FormData) {
     }
 
     // Send SMS with password
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/representative/login`;
+    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work'}/representative/login`;
     const smsMessage = `ሰላም ${fullName}፣ የ${region} ተወካይ ሆነው በየተቀናጀ የኮሚሽን ስራዎች ዲጂታል ስርዓት (ICODiS)  ላይ ለሪፖርት ተመዝግበዋል።\n\nመግቢያ: ${loginUrl}\nስልክ: ${phone}\nየይለፍ ቃል: ${password}\n\nሲገቡ የይለፍ ቃልዎን መቀየር ግዴታ ነው።`;
 
     await sendSMS(phone, smsMessage);
@@ -143,6 +143,14 @@ export async function resetRepresentativePasswordAction(userId: string, phone: s
   }
 }
 
+function getPeriodCategory(period: string): string {
+  if (period.includes('1ኛ')) return 'q1';
+  if (period.includes('2ኛ')) return 'q2';
+  if (period.includes('3ኛ')) return 'q3';
+  if (period.includes('4ኛ')) return 'q4';
+  return 'q3';
+}
+
 export async function saveReportFormAction(
   userId: string,
   region: string,
@@ -163,10 +171,18 @@ export async function saveReportFormAction(
       .from('reports')
       .upsert({
         user_id: userId,
+        submitter_id: userId,
+        title: `የ${region} ክልል ${period} ሪፖርት`,
+        report_type: 'numerical',
+        budget_year: String(year),
+        period_category: getPeriodCategory(period),
+        submitter_level: 'region',
+        region_name: region,
         region,
         year,
         period,
         forms_data: formsData,
+        numerical_data: formsData,
         schema_snapshot: schemas || [],
         status: 'draft'
       }, {
@@ -199,12 +215,20 @@ export async function submitReportAction(
       .from('reports')
       .upsert({
         user_id: userId,
+        submitter_id: userId,
+        title: `የ${region} ክልል ${period} ሪፖርት`,
+        report_type: 'numerical',
+        budget_year: String(year),
+        period_category: getPeriodCategory(period),
+        submitter_level: 'region',
+        region_name: region,
         region,
         year,
         period,
         forms_data: formsData,
+        numerical_data: formsData,
         schema_snapshot: schemas || [],
-        status: 'submitted',
+        status: 'submitted_to_federal',
         submitted_at: new Date().toISOString()
       }, {
         onConflict: 'region, year, period'

@@ -62,6 +62,7 @@ export interface NewsArticle {
   created: string;
   published: string;
   article_type?: 'News' | 'Message';
+  category?: string;
   body?: string;
   content?: string;
   image?: string;

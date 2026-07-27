@@ -165,13 +165,15 @@ export const complaintService = {
     }
 
     if (formData.phone) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work';
       const typeAmharic = formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const typeEnglish = formData.type === 'Suggestion' ? 'suggestion' : 'complaint';
-      const currentDate = new Date().toLocaleDateString('en-GB');
 
-      const msg = `ሰላም ${formData.name}፣ ${typeAmharic}ዎ በተሳካ ሁኔታ ቀርቧል! (Your ${typeEnglish} is submitted successfully).\nየገባበት ቀን (Date Received): ${currentDate}\nመከታተያ ኮድ (Tracking Code): ${trackingCode}\nመከታተያ ሊንክ (Link): ${siteUrl}/track`;
-      
+      const msg = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት\n` +
+        `ክቡር/ርት ${formData.name}፣ ያቀረቡት ${typeAmharic} በተሳካ ሁኔታ ተመዝግቧል።\n\n` +
+        `መከታተያ ኮድ፡ ${trackingCode}\n\n` +
+        `የ${typeAmharic}ዎን ሁኔታ በቀጥታ ለመከታተል፡\n` +
+        `${siteUrl}/track?code=${trackingCode}`;
+
       smsService.sendSMS(formData.phone, msg);
     }
 
@@ -188,7 +190,10 @@ export const complaintService = {
         (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma')))
       );
       
-      const adminMessage = `አዲስ ${formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ'} ገብቷል። መከታተያ ኮድ: ${trackingCode}`;
+      const adminMessage = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት\n` +
+        `አዲስ ${formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ'} ገብቷል።\n` +
+        `መከታተያ ኮድ፡ ${trackingCode}`;
+
       for (const admin of targetAdmins) {
         if (admin.phone) {
           smsService.sendSMS(admin.phone, adminMessage);
@@ -254,7 +259,7 @@ export const complaintService = {
       .from('complaints')
       .update(updates)
       .eq('id', id)
-      .select('name, phone, type')
+      .select('name, phone, type, tracking_code')
       .single();
 
     if (error) {
@@ -263,36 +268,32 @@ export const complaintService = {
     }
 
     if (updatedComplaint && updatedComplaint.phone) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work';
       const typeAmharic = updatedComplaint.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const typeEnglish = updatedComplaint.type === 'Suggestion' ? 'suggestion' : 'complaint';
+      const trackingCode = updatedComplaint.tracking_code || '';
 
       let statusMsgAmh = '';
-      let statusMsgEng = '';
       if (newStatus === 'Processing') {
-         statusMsgAmh = 'በመታየት ላይ ነው';
-         statusMsgEng = 'Under Review';
+        statusMsgAmh = 'በመመርመር ላይ';
       } else if (newStatus === 'Resolved') {
-         statusMsgAmh = 'ውሳኔ አግኝቷል';
-         statusMsgEng = 'Resolved';
+        statusMsgAmh = 'ውሳኔ አግኝቷል';
       } else if (newStatus === 'Rejected') {
-         statusMsgAmh = 'ውድቅ ተደርጓል';
-         statusMsgEng = 'Rejected';
+        statusMsgAmh = 'ውድቅ ሆኗል';
       }
-      
+
       if (statusMsgAmh) {
-         let msg = `ሰላም ${updatedComplaint.name}፣ የ${typeAmharic}ዎ ሁኔታ ተቀይሯል! (Your ${typeEnglish} status has been updated).\n`;
-         msg += `የአሁን ሁኔታ (Status): ${statusMsgAmh} (${statusMsgEng})\n`;
-         
-         if (newStatus === 'Processing') {
-           msg += `እባክዎ መከታተያ ሊንኩን በመጠቀም ሁኔታውን ይከታተሉ፣ በቅርቡ ምላሽ ያገኛሉ። (Please check your status using the link, you will receive results soon).\n`;
-         } else if (resolution?.message) {
-           msg += `የተሰጠው ምላሽ (Resolution): ${resolution.message}\n`;
-         }
+        let msg = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት\n` +
+          `ክቡር/ርት ${updatedComplaint.name}፣ የቀረበው ${typeAmharic} ሁኔታ ተሻሽሏል።\n\n` +
+          `የአሁን ሁኔታ፡ ${statusMsgAmh}\n`;
 
-         msg += `መከታተያ ሊንክ (Link): ${siteUrl}/track`;
+        if (resolution?.message) {
+          msg += `የተሰጠው ምላሽ፡ ${resolution.message}\n`;
+        }
 
-         smsService.sendSMS(updatedComplaint.phone, msg);
+        const linkParam = trackingCode ? `?code=${trackingCode}` : '';
+        msg += `\nዝርዝሩን በቀጥታ ለመከታተል፡\n${siteUrl}/track${linkParam}`;
+
+        smsService.sendSMS(updatedComplaint.phone, msg);
       }
     }
 

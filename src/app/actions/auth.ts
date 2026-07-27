@@ -147,7 +147,7 @@ export async function registerUserAction(formData: FormData) {
     await supabaseAdmin.from('user_profiles').upsert(profileData);
 
     // 4. Send SMS via Textbee
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/assessment/login`;
+    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work'}/assessment/login`;
     
     let smsMessage = '';
     if (isAdminCreated) {

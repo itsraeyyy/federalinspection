@@ -11,7 +11,8 @@ export function ReportForm01({
   year, 
   period, 
   existingData, 
-  onSuccess 
+  onSuccess,
+  isReadOnly = false
 }: { 
   userId: string, 
   region: string, 

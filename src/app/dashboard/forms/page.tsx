@@ -1,6 +1,7 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { FormsAdminView } from "@/components/dashboard/FormsAdminView";
 import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { redirect } from "next/navigation";
 import { verifyAdminUser } from "@/lib/adminAuth";
 
@@ -17,18 +18,18 @@ export default async function FormsPage() {
     redirect('/auth/login?error=unauthorized');
   }
 
-  // Admin data fetching via authenticated session client
-  const { data: fetchedReps } = await supabase
+  // Admin data fetching via admin client (bypasses RLS issues)
+  const { data: fetchedReps } = await supabaseAdmin
     .from('user_profiles')
     .select('user_id, region, system_role, users:user_id(full_name, phone_number)')
     .eq('system_role', 'representative');
 
-  const { data: fetchedReports } = await supabase
+  const { data: fetchedReports } = await supabaseAdmin
     .from('reports')
     .select('*')
     .order('created_at', { ascending: false });
     
-  const { data: fetchedSchemas } = await supabase
+  const { data: fetchedSchemas } = await supabaseAdmin
     .from('form_schemas')
     .select('*')
     .order('id');

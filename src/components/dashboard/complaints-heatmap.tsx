@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useCallback } from "react";
-import Map, { Source, Layer, MapRef, Popup, NavigationControl, Marker } from "react-map-gl/mapbox";
-import type { HeatmapLayer, CircleLayer, SymbolLayer } from "react-map-gl";
+import Map, { Source, Layer, MapRef, Popup, NavigationControl, Marker, LayerProps } from "react-map-gl/mapbox";
 import { ETHIOPIA_BOUNDS, REGION_BOUNDS, ZONE_CAPITALS } from "@/lib/geojson-utils";
 import { regionsData } from "@/lib/regions-data";
 import { IconMapPin, IconX, IconFilter, IconShieldLock, IconExternalLink } from "@tabler/icons-react";
@@ -16,7 +15,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || (tokenP1 + tokenP2)
 
 
 
-const heatmapLayer: HeatmapLayer = {
+const heatmapLayer: LayerProps = {
   id: "complaints-heat",
   type: "heatmap",
   source: "complaints",
@@ -63,7 +62,7 @@ const heatmapLayer: HeatmapLayer = {
   },
 };
 
-const hitboxLayer: CircleLayer = {
+const hitboxLayer: LayerProps = {
   id: "city-hitbox",
   type: "circle",
   source: "complaints",
@@ -80,7 +79,7 @@ const hitboxLayer: CircleLayer = {
   },
 };
 
-const pointLayer: CircleLayer = {
+const pointLayer: LayerProps = {
   id: "city-points",
   type: "circle",
   source: "complaints",
@@ -101,7 +100,7 @@ const pointLayer: CircleLayer = {
   },
 };
 
-const labelLayer: SymbolLayer = {
+const labelLayer: LayerProps = {
   id: "city-labels",
   type: "symbol",
   source: "complaints",
@@ -226,8 +225,8 @@ export function ComplaintsHeatmap({ initialData }: { initialData: GeoJSON.Featur
   const activePopupInfo = useMemo(() => {
     if (hoverInfo) return hoverInfo;
     if (selectedZone) {
-      const f = data.features.find((f: any) => f.properties.zone === selectedZone);
-      if (f) {
+      const f: any = data.features.find((f: any) => f.properties.zone === selectedZone);
+      if (f && f.geometry && 'coordinates' in f.geometry) {
         return {
           longitude: f.geometry.coordinates[0],
           latitude: f.geometry.coordinates[1],

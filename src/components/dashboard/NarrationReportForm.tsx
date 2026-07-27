@@ -7,12 +7,14 @@ import { IconDeviceFloppy, IconSend, IconLoader2, IconFileUpload, IconX, IconFil
 import { supabase } from "@/lib/supabaseClient";
 
 interface NarrationReportFormProps {
-  userId: string;
-  region: string;
-  year: number;
-  period: ReportPeriod;
+  userId?: string;
+  region?: string;
+  year?: number;
+  period?: ReportPeriod;
   existingData?: any;
-  onSuccess: () => void;
+  initialData?: any;
+  onChange?: (data: any) => void;
+  onSuccess?: () => void;
   isReadOnly?: boolean;
 }
 
@@ -22,12 +24,14 @@ export function NarrationReportForm({
   year,
   period,
   existingData,
+  initialData,
+  onChange,
   onSuccess,
   isReadOnly = false
 }: NarrationReportFormProps) {
-  const [narrationText, setNarrationText] = useState(existingData?.narration_report?.text || "");
-  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(existingData?.narration_report?.attachment_url || null);
-  const [attachmentName, setAttachmentName] = useState<string | null>(existingData?.narration_report?.attachment_name || null);
+  const [narrationText, setNarrationText] = useState(initialData?.text || existingData?.narration_report?.text || "");
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(initialData?.attachment_url || existingData?.narration_report?.attachment_url || null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(initialData?.attachment_name || existingData?.narration_report?.attachment_name || null);
 
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState<'save' | 'submit' | null>(null);
@@ -84,15 +88,18 @@ export function NarrationReportForm({
     try {
       const url = await uploadAttachment();
       const narrationData = { text: narrationText, attachment_url: url, attachment_name: attachmentName };
-      const fullData = { ...existingData, narration_report: narrationData };
+      onChange?.(narrationData);
 
-      const res = await saveReportFormAction(userId, region, year, period, fullData);
-      if (res.error) setError(res.error);
-      else alert("በተሳካ ሁኔታ ተቀምጧል! (Saved successfully)");
+      if (userId && region && year && period) {
+        const fullData = { ...existingData, narration_report: narrationData };
+        const res = await saveReportFormAction(userId, region, year, period, fullData);
+        if (res.error) setError(res.error);
+        else alert("በተሳካ ሁኔታ ተቀምጧል! (Saved successfully)");
 
-      if (!res.error && url && url !== attachmentUrl) {
-        setAttachmentUrl(url);
-        setFile(null);
+        if (!res.error && url && url !== attachmentUrl) {
+          setAttachmentUrl(url);
+          setFile(null);
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -113,15 +120,20 @@ export function NarrationReportForm({
     try {
       const url = await uploadAttachment();
       const narrationData = { text: narrationText, attachment_url: url, attachment_name: attachmentName };
-      const fullData = { ...existingData, narration_report: narrationData };
+      onChange?.(narrationData);
 
-      const res = await submitReportAction(userId, region, year, period, fullData);
-      if (res.error) {
-        setError(res.error);
-        setLoading(null);
+      if (userId && region && year && period) {
+        const fullData = { ...existingData, narration_report: narrationData };
+        const res = await submitReportAction(userId, region, year, period, fullData);
+        if (res.error) {
+          setError(res.error);
+          setLoading(null);
+        } else {
+          alert("በተሳካ ሁኔታ ተልኳል! (Submitted successfully)");
+          onSuccess?.();
+        }
       } else {
-        alert("በተሳካ ሁኔታ ተልኳል! (Submitted successfully)");
-        onSuccess();
+        onSuccess?.();
       }
     } catch (err: any) {
       setError(err.message);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   IconCheck, 
   IconDownload, 
@@ -34,6 +34,10 @@ const ALL_REGIONS = [
 
 export function RegionReportTab({ initialReports, schemas, defaultRegion, defaultYear, defaultPeriod }: RegionReportTabProps) {
   const [reports, setReports] = useState(initialReports);
+
+  useEffect(() => {
+    setReports(initialReports);
+  }, [initialReports]);
   const [selectedRegion, setSelectedRegion] = useState<string>(defaultRegion || "");
   
   const [feedbackInputs, setFeedbackInputs] = useState<Record<string, any>>({});
@@ -241,7 +245,7 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
 
           {activeTab === 'forms' && (
             <div className="border border-border-light rounded-2xl overflow-hidden bg-surface-primary shadow-sm mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {activeSchemas.map((schema, index) => {
+              {activeSchemas.map((schema: any, index: number) => {
                 const isCompleted = selectedReport.forms_data[schema.id] && Object.keys(selectedReport.forms_data[schema.id]).length > 0;
                 const isExpanded = expandedFormId === schema.id;
                 const isLast = index === activeSchemas.length - 1;

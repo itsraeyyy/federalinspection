@@ -333,7 +333,7 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas, defa
           <div className={`animate-in fade-in slide-in-from-bottom-2 duration-300 ${isReadOnly ? "opacity-90 pointer-events-none" : ""}`}>
             <NarrationReportForm
               initialData={formData['narration_report'] || {}}
-              onChange={(data) => handleFormChange('narration_report', data)}
+              onChange={(data: any) => handleFormChange('narration_report', data)}
               isReadOnly={isReadOnly}
               year={currentYear}
               region={userProfile?.region}

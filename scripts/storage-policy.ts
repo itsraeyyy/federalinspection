@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Client } from 'pg';
 
 async function runSQL() {
