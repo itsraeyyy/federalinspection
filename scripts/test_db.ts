@@ -109,8 +109,30 @@ async function runTests() {
     }
   };
 
+  const testPageViewWrite = async () => {
+    console.log('\nTesting Write: page_views (Admin)...');
+    try {
+      const { error } = await supabaseAdmin.from('page_views').insert({
+        path: '/test-path',
+        referrer: 'https://test.com',
+        user_agent: 'Test Agent',
+        ip_address: '127.0.0.1',
+        device_type: 'Desktop',
+        country: 'ET'
+      });
+      if (error) {
+        console.error('❌ Error writing page_views:', error.message, error.details);
+      } else {
+        console.log('✅ Success writing page_views.');
+      }
+    } catch (e: any) {
+      console.error('❌ Exception writing page_views:', e.message);
+    }
+  };
+
   await testComplaintWrite();
   await testReportWrite();
+  await testPageViewWrite();
 
   console.log('\n--- Tests Complete ---');
 }

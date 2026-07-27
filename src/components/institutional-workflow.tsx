@@ -70,7 +70,7 @@ export function InstitutionalWorkflow() {
       {/* Top box - aligned with left column */}
       <div className="grid grid-cols-[1fr_48px_1fr] max-w-4xl mx-auto mb-0">
         <div className="flex justify-center">
-          <OrgBox icon={Users} label="የብልፅግና ህብረት ጉባዔ" variant="top" />
+          <OrgBox icon={Users} label="የብልፅግና ጉባዔ" variant="top" />
         </div>
         <div /><div />
       </div>
