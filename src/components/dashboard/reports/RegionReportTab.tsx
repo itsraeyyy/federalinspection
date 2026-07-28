@@ -11,12 +11,15 @@ import {
   IconChevronDown,
   IconCircleCheck,
   IconCircleDashed,
-  IconFileText
+  IconFileText,
+  IconFileTypePdf
 } from "@tabler/icons-react";
 import { FormSchema, FormTableRenderer } from "@/components/dashboard/forms/FormTableRenderer";
 import { provideAdminFeedbackAction, approveReportAction } from "@/app/actions/reports";
 import { formatECDate } from "@/lib/date-formatter";
 import { exportRegionToWord, exportNarrationToWord } from "@/utils/exportUtils";
+import { downloadPDFDocument } from "@/lib/exportToPDF";
+import { RegionReportPDF, NarrationReportPDF } from "./ReportsPDFComponents";
 import { RichTextEditor, RichTextValue } from "@/components/ui/RichTextEditor";
 
 interface RegionReportTabProps {
@@ -66,9 +69,54 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
     }
   })();
 
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+
   const handleExportAllWord = () => {
     if (!selectedReport) return;
     exportRegionToWord(selectedReport.region, selectedReport.year, selectedReport.period, selectedReport.forms_data, activeSchemas);
+  };
+
+  const handleExportRegionPDF = async (targetSchemas: FormSchema[] = activeSchemas, customName?: string) => {
+    if (!selectedReport) return;
+    setDownloadingPDF(true);
+    try {
+      const fileName = customName || `የ_${selectedReport.region}_${selectedReport.year}_${selectedReport.period}_ሪፖርት.pdf`;
+      const docElement = (
+        <RegionReportPDF
+          regionName={selectedReport.region}
+          year={selectedReport.year}
+          period={selectedReport.period}
+          formsData={selectedReport.forms_data}
+          schemas={targetSchemas}
+        />
+      );
+      await downloadPDFDocument(docElement, fileName);
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
+  const handleExportNarrationPDF = async () => {
+    if (!selectedReport) return;
+    setDownloadingPDF(true);
+    try {
+      const fileName = `የ_${selectedRegion}_${currentYear}_${currentPeriod}_የጽሁፍ_ሪፖርት.pdf`;
+      const docElement = (
+        <NarrationReportPDF
+          regionName={selectedRegion}
+          year={currentYear}
+          period={currentPeriod}
+          narrationData={selectedReport.forms_data?.narration_report}
+        />
+      );
+      await downloadPDFDocument(docElement, fileName);
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
+      setDownloadingPDF(false);
+    }
   };
 
   const handleApprove = async () => {
@@ -195,10 +243,18 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
             </div>
             
             <div className="flex items-center gap-3">
-              <div className="flex items-center bg-surface-secondary p-1 rounded-xl border border-border-light shadow-sm">
+              <div className="flex items-center bg-surface-secondary p-1 rounded-xl border border-border-light shadow-sm gap-1">
+                <button
+                  onClick={() => handleExportRegionPDF(activeSchemas)}
+                  disabled={downloadingPDF}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-blue text-white rounded-lg text-xs font-medium hover:bg-brand-blue/90 transition-colors shadow-sm disabled:opacity-50"
+                  title="Export All to PDF"
+                >
+                  {downloadingPDF ? <IconLoader2 size={14} className="animate-spin" /> : <IconFileTypePdf size={14} />} PDF
+                </button>
                 <button
                   onClick={handleExportAllWord}
-                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-white dark:hover:bg-surface-primary rounded-lg text-xs font-medium transition-colors text-text-secondary"
+                  className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white dark:hover:bg-surface-primary rounded-lg text-xs font-medium transition-colors text-text-secondary"
                   title="Export All to Word"
                 >
                   <IconDownload size={14} /> Word
@@ -308,6 +364,14 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
                               </button>
                               
                               <button
+                                onClick={() => handleExportRegionPDF([schema], `የ_${selectedReport.region}_ቅፅ_${schema.id.replace('form_', '')}_ሪፖርት.pdf`)}
+                                disabled={downloadingPDF}
+                                className="px-4 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white font-medium rounded-xl transition-colors text-sm flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                              >
+                                {downloadingPDF ? <IconLoader2 size={18} className="animate-spin" /> : <IconFileTypePdf size={18} />} Export PDF
+                              </button>
+
+                              <button
                                 onClick={() => exportRegionToWord(selectedReport.region, selectedReport.year, selectedReport.period, selectedReport.forms_data, [schema])}
                                 className="px-4 py-2.5 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue font-medium rounded-xl transition-colors text-sm flex items-center justify-center gap-2 border border-brand-blue/20"
                               >
@@ -343,6 +407,13 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
                         <IconCircleDashed size={14} /> አልቀረበም (Not Provided)
                       </span>
                     )}
+                    <button
+                      onClick={handleExportNarrationPDF}
+                      disabled={downloadingPDF}
+                      className="px-4 py-2 bg-brand-blue hover:bg-brand-blue/90 text-white font-medium rounded-xl transition-colors text-sm flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                    >
+                      {downloadingPDF ? <IconLoader2 size={18} className="animate-spin" /> : <IconFileTypePdf size={18} />} Export PDF
+                    </button>
                     <button
                       onClick={() => {
                         exportNarrationToWord(

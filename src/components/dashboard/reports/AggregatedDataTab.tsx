@@ -1,9 +1,9 @@
-"use client";
-
 import { useState } from "react";
-import { IconChevronDown, IconChevronUp, IconDownload, IconTable } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronUp, IconDownload, IconTable, IconFileTypePdf, IconLoader2 } from "@tabler/icons-react";
 import { FormSchema } from "@/components/dashboard/forms/FormTableRenderer";
 import { exportAggregatedToWord } from "@/utils/exportUtils";
+import { downloadPDFDocument } from "@/lib/exportToPDF";
+import { AggregatedReportPDF } from "./ReportsPDFComponents";
 
 interface AggregatedDataTabProps {
   reports: any[];
@@ -21,6 +21,7 @@ export function AggregatedDataTab({ reports, schemas, year, period }: Aggregated
   const [openForms, setOpenForms] = useState<Record<string, boolean>>(
     schemas && schemas.length > 0 ? { [schemas[0].id]: true } : {}
   );
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const toggleForm = (id: string) => {
     setOpenForms(prev => ({ ...prev, [id]: !prev[id] }));
@@ -28,6 +29,26 @@ export function AggregatedDataTab({ reports, schemas, year, period }: Aggregated
 
   const handleExportWord = () => {
     exportAggregatedToWord(year, period, reports, schemas);
+  };
+
+  const handleExportPDF = async (targetSchemas: FormSchema[] = schemas, fileName?: string) => {
+    setDownloadingPDF(true);
+    try {
+      const name = fileName || `የ_${year}_${period}_የተጠቃለለ_አሃዛዊ_አፈጻጸም_ሪፖርት.pdf`;
+      const docElement = (
+        <AggregatedReportPDF
+          year={year}
+          period={period}
+          reports={reports}
+          schemas={targetSchemas}
+        />
+      );
+      await downloadPDFDocument(docElement, name);
+    } catch (err) {
+      console.error('PDF export error:', err);
+    } finally {
+      setDownloadingPDF(false);
+    }
   };
 
   return (
@@ -38,6 +59,14 @@ export function AggregatedDataTab({ reports, schemas, year, period }: Aggregated
           <p className="text-sm text-text-muted">{year} - {period}</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => handleExportPDF(schemas)}
+            disabled={downloadingPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-medium hover:bg-brand-blue/90 transition-colors shadow-sm disabled:opacity-50"
+          >
+            {downloadingPDF ? <IconLoader2 size={18} className="animate-spin" /> : <IconFileTypePdf size={18} />}
+            {downloadingPDF ? 'በማዘጋጀት ላይ...' : 'Export PDF'}
+          </button>
           <button
             onClick={handleExportWord}
             className="flex items-center gap-2 px-4 py-2 bg-surface-primary border border-border-medium rounded-lg text-sm font-medium hover:bg-surface-secondary transition-colors text-text-secondary"
@@ -161,7 +190,15 @@ export function AggregatedDataTab({ reports, schemas, year, period }: Aggregated
                   </table>
 
                   {/* Form Actions (Export) */}
-                  <div className="flex justify-end mt-4 p-4 bg-surface-primary rounded-xl border border-border-medium shadow-sm">
+                  <div className="flex justify-end gap-3 mt-4 p-4 bg-surface-primary rounded-xl border border-border-medium shadow-sm">
+                    <button
+                      onClick={() => handleExportPDF([schema], `ቅፅ_${schema.id.replace('form_', '')}_የተጠቃለለ_ሪፖርት.pdf`)}
+                      disabled={downloadingPDF}
+                      className="px-4 py-2 bg-brand-blue hover:bg-brand-blue/90 text-white font-medium rounded-xl transition-colors text-sm flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                    >
+                      {downloadingPDF ? <IconLoader2 size={18} className="animate-spin" /> : <IconFileTypePdf size={18} />}
+                      Export PDF
+                    </button>
                     <button
                       onClick={() => exportAggregatedToWord(year, period, reports, [schema])}
                       className="px-4 py-2 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue font-medium rounded-xl transition-colors text-sm flex items-center justify-center gap-2 border border-brand-blue/20"
