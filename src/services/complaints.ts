@@ -111,24 +111,32 @@ export const complaintService = {
     let attachments: any[] = [];
     if (formData.files && formData.files.length > 0) {
       for (const file of formData.files) {
-        const filePath = `submissions/${trackingCode}/${Date.now()}_${file.name}`;
+        const fileExt = file.name.includes('.') ? file.name.split('.').pop() || '' : '';
+        const cleanExt = fileExt.replace(/[^a-zA-Z0-9]/g, '');
+        const safeExt = cleanExt ? `.${cleanExt}` : '';
+        const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}${safeExt}`;
+        const filePath = `submissions/${trackingCode}/${safeFileName}`;
+
         const { error: uploadError } = await supabase.storage
           .from('complaints')
           .upload(filePath, file);
 
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('complaints')
-            .getPublicUrl(filePath);
-
-          attachments.push({
-            id: crypto.randomUUID(),
-            filename: file.name,
-            fileType: file.type,
-            fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-            url: urlData.publicUrl,
-          });
+        if (uploadError) {
+          console.error('Error uploading file to complaints storage:', uploadError);
+          throw uploadError;
         }
+
+        const { data: urlData } = supabase.storage
+          .from('complaints')
+          .getPublicUrl(filePath);
+
+        attachments.push({
+          id: crypto.randomUUID(),
+          filename: file.name,
+          fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
+          fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+          url: urlData.publicUrl,
+        });
       }
     }
 
@@ -225,24 +233,32 @@ export const complaintService = {
         let resolutionAttachments: any[] = [];
         if (resolution.files && resolution.files.length > 0) {
           for (const file of resolution.files) {
-            const filePath = `resolutions/${id}/${Date.now()}_${file.name}`;
+            const fileExt = file.name.includes('.') ? file.name.split('.').pop() || '' : '';
+            const cleanExt = fileExt.replace(/[^a-zA-Z0-9]/g, '');
+            const safeExt = cleanExt ? `.${cleanExt}` : '';
+            const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}${safeExt}`;
+            const filePath = `resolutions/${id}/${safeFileName}`;
+
             const { error: uploadError } = await supabase.storage
               .from('complaints')
               .upload(filePath, file);
 
-            if (!uploadError) {
-              const { data: urlData } = supabase.storage
-                .from('complaints')
-                .getPublicUrl(filePath);
-
-              resolutionAttachments.push({
-                id: crypto.randomUUID(),
-                filename: file.name,
-                fileType: file.type,
-                fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-                url: urlData.publicUrl,
-              });
+            if (uploadError) {
+              console.error('Error uploading resolution file to complaints storage:', uploadError);
+              throw uploadError;
             }
+
+            const { data: urlData } = supabase.storage
+              .from('complaints')
+              .getPublicUrl(filePath);
+
+            resolutionAttachments.push({
+              id: crypto.randomUUID(),
+              filename: file.name,
+              fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
+              fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+              url: urlData.publicUrl,
+            });
           }
         }
 
