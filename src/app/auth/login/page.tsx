@@ -57,8 +57,7 @@ export default function LoginPage() {
           .single();
           
         if (profile?.requires_password_change) {
-          setRequiresReset(true);
-          setLoading(false);
+          window.location.href = '/auth/change-password';
           return;
         }
       }

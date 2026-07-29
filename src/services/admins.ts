@@ -67,10 +67,11 @@ export const adminService = {
   },
 
   deleteAdmin: async (id: string): Promise<void> => {
-    const { error } = await supabase.from('admin_profiles').delete().eq('id', id);
-    if (error) {
-      console.error('Error deleting admin:', error);
-      throw error;
+    const { deleteAdminUser } = await import('@/app/actions/admin-provisioning');
+    const result = await deleteAdminUser(id);
+    if (!result.success) {
+      console.error('Error deleting admin:', result.error);
+      throw new Error(result.error || 'Failed to delete admin');
     }
   },
 };

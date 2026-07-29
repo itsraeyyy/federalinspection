@@ -3,11 +3,10 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { revalidatePath } from 'next/cache';
 import { Resend } from 'resend';
+import { sendSMS } from '@/lib/textbee';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-function generateTempPassword(length = 12) {
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+function generateTempPassword(length = 6) {
+  const charset = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
   let password = "";
   for (let i = 0; i < length; i++) {
     password += charset.charAt(Math.floor(Math.random() * charset.length));
@@ -26,6 +25,13 @@ export async function provisionAdmin(data: any) {
       email: email,
       password: tempPassword,
       email_confirm: true,
+      user_metadata: {
+        full_name: data.name,
+        phone: data.phone,
+        role: role,
+        force_password_change: true,
+        requires_password_change: true,
+      },
     });
 
     if (authError) {
@@ -63,12 +69,15 @@ export async function provisionAdmin(data: any) {
       return { success: false, error: 'Profile creation failed: ' + profileError.message };
     }
 
-    // 3. Send email via Resend
-    const { error: resendError } = await resend.emails.send({
-      from: 'CIDMS Admin <onboarding@resend.dev>',
-      to: email,
-      subject: 'Welcome to CIDMS - Admin Access',
-      html: `
+    // 3. Send email via Resend if API key is configured
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const { error: resendError } = await resend.emails.send({
+          from: 'CIDMS Admin <onboarding@resend.dev>',
+          to: email,
+          subject: 'Welcome to CIDMS - Admin Access',
+          html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -201,6 +210,8 @@ export async function provisionAdmin(data: any) {
       <p>An administrator account has been provisioned for you. You now have access to the secure portal to manage system configurations and oversight.</p>
       
       <div class="credentials-box">
+        <div class="label">Username</div>
+        <div style="font-weight: 600; font-size: 16px; margin-bottom: 16px; color: #18181B;">${email}</div>
         <div class="label">Your Temporary Password</div>
         <div class="password">${tempPassword}</div>
       </div>
@@ -223,15 +234,72 @@ export async function provisionAdmin(data: any) {
 </body>
 </html>
       `,
-    });
+        });
 
-    if (resendError) {
-      console.error('Error sending email:', resendError);
+        if (resendError) {
+          console.error('Error sending email:', resendError);
+        }
+      } catch (emailErr) {
+        console.error('Failed to send admin welcome email via Resend:', emailErr);
+      }
+    } else {
+      console.warn('RESEND_API_KEY environment variable is missing. Welcome email was skipped.');
+    }
+
+    // 4. Send SMS notification to admin phone with role info, phone number as username, temp password, and password change redirect link
+    if (data.phone) {
+      try {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work';
+        const roleAmharic = role === 'super_admin' ? 'ዋና የሲስተም አስተዳዳሪ (Super Admin)' : 'የሲስተም አስተዳዳሪ (Admin)';
+        const redirectLoginUrl = `${siteUrl}/auth/change-password`;
+
+        const smsMsg = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን\n` +
+          `ክቡር/ርት ${data.name}፣ በሲስተሙ ላይ እንደ ${roleAmharic} ሆነው ተመዝግበዋል።\n\n` +
+          `የተጠቃሚ ስም (ስልክ ቁጥር)፡ ${data.phone}\n` +
+          `ጊዚያዊ የይለፍ ቃል፡ ${tempPassword}\n\n` +
+          `እባክዎ በዚህ ሊንክ በመግባት የይለፍ ቃልዎን ይለውጡ፡\n` +
+          `${redirectLoginUrl}`;
+
+        await sendSMS(data.phone, smsMsg);
+      } catch (smsErr) {
+        console.error('Error sending SMS notification to admin:', smsErr);
+      }
     }
 
     revalidatePath('/dashboard/admins');
     return { success: true, message: `Admin ${email} provisioned successfully.` };
   } catch (err: any) {
     return { success: false, error: err.message || 'An unexpected error occurred.' };
+  }
+}
+
+export async function deleteAdminUser(id: string) {
+  try {
+    if (!id) {
+      return { success: false, error: 'Admin ID is required' };
+    }
+
+    // 1. Delete profile record from admin_profiles table in DB
+    const { error: dbError } = await supabaseAdmin
+      .from('admin_profiles')
+      .delete()
+      .eq('id', id);
+
+    if (dbError) {
+      console.error('Error deleting admin profile from database:', dbError);
+      return { success: false, error: 'Database deletion failed: ' + dbError.message };
+    }
+
+    // 2. Delete user from Supabase Auth
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+    if (authError) {
+      console.error('Error deleting user from Supabase Auth:', authError);
+    }
+
+    revalidatePath('/dashboard/admins');
+    return { success: true, message: 'Admin user deleted successfully from database and auth.' };
+  } catch (err: any) {
+    console.error('Error deleting admin user:', err);
+    return { success: false, error: err.message || 'An error occurred while deleting admin.' };
   }
 }

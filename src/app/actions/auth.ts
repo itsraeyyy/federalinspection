@@ -183,14 +183,16 @@ export async function resolveLoginEmail(identifier: string) {
     return { email: identifier.trim() };
   }
   
-  const cleanPhone = identifier.trim();
-  const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+  const rawPhone = identifier.trim();
+  const digitsOnly = rawPhone.replace(/\D/g, '');
+  const e164Phone = rawPhone.startsWith('+') ? rawPhone : `+251${rawPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+  const localPhone = rawPhone.startsWith('0') ? rawPhone : `0${rawPhone.replace(/^\+?251/, '').replace(/\s+/g, '')}`;
 
   // Check if it's an admin first
   const { data: adminData } = await supabaseAdmin
     .from('admin_profiles')
     .select('email')
-    .or(`phone.eq.${phone},phone.eq.${cleanPhone}`)
+    .or(`phone.eq.${e164Phone},phone.eq.${localPhone},phone.eq.${rawPhone},phone.ilike.%${digitsOnly}%`)
     .maybeSingle();
 
   if (adminData?.email) {
@@ -198,7 +200,7 @@ export async function resolveLoginEmail(identifier: string) {
   }
 
   // Fallback to synthetic email for regular users
-  return { email: `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+  return { email: `${e164Phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
 }
 
 export async function resetPasswordAction(rawPhone: string, role: 'assessment' | 'representative' = 'assessment') {

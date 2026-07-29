@@ -67,9 +67,17 @@ export default function ChangePasswordPage() {
       });
 
       if (error) throw error;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('admin_profiles')
+          .update({ requires_password_change: false })
+          .eq('id', user.id);
+      }
       
       // Successfully updated password, navigate to dashboard
-      router.push('/assessment');
+      window.location.href = '/dashboard';
     } catch (error: any) {
       setErrorMsg(error.message || 'Failed to update password');
     } finally {

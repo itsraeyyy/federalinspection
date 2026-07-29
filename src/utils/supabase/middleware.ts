@@ -53,8 +53,10 @@ export async function updateSession(request: NextRequest) {
       
       if (request.nextUrl.pathname.startsWith('/representative')) {
         url.pathname = '/representative/change-password';
-      } else {
+      } else if (request.nextUrl.pathname.startsWith('/assessment')) {
         url.pathname = '/assessment/change-password';
+      } else {
+        url.pathname = '/auth/change-password';
       }
       return NextResponse.redirect(url);
     }
