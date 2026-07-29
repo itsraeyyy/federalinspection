@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from "@supabase/ssr";
+import { supabase } from '@/lib/supabaseClient';
 import { Loader2, KeyRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -26,10 +26,6 @@ export default function ChangePasswordPage() {
   const strength = checkPasswordStrength(password);
   const isStrong = Object.values(strength).every(Boolean);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
     async function checkAuth() {
@@ -42,7 +38,7 @@ export default function ChangePasswordPage() {
       }
     }
     checkAuth();
-  }, [router, supabase]);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +72,8 @@ export default function ChangePasswordPage() {
           .eq('id', user.id);
       }
       
-      // Successfully updated password, navigate to dashboard
-      window.location.href = '/dashboard';
+      // Successfully updated password, navigate to assessment
+      window.location.href = '/assessment';
     } catch (error: any) {
       setErrorMsg(error.message || 'Failed to update password');
     } finally {

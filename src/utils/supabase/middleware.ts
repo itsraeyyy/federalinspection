@@ -33,8 +33,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || 
-                           (request.nextUrl.pathname.startsWith('/assessment') && !request.nextUrl.pathname.includes('/login')) ||
-                           (request.nextUrl.pathname.startsWith('/representative') && !request.nextUrl.pathname.includes('/login'))
+                           (request.nextUrl.pathname.startsWith('/assessment') && !request.nextUrl.pathname.includes('/login') && !request.nextUrl.pathname.includes('/reset-password')) ||
+                           (request.nextUrl.pathname.startsWith('/representative') && !request.nextUrl.pathname.includes('/login') && !request.nextUrl.pathname.includes('/reset-password'))
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth/login')
 

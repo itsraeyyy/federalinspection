@@ -246,19 +246,19 @@ export async function provisionAdmin(data: any) {
       console.warn('RESEND_API_KEY environment variable is missing. Welcome email was skipped.');
     }
 
-    // 4. Send SMS notification to admin phone with role info, phone number as username, temp password, and password change redirect link
+    // 4. Send SMS notification to admin phone with role info, phone number as username, temp password, and login link
     if (data.phone) {
       try {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work';
         const roleAmharic = role === 'super_admin' ? 'ዋና የሲስተም አስተዳዳሪ (Super Admin)' : 'የሲስተም አስተዳዳሪ (Admin)';
-        const redirectLoginUrl = `${siteUrl}/auth/change-password`;
+        const loginUrl = `${siteUrl}/auth/login`;
 
         const smsMsg = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን\n` +
           `ክቡር/ርት ${data.name}፣ በሲስተሙ ላይ እንደ ${roleAmharic} ሆነው ተመዝግበዋል።\n\n` +
           `የተጠቃሚ ስም (ስልክ ቁጥር)፡ ${data.phone}\n` +
           `ጊዚያዊ የይለፍ ቃል፡ ${tempPassword}\n\n` +
           `እባክዎ በዚህ ሊንክ በመግባት የይለፍ ቃልዎን ይለውጡ፡\n` +
-          `${redirectLoginUrl}`;
+          `${loginUrl}`;
 
         await sendSMS(data.phone, smsMsg);
       } catch (smsErr) {
