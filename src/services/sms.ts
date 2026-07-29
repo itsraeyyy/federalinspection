@@ -13,14 +13,14 @@ export const smsService = {
       const result = await serverSendSMS(to, message);
       
       if (result.error) {
-        console.error(`Failed to send SMS to ${to}:`, result.error);
+        console.warn(`[SMS Dispatch Warning] Could not send SMS to ${to}: ${result.error}`);
         return false;
       }
 
-      console.log(`SMS successfully sent to ${to}`);
+      console.log(`[SMS Sent] successfully to ${to}`);
       return true;
-    } catch (error) {
-      console.error(`Error sending SMS to ${to}:`, error);
+    } catch (error: any) {
+      console.warn(`[SMS Dispatch Error] Error sending SMS to ${to}:`, error?.message || error);
       return false;
     }
   }

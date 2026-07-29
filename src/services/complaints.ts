@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Complaint, ComplaintStatus } from '../types';
 import { formatECDate, formatECDateTime } from '../lib/date-formatter';
 import { smsService } from './sms';
+import { notifyComplaintSubmitted, notifyComplaintStatusUpdate, notifyReportUpdate } from '../lib/notify';
 
 function generateTrackingCode(): string {
   const prefix = 'TRK';
@@ -172,25 +173,20 @@ export const complaintService = {
       return null;
     }
 
-    if (formData.phone) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work';
-      const typeAmharic = formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-
-      const msg = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት\n` +
-        `ክቡር/ርት ${formData.name}፣ ያቀረቡት ${typeAmharic} በተሳካ ሁኔታ ተመዝግቧል።\n\n` +
-        `መከታተያ ኮድ፡ ${trackingCode}\n\n` +
-        `የ${typeAmharic}ዎን ሁኔታ በቀጥታ ለመከታተል፡\n` +
-        `${siteUrl}/track?code=${trackingCode}`;
-
-      smsService.sendSMS(formData.phone, msg);
+    if (formData.phone || formData.email) {
+      notifyComplaintSubmitted({
+        phone: formData.phone,
+        email: formData.email,
+        name: formData.name,
+        trackingCode,
+        type: formData.type,
+      });
     }
 
     const { data: admins } = await supabase
       .from('admin_profiles')
-      .select('phone, modules, role')
-      .eq('status', 'Active')
-      .not('phone', 'is', null)
-      .neq('phone', '');
+      .select('phone, email, modules, role')
+      .eq('status', 'Active');
 
     if (admins) {
       const targetAdmins = admins.filter(a => 
@@ -198,13 +194,19 @@ export const complaintService = {
         (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma')))
       );
       
-      const adminMessage = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት\n` +
-        `አዲስ ${formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ'} ገብቷል።\n` +
-        `መከታተያ ኮድ፡ ${trackingCode}`;
+      const typeLabel = formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
+      const adminMessage = `አዲስ ${typeLabel} ገብቷል። መከታተያ ኮድ፡ ${trackingCode}`;
 
       for (const admin of targetAdmins) {
-        if (admin.phone) {
-          smsService.sendSMS(admin.phone, adminMessage);
+        if (admin.phone || admin.email) {
+          notifyReportUpdate({
+            phone: admin.phone || undefined,
+            email: admin.email || undefined,
+            name: 'አስተዳዳሪ',
+            subject: `ICODS — አዲስ ${typeLabel}`,
+            message: adminMessage,
+            loginPath: '/dashboard',
+          });
         }
       }
     }
@@ -275,7 +277,7 @@ export const complaintService = {
       .from('complaints')
       .update(updates)
       .eq('id', id)
-      .select('name, phone, type, tracking_code')
+      .select('name, phone, email, type, tracking_code')
       .single();
 
     if (error) {
@@ -283,34 +285,16 @@ export const complaintService = {
       return false;
     }
 
-    if (updatedComplaint && updatedComplaint.phone) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work';
-      const typeAmharic = updatedComplaint.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const trackingCode = updatedComplaint.tracking_code || '';
-
-      let statusMsgAmh = '';
-      if (newStatus === 'Processing') {
-        statusMsgAmh = 'በመመርመር ላይ';
-      } else if (newStatus === 'Resolved') {
-        statusMsgAmh = 'ውሳኔ አግኝቷል';
-      } else if (newStatus === 'Rejected') {
-        statusMsgAmh = 'ውድቅ ሆኗል';
-      }
-
-      if (statusMsgAmh) {
-        let msg = `የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት\n` +
-          `ክቡር/ርት ${updatedComplaint.name}፣ የቀረበው ${typeAmharic} ሁኔታ ተሻሽሏል።\n\n` +
-          `የአሁን ሁኔታ፡ ${statusMsgAmh}\n`;
-
-        if (resolution?.message) {
-          msg += `የተሰጠው ምላሽ፡ ${resolution.message}\n`;
-        }
-
-        const linkParam = trackingCode ? `?code=${trackingCode}` : '';
-        msg += `\nዝርዝሩን በቀጥታ ለመከታተል፡\n${siteUrl}/track${linkParam}`;
-
-        smsService.sendSMS(updatedComplaint.phone, msg);
-      }
+    if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
+      notifyComplaintStatusUpdate({
+        phone: updatedComplaint.phone,
+        email: (updatedComplaint as any).email,
+        name: updatedComplaint.name,
+        type: updatedComplaint.type,
+        status: newStatus,
+        trackingCode: updatedComplaint.tracking_code || '',
+        resolution: resolution?.message,
+      });
     }
 
     return true;

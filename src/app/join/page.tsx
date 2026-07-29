@@ -12,6 +12,7 @@ function JoinPeriodContent() {
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,7 @@ function JoinPeriodContent() {
       formData.append('periodId', periodId);
       formData.append('fullName', fullName);
       formData.append('phone', phone);
+      if (email) formData.append('email', email);
       formData.append('password', password);
 
       const result = await registerUserAction(formData);
@@ -114,6 +116,19 @@ function JoinPeriodContent() {
               onChange={(e) => setPhone(e.target.value)}
               className="w-full px-4 py-2 bg-surface-primary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
               placeholder="0911223344"
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">
+              ኢሜይል (Email) <span className="text-xs text-text-muted">(አማራጭ / Optional)</span>
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 bg-surface-primary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/50 text-text-primary placeholder:text-text-muted"
+              placeholder="example@domain.com"
             />
           </div>
           <div>

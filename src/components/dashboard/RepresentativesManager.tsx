@@ -204,6 +204,18 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
                 </div>
 
                 <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">ኢሜይል (Email) - አማራጭ</label>
+                  <div className="relative">
+                    <input
+                      name="email"
+                      type="email"
+                      placeholder="example@domain.com"
+                      className="w-full pl-4 pr-4 py-3 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-slate-900 dark:text-white text-sm font-medium placeholder-slate-400 dark:placeholder-slate-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">ክልል (Region)</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

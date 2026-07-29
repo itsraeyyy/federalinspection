@@ -23,8 +23,8 @@ export async function sendSMS(to: string, message: string) {
         "x-api-key": apiKey
       },
       body: JSON.stringify({
-        receivers: [formattedPhone],
-        smsBody: message
+        recipients: [formattedPhone],
+        message: message
       })
     });
 

@@ -18,6 +18,7 @@ export function TikomaForm() {
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [submissionType, setSubmissionType] = useState<'በግል' | 'በቡድን'>('በግል');
   const [groupMembers, setGroupMembers] = useState<string[]>(['', '']); // Default 2 fields for group
@@ -96,6 +97,7 @@ export function TikomaForm() {
       const result = await complaintService.submitComplaint({
         name: fullName,
         phone,
+        email: email || undefined,
         age: age ? parseInt(age) : undefined,
         gender: gender || undefined,
         address: address || undefined,
@@ -384,6 +386,20 @@ export function TikomaForm() {
                   placeholder="የመኖሪያ አድራሻ"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                ኢሜይል (Email) <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">አማራጭ (Optional)</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="block w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3.5 text-sm focus:border-[#014BAA] focus:ring-[#014BAA] focus:bg-white transition-colors"
+                placeholder="example@domain.com"
+              />
             </div>
           </div>
 

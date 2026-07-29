@@ -58,3 +58,6 @@ migration/
 *.rar
 *.7z
 *.dump
+
+# PDF Documents
+public/documents/

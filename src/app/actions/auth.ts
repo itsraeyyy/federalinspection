@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendSMS } from '@/lib/textbee';
+import { notifyRegistration, notifyPasswordReset } from '@/lib/notify';
 import crypto from 'crypto';
 
 export async function verifyLoginAttempt() {
@@ -31,6 +32,7 @@ export async function registerUserAction(formData: FormData) {
     const periodId = formData.get('periodId') as string;
     const fullName = formData.get('fullName') as string;
     const rawPhone = formData.get('phone') as string;
+    const rawEmail = (formData.get('email') as string)?.trim() || undefined;
     const role = (formData.get('role') as string) || 'regular';
     let password = (formData.get('password') as string)?.trim() || '';
 
@@ -146,22 +148,20 @@ export async function registerUserAction(formData: FormData) {
     
     await supabaseAdmin.from('user_profiles').upsert(profileData);
 
-    // 4. Send SMS via Textbee
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work'}/assessment/login`;
-    
-    let smsMessage = '';
-    if (isAdminCreated) {
-      smsMessage = `ሰላም ${fullName}፣ ለግምገማ ተመዝግበዋል! (You are registered for assessment).\nመግቢያ (Link): ${loginUrl}\nስልክ (Phone): ${phone}\nየይለፍ ቃል (Password): ${password}`;
-    } else {
-      smsMessage = `ሰላም ${fullName}፣ ምዝገባዎ ተሳክቷል! (Registration successful).\nመግቢያ (Link): ${loginUrl}\nስልክ (Phone): ${phone}`;
+    // 4. Notify user (SMS first → email fallback)
+    const notifyResult = await notifyRegistration({
+      phone,
+      email: rawEmail,
+      name: fullName,
+      password: isAdminCreated ? password : undefined as any,
+      role: 'assessment',
+    });
+
+    if (!notifyResult.smsDelivered && !notifyResult.emailDelivered && isAdminCreated) {
+      return { success: true, smsDelivered: false, tempPassword: password, phone };
     }
 
-    const smsResult = await sendSMS(phone, smsMessage);
-    if (smsResult.error) {
-      console.error("SMS Warning:", smsResult.error);
-    }
-
-    return { success: true };
+    return { success: true, smsDelivered: notifyResult.smsDelivered, emailDelivered: notifyResult.emailDelivered };
   } catch (error: any) {
     console.error("Registration action error:", error);
     return { error: 'ያልተጠበቀ ስህተት አጋጥሟል (An unexpected error occurred)' };
@@ -267,17 +267,19 @@ export async function resetPasswordAction(rawPhone: string, role: 'assessment' |
       return { error: 'Failed to reset password' };
     }
 
-    // 4. Send SMS via Textbee
-    const loginPath = role === 'representative' ? '/representative/login' : '/assessment/login';
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${loginPath}`;
-    const smsMessage = `ሰላም ${userName}፣ የይለፍ ቃልዎ ተቀይሯል።\nአዲሱ የይለፍ ቃል (New Password): ${newPassword}\nመግቢያ (Link): ${loginUrl}`;
+    // 4. Notify user (SMS first → email fallback)
+    const notifyResult = await notifyPasswordReset({
+      phone,
+      name: userName || 'User',
+      password: newPassword,
+      role,
+    });
 
-    const smsResult = await sendSMS(phone, smsMessage);
-    if (smsResult.error) {
-      console.error("SMS Warning in reset:", smsResult.error);
+    if (!notifyResult.smsDelivered && !notifyResult.emailDelivered) {
+      return { success: true, smsDelivered: false, tempPassword: newPassword };
     }
 
-    return { success: true };
+    return { success: true, smsDelivered: notifyResult.smsDelivered, emailDelivered: notifyResult.emailDelivered };
   } catch (error: any) {
     console.error("Reset password error:", error);
     return { error: error.message || 'An unexpected error occurred' };

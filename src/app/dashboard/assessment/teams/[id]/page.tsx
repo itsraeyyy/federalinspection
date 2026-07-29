@@ -35,6 +35,7 @@ export default function PeriodManagePage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addFullName, setAddFullName] = useState('');
   const [addPhone, setAddPhone] = useState('');
+  const [addEmail, setAddEmail] = useState('');
   const [addRole, setAddRole] = useState('regular');
   const [addGender, setAddGender] = useState('');
   const [addAge, setAddAge] = useState('');
@@ -240,6 +241,7 @@ export default function PeriodManagePage() {
       formData.append('periodId', periodId);
       formData.append('fullName', addFullName);
       formData.append('phone', addPhone);
+      if (addEmail) formData.append('email', addEmail);
       formData.append('role', addRole);
       formData.append('gender', addGender);
       formData.append('age', addAge);
@@ -260,6 +262,7 @@ export default function PeriodManagePage() {
       setAddSuccess(true);
       setAddFullName('');
       setAddPhone('');
+      setAddEmail('');
       setAddGender('');
       setAddAge('');
       setAddEducationLevel('');
@@ -695,6 +698,18 @@ export default function PeriodManagePage() {
                             onChange={(e) => setAddPhone(e.target.value)}
                             className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
                             placeholder="0911223344"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                            ኢሜይል (Email) <span className="text-xs text-text-muted font-normal">(አማራጭ)</span>
+                          </label>
+                          <input
+                            type="email"
+                            value={addEmail}
+                            onChange={(e) => setAddEmail(e.target.value)}
+                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
+                            placeholder="user@example.com"
                           />
                         </div>
                         <div className="md:col-span-2 space-y-2">

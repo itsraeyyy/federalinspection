@@ -28,15 +28,15 @@ export async function POST(req: Request) {
     // Format phone number if needed (Textbee expects international format usually)
     const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
 
-    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/sendSMS`, {
+    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
       },
       body: JSON.stringify({
-        receivers: [formattedPhone],
-        smsBody: `Your Federal Inspection Assessment login code is: ${otp}`,
+        recipients: [formattedPhone],
+        message: `Your Federal Inspection Assessment login code is: ${otp}`,
       }),
     });
 

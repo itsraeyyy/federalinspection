@@ -10,6 +10,8 @@ export default function AssessmentResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [smsDelivered, setSmsDelivered] = useState<boolean | null>(null);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +25,8 @@ export default function AssessmentResetPasswordPage() {
         throw new Error(result.error);
       }
       
+      setSmsDelivered(result?.smsDelivered !== false);
+      if (result?.tempPassword) setTempPassword(result.tempPassword);
       setSuccess(true);
     } catch (error: any) {
       setErrorMsg(error.message || 'Failed to reset password.');
@@ -45,11 +49,32 @@ export default function AssessmentResetPasswordPage() {
                 <CheckCircle2 className="w-8 h-8 text-success" />
               </div>
               <h1 className="text-2xl font-heading font-semibold text-text-primary mb-2">
-                የይለፍ ቃል ተቀይሯል!
+                {smsDelivered === false ? 'የይለፍ ቃል ተቀይሯል!' : 'የይለፍ ቃል ተቀይሯል!'}
               </h1>
-              <p className="text-sm text-text-secondary mb-6">
-                (Password Reset Successful). አዲሱ የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ተልኳል።
-              </p>
+
+              {smsDelivered === false && tempPassword ? (
+                <div className="mt-4 mb-6">
+                  <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl text-left">
+                    <p className="text-sm font-semibold text-warning mb-1">⚠️ SMS ሊላክ አልቻለም (SMS could not be sent)</p>
+                    <p className="text-xs text-text-secondary mb-3">የSMS ቀን ገደብ ደርሷል። አዲሱን የይለፍ ቃል ከዚህ ያስቀምጡ:</p>
+                    <div className="bg-surface-primary border border-border rounded-lg p-3 flex items-center justify-between gap-2">
+                      <span className="font-mono text-lg font-bold text-text-primary tracking-widest">{tempPassword}</span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(tempPassword)}
+                        className="text-xs text-brand-blue hover:underline shrink-0"
+                      >
+                        ቅዳ (Copy)
+                      </button>
+                    </div>
+                    <p className="text-xs text-text-muted mt-2">ይህን ለተጠቃሚው ያሳውቁ (Share this password with the user manually)</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-text-secondary mb-6">
+                  (Password Reset Successful). አዲሱ የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ተልኳል።
+                </p>
+              )}
+
               <Link 
                 href="/assessment/login"
                 className="w-full inline-flex items-center justify-center bg-surface-secondary text-text-primary px-4 py-3 rounded-xl font-medium transition-colors hover:bg-border border border-border"

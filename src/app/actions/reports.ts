@@ -1,7 +1,7 @@
 "use server";
 
 import crypto from 'crypto';
-import { sendSMS } from '@/lib/textbee';
+import { notifyRegistration, notifyPasswordReset, notifyReportUpdate } from '@/lib/notify';
 import { canSubmitReport, ReportPeriod } from '@/lib/et-calendar';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
@@ -9,6 +9,7 @@ export async function createRepresentativeAction(formData: FormData) {
   try {
     const fullName = formData.get('fullName') as string;
     const rawPhone = formData.get('phone') as string;
+    const rawEmail = (formData.get('email') as string)?.trim() || undefined;
     const region = formData.get('region') as string;
 
     if (!fullName || !rawPhone || !region) {
@@ -83,11 +84,14 @@ export async function createRepresentativeAction(formData: FormData) {
       return { error: 'Failed to update profile: ' + profileError.message };
     }
 
-    // Send SMS with password
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://icods.raey.work'}/representative/login`;
-    const smsMessage = `ሰላም ${fullName}፣ የ${region} ተወካይ ሆነው በየተቀናጀ የኮሚሽን ስራዎች ዲጂታል ስርዓት (ICODiS)  ላይ ለሪፖርት ተመዝግበዋል።\n\nመግቢያ: ${loginUrl}\nስልክ: ${phone}\nየይለፍ ቃል: ${password}\n\nሲገቡ የይለፍ ቃልዎን መቀየር ግዴታ ነው።`;
-
-    await sendSMS(phone, smsMessage);
+    // Notify representative (SMS first → email fallback)
+    await notifyRegistration({
+      phone,
+      email: rawEmail,
+      name: fullName,
+      password,
+      role: 'representative',
+    });
 
     // Force password change on next login (by saving it in a metadata if we supported that, 
     // but the UI currently checks force_password_change or we can add it to user_profiles)
@@ -129,12 +133,15 @@ export async function resetRepresentativePasswordAction(userId: string, phone: s
       return { error: 'Failed to reset password: ' + updateError.message };
     }
 
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/representative/login`;
-    const smsMessage = `ሰላም ${fullName}፣ የይለፍ ቃልዎ ተቀይሯል።\nአዲሱ የይለፍ ቃል (New Password): ${password}\nመግቢያ (Link): ${loginUrl}`;
+    const notifyResult = await notifyPasswordReset({
+      phone,
+      name: fullName,
+      password,
+      role: 'representative',
+    });
 
-    const smsResult = await sendSMS(phone, smsMessage);
-    if (smsResult.error) {
-      return { error: 'Password updated but failed to send SMS' };
+    if (!notifyResult.smsDelivered && !notifyResult.emailDelivered) {
+      return { success: true, smsDelivered: false, tempPassword: password };
     }
 
     return { success: true };
@@ -272,10 +279,15 @@ export async function provideAdminFeedbackAction(
         .eq('id', report.user_id)
         .single();
 
-      if (user && user.phone_number) {
-        const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/representative/login`;
-        const smsMessage = `ውድ ${user.full_name || 'ተወካይ'}፣ ለ${report.region} ክልል ባስገቡት ሪፖርት ላይ ግብረ መልስ ተሰጥቷል። እባክዎ ዳሽቦርድዎን ይጎብኙ።\nመግቢያ: ${loginUrl}`;
-        await sendSMS(user.phone_number, smsMessage);
+      if (user && (user.phone_number || (user as any).email)) {
+        await notifyReportUpdate({
+          phone: user.phone_number,
+          email: (user as any).email,
+          name: user.full_name || 'ተወካይ',
+          subject: 'ICODS — የሪፖርት ግብረ መልስ',
+          message: `ለ${report.region} ክልል ባስገቡት ሪፖርት ላይ ግብረ መልስ ተሰጥቷል። እባክዎ ዳሽቦርድዎን ይጎብኙ።`,
+          loginPath: '/representative/login',
+        });
       }
     }
 
