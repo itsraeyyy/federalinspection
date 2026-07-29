@@ -388,7 +388,7 @@ export default function DocumentsPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-3 opacity-100 transition-opacity">
                               <button onClick={(e) => handleTogglePublic(e, doc)} className={`text-xs flex items-center gap-1 ${doc.is_public ? 'text-green-600 hover:text-green-700' : 'text-orange-500 hover:text-orange-600'} transition-colors`} title={doc.is_public ? 'ለህዝብ ክፍት ነው (Public)' : 'ግል ሰነድ (Private)'}>
                                 {doc.is_public ? <IconEye size={16} stroke={1.5} /> : <IconEyeOff size={16} stroke={1.5} />}
                               </button>
@@ -410,7 +410,7 @@ export default function DocumentsPage() {
                                     <div className="text-[11px] font-medium text-text-primary truncate">{file.name}</div>
                                     <div className="text-[10px] text-text-muted">{file.fileType} • {file.fileSize}</div>
                                   </div>
-                                  <a href={documentService.getFileUrl ? documentService.getFileUrl({ office: doc.office, year: doc.year }, file.id) : '#'} target="_blank" rel="noreferrer" className="text-brand-blue opacity-0 group-hover/file:opacity-100 transition-opacity p-1"><IconDownload size={14} /></a>
+                                  <a href={documentService.getFileUrl ? documentService.getFileUrl({ office: doc.office, year: doc.year }, file.id) : '#'} target="_blank" rel="noreferrer" className="text-brand-blue opacity-100 transition-opacity p-1"><IconDownload size={14} /></a>
                                 </div>
                               );
                             })}
@@ -492,7 +492,7 @@ export default function DocumentsPage() {
                     <div key={file.id} className="bg-surface-primary/40 border border-border/20 rounded-2xl p-5 flex flex-col gap-3 group hover:border-brand-blue/30 transition-all hover:shadow-sm">
                       <div className="flex justify-between items-start">
                         <div className="p-2.5 bg-brand-blue/10 rounded-xl text-brand-blue"><IconFileText size={20} /></div>
-                        <button onClick={() => setConfirmDialog({ isOpen: true, fileToDelete: { id: file.id, url: file.file_url, category: file.category } })} className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="አጥፋ">
+                        <button onClick={() => setConfirmDialog({ isOpen: true, fileToDelete: { id: file.id, url: file.file_url, category: file.category } })} className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100" title="አጥፋ">
                           <IconTrash size={16} />
                         </button>
                       </div>

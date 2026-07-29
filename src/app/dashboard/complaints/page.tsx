@@ -378,7 +378,7 @@ export default function ComplaintsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4 align-middle text-right">
-                          <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-1.5 opacity-100 transition-opacity">
                             <button
                               onClick={() => setSelectedTicket(ticket)}
                               className="p-1.5 rounded-lg bg-surface-secondary/50 hover:bg-brand-blue hover:text-white text-text-secondary transition-all"
@@ -525,7 +525,7 @@ export default function ComplaintsPage() {
                           <p className="text-sm font-medium text-text-primary truncate">{att.filename}</p>
                           <p className="text-xs text-text-muted mt-0.5">{att.fileSize}</p>
                         </div>
-                        <IconExternalLink size={16} className="text-text-muted opacity-0 group-hover:opacity-100 group-hover:text-brand-blue transition-all" />
+                        <IconExternalLink size={16} className="text-text-muted opacity-100 group-hover:text-brand-blue transition-all" />
                       </a>
                     ))}
                   </div>

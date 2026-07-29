@@ -576,7 +576,7 @@ export default function PeriodManagePage() {
                           {period.status === 'finalized' ? userScores.f100 : currentTotal}
                         </td>
                         <td className="pl-2 py-3 text-right">
-                          <div className="flex justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                          <div className="flex justify-end gap-1 opacity-100 transition-opacity">
                             <button
                               onClick={() => {
                                 setSelectedProfileId(member.user_id);

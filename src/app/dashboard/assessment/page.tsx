@@ -100,7 +100,7 @@ export default function AssessmentPage() {
                       </span>
                       <button 
                         onClick={() => handleDelete(period.id, period.name)}
-                        className="text-text-muted hover:text-danger p-1 rounded-md hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        className="text-text-muted hover:text-danger p-1 rounded-md hover:bg-danger/10 transition-colors opacity-100"
                         title="Delete Period"
                       >
                         <Trash2 className="w-4 h-4" />

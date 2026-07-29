@@ -55,7 +55,7 @@ export default function PersonnelPage() {
 
   const PersonnelCard = ({ person }: { person: Personnel }) => (
     <div className="bg-surface-primary/50 border border-border/30 rounded-2xl p-6 flex flex-col gap-4 hover:border-brand-blue/30 transition-colors shadow-sm relative group">
-      <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-4 right-4 flex items-center gap-2 opacity-100 transition-opacity">
         <Link href={`/dashboard/personnel/${person.id}`} className="p-2 bg-surface-primary text-text-muted hover:text-brand-blue border border-border/50 rounded-lg shadow-sm transition-colors">
           <IconEdit size={16} />
         </Link>
