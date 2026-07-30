@@ -11,7 +11,7 @@ import {
   buildReportNotificationEmail,
 } from "@/lib/brevo";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ICODiS.raey.work";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ICODS.raey.work";
 
 export type NotifyResult = {
   success: boolean;

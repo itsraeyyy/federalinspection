@@ -168,9 +168,9 @@ async function run() {
         user_id: userObj.id,
         responses: responses,
         score_10: score_10,
-        is_locked: true
+        is_locked: false
       }, { onConflict: 'period_id, user_id' });
-      console.log(`  - ${userObj.name}: Self assessment locked (${score_10}/10)`);
+      console.log(`  - ${userObj.name}: Self assessment pre-filled & UNLOCKED (${score_10}/10)`);
     } else {
       console.log(`  * ${userObj.name}: Left UNSUBMITTED for manual testing!`);
     }
@@ -194,10 +194,10 @@ async function run() {
         target_user_id: targetId,
         responses: responses,
         score_20: score_20,
-        is_locked: true
+        is_locked: false
       }, { onConflict: 'period_id, evaluator_id, target_user_id' });
     }
-    console.log(`  - ${evalUser.name}: Submitted evaluations for all team members (${allUserIds.length - 1} members)`);
+    console.log(`  - ${evalUser.name}: Pre-filled & UNLOCKED evaluations for team members (${allUserIds.length - 1} members)`);
   }
   console.log(`  * Evaluator 3 (ዮናስ ታሪኩ - 0922000203): Left UNLOCKED/UNSUBMITTED for manual testing!`);
 

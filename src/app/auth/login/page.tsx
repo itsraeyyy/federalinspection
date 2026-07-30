@@ -24,7 +24,7 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('error') === 'unauthorized') {
-        setErrorMsg("አካውንትዎ የአድሚን ፍቃድ የለውም ወይም ገቢር (Active) አይደለም (Unauthorized: Your account does not have active admin access).");
+        setErrorMsg("አካውንትዎ የአድሚን ፈቃድ የለውም ወይም ገቢር (Active) አይደለም።");
       }
     }
   }, []);
@@ -75,13 +75,13 @@ export default function LoginPage() {
     setErrorMsg(null);
 
     if (newPassword !== confirmPassword) {
-      setErrorMsg("Passwords do not match.");
+      setErrorMsg("የይለፍ ቃሎቹ አይመሳሰሉም።");
       setLoading(false);
       return;
     }
 
     if (newPassword.length < 8) {
-      setErrorMsg("Password must be at least 8 characters long.");
+      setErrorMsg("የይለፍ ቃሉ ቢያንስ 8 ቁምፊዎች መሆን አለበት።");
       setLoading(false);
       return;
     }
@@ -101,7 +101,7 @@ export default function LoginPage() {
           .eq('id', user.id);
       }
 
-      setSuccessMsg("Password updated successfully. Redirecting...");
+      setSuccessMsg("የይለፍ ቃሉ በተሳካ ሁኔታ ተቀይሯል። በማዘዋወር ላይ...");
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 1000);
@@ -126,10 +126,10 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-semibold mb-2 tracking-tight">
-            {requiresReset ? 'Set New Password' : 'Welcome back'}
+            {requiresReset ? 'አዲስ የይለፍ ቃል ያስገቡ' : 'እንኳን ደህና መጡ'}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">
-            {requiresReset ? 'For your security, please create a new password.' : 'Enter your details to sign in to your dashboard'}
+            {requiresReset ? 'ለደህንነትዎ ሲባል እባክዎን አዲስ የይለፍ ቃል ይፍጠሩ።' : 'ወደ ዳሽቦርድዎ ለመግባት መረጃዎን ያስገቡ'}
           </p>
         </div>
 
@@ -138,7 +138,7 @@ export default function LoginPage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="email">
-                  Phone or Email
+                  ስልክ ቁጥር ወይም ኢሜይል
                 </label>
                 <input
                   id="email"
@@ -146,7 +146,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="0911000000 or admin@example.com"
+                  placeholder="0911000000 ወይም admin@example.com"
                   className="w-full px-4 py-2.5 bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-slate-100/10 focus:border-slate-900 dark:focus:border-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 />
               </div>
@@ -154,10 +154,10 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="password">
-                    Password
+                    የይለፍ ቃል
                   </label>
                   <Link href="/auth/forgot-password" className="text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors">
-                    Forgot password?
+                    የይለፍ ቃል ረስተዋል?
                   </Link>
                 </div>
                 <input
@@ -187,7 +187,7 @@ export default function LoginPage() {
               className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-medium rounded-xl text-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Sign In
+              ይግቡ
             </button>
           </form>
         ) : (
@@ -195,7 +195,7 @@ export default function LoginPage() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="newPassword">
-                  New Password
+                  አዲስ የይለፍ ቃል
                 </label>
                 <input
                   id="newPassword"
@@ -210,7 +210,7 @@ export default function LoginPage() {
               
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="confirmPassword">
-                  Confirm Password
+                  የይለፍ ቃል ያረጋግጡ
                 </label>
                 <input
                   id="confirmPassword"
@@ -248,7 +248,7 @@ export default function LoginPage() {
               className="w-full py-2.5 px-4 bg-brand-blue hover:bg-brand-blue/90 text-white font-medium rounded-xl text-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Set Password & Continue
+              የይለፍ ቃል ያዘጋጁ እና ይቀጥሉ
             </button>
           </form>
         )}

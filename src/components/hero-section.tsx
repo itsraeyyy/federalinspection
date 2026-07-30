@@ -47,19 +47,11 @@ function AnimatedNumber({ target, duration = 2000 }: { target: number; duration?
 
 export function HeroSection() {
   const [charCount, setCharCount] = useState(0);
-  const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
     if (charCount < FULL_TEXT.length) {
       const timeout = setTimeout(() => setCharCount((c) => c + 1), TYPING_SPEED);
       return () => clearTimeout(timeout);
-    }
-  }, [charCount]);
-
-  useEffect(() => {
-    if (charCount >= FULL_TEXT.length) {
-      const interval = setInterval(() => setShowCursor((v) => !v), 530);
-      return () => clearInterval(interval);
     }
   }, [charCount]);
 
@@ -164,19 +156,19 @@ export function HeroSection() {
             >
               <span className="text-slate-900">
                 {line1Typed}
-                {cursorOnLine1 && (
+                {cursorOnLine1 && !isDone && (
                   <span
-                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm"
-                    style={{ backgroundColor: "#FFB800", opacity: isDone && !showCursor ? 0 : 1 }}
+                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm animate-pulse"
+                    style={{ backgroundColor: "#FFB800" }}
                   />
                 )}
               </span>
               <span style={{ color: "#014BAA" }}>
                 {line2Typed}
-                {!cursorOnLine1 && (
+                {!cursorOnLine1 && !isDone && (
                   <span
-                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm"
-                    style={{ backgroundColor: "#FFB800", opacity: isDone && !showCursor ? 0 : 1 }}
+                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm animate-pulse"
+                    style={{ backgroundColor: "#FFB800" }}
                   />
                 )}
               </span>

@@ -124,6 +124,62 @@ function MemberCard({ member }: { member: Personnel }) {
   );
 }
 
+function getRegionRank(regionStr?: string): number {
+  if (!regionStr) return 999;
+  const str = regionStr.trim();
+  
+  if (str.includes('ኦሮሚያ') || str.toLowerCase().includes('oromia')) return 1;
+  if (str.includes('አማራ') || str.toLowerCase().includes('amhara')) return 2;
+  if (str.includes('ሱማሌ') || str.includes('ሶማሌ') || str.toLowerCase().includes('somali')) return 3;
+  if (str.includes('አፋር') || str.toLowerCase().includes('afar')) return 4;
+  if (str.includes('ቤን') || str.includes('ቤኒሻንጉል') || str.toLowerCase().includes('benishangul')) return 5;
+  if (str.includes('ጋምቤላ') || str.toLowerCase().includes('gambella')) return 6;
+  if (str.includes('ሐረሪ') || str.toLowerCase().includes('harari')) return 7;
+  if (str.includes('ሲዳማ') || str.toLowerCase().includes('sidama')) return 8;
+  if (str.includes('ደ/ም/ኢ/ያ') || str.includes('ምዕራብ') || str.toLowerCase().includes('south west')) return 9;
+  if (str.includes('ደቡብ ኢ/ያ') || (str.includes('ደቡብ') && !str.includes('ምዕራብ')) || (str.toLowerCase().includes('south') && !str.toLowerCase().includes('west'))) return 10;
+  if (str.includes('ማዕ/ኢ/ያ') || str.includes('ማዕከላዊ') || str.toLowerCase().includes('central')) return 11;
+  if (str.includes('አዲስ አበባ') || str.toLowerCase().includes('addis')) return 12;
+  if (str.includes('ድሬ') || str.toLowerCase().includes('dire')) return 13;
+  if (str.includes('ፌዴራል') || str.toLowerCase().includes('federal')) return 14;
+
+  return 999;
+}
+
+function getCommissionMemberRank(nameStr?: string): number {
+  if (!nameStr) return 999;
+  const str = nameStr.trim();
+
+  if (str.includes('ደስታ ተስፋው') || str.includes('ደስታ')) return 1;
+  if (str.includes('ያሲን ሀቢብ') || str.includes('ያሲን')) return 2;
+  if (str.includes('ሀብታሙ ሲሳይ') || str.includes('ሀብታሙ')) return 3;
+  if (str.includes('አብዱል ሃኪም') || str.includes('አብዱልሃኪም') || str.includes('አብዱል')) return 4;
+  if (str.includes('ሀፍታይ') || str.includes('ሀፍታይ ገ/እግዚአብሔር')) return 5;
+  if (str.includes('ቢንያም') || str.includes('ቢንያም መንገሻ')) return 6;
+  if (str.includes('ሮዛ') || str.includes('ሮዛ ቢያ')) return 7;
+  if (str.includes('ጀማል') || str.includes('ጀማል ከዲር')) return 8;
+  if (str.includes('እሱባለው') || str.includes('እሱባለው መሠለ')) return 9;
+  if (str.includes('ኦላዶ') || str.includes('ኦላዶ ኦሎ')) return 10;
+  if (str.includes('ማርታ') || str.includes('ማርታ ሉዊጂ')) return 11;
+  if (str.includes('መሐሙድ') || str.includes('መሐሙድ ዩሱፍ') || str.includes('መህሙድ')) return 12;
+  if (str.includes('ቻም') || str.includes('ቻም ኡቦንግ')) return 13;
+  if (str.includes('እመቤት') || str.includes('እመቤት ኢሳያስ')) return 14;
+
+  return 999;
+}
+
+function getPositionRank(pos?: string): number {
+  if (!pos) return 99;
+  if (pos.includes('ዋና ኮሚሽነር')) return 1;
+  if (pos.includes('ምክትል ኮሚሽነር')) return 2;
+  if (pos.includes('ጸሃፊ') || pos.includes('ጽህፈት ቤት ሃላፊ')) return 3;
+  if (pos.includes('ስራ አመራር')) return 4;
+  if (pos.includes('ማኔጅመንት')) return 5;
+  if (pos.includes('ቅርንጫፍ')) return 6;
+  if (pos.includes('አባል')) return 7;
+  return 10;
+}
+
 export function MembersSection() {
   const [activeTab, setActiveTab] = useState(OFFICE_TABS[0].id);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -142,12 +198,29 @@ export function MembersSection() {
 
   const activePersonnel = personnel.filter(p => p.status === 'Active');
 
-  const currentOffice = activePersonnel.filter(p => {
-    if (activeTab === 'main') return p.officeCategory === 'Main Office' || p.officeCategoryAm === 'ኮሚሽን ዋና ጽ/ቤት' || p.officeCategoryAm === 'ኮሚሽን ጽ/ቤት';
-    if (activeTab === 'branch') return p.officeCategory === 'Branch Office' || p.officeCategoryAm === 'ኮሚሽን ቅርንጫፍ ጽ/ቤት';
-    if (activeTab === 'commission-members') return p.officeCategory === 'Commission Members' || p.officeCategoryAm === 'ኮሚሽን አባላት';
-    return false;
-  });
+  const currentOffice = activePersonnel
+    .filter(p => {
+      if (activeTab === 'main') return p.officeCategory === 'Main Office' || p.officeCategoryAm === 'ኮሚሽን ዋና ጽ/ቤት' || p.officeCategoryAm === 'ኮሚሽን ጽ/ቤት';
+      if (activeTab === 'branch') return p.officeCategory === 'Branch Office' || p.officeCategoryAm === 'ኮሚሽን ቅርንጫፍ ጽ/ቤት';
+      if (activeTab === 'commission-members') return p.officeCategory === 'Commission Members' || p.officeCategoryAm === 'ኮሚሽን አባላት';
+      return false;
+    })
+    .sort((a, b) => {
+      if (activeTab === 'branch') {
+        const rankA = getRegionRank(a.region);
+        const rankB = getRegionRank(b.region);
+        if (rankA !== rankB) return rankA - rankB;
+      }
+      if (activeTab === 'commission-members') {
+        const rankA = getCommissionMemberRank(a.nameAm || a.name);
+        const rankB = getCommissionMemberRank(b.nameAm || b.name);
+        if (rankA !== rankB) return rankA - rankB;
+      }
+      const posA = getPositionRank(a.positionAm || a.position);
+      const posB = getPositionRank(b.positionAm || b.position);
+      if (posA !== posB) return posA - posB;
+      return 0;
+    });
 
   const checkScroll = () => {
     const el = scrollRef.current;
