@@ -177,3 +177,34 @@ export async function notifyReportUpdate(opts: {
 
   return tryNotify(opts.phone, opts.email, opts.message, opts.subject, html, text);
 }
+
+/** Notify an existing user that they have been added to a new assessment period */
+export async function notifyNewPeriodEnrollment(opts: {
+  phone: string;
+  email?: string;
+  name: string;
+  periodName: string;
+}): Promise<NotifyResult> {
+  const loginUrl = `${SITE_URL}/assessment/login`;
+
+  const smsMessage =
+    `ሰላም ${opts.name}፣\n` +
+    `ለ"${opts.periodName}" አዲስ ምዘና ጊዜ ተመዝግበዋል።\n` +
+    `የቀድሞ የይለፍ ቃልዎን ተጠቅመው ይግቡ: ${loginUrl}`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px;background:#f9f9f9;border-radius:12px;">
+      <h2 style="color:#1d4ed8;margin-bottom:8px;">ለምዘና ጊዜ ተጨምረዋል!</h2>
+      <p style="color:#333;font-size:15px;">ሰላም <strong>${opts.name}</strong>፣</p>
+      <p style="color:#333;font-size:15px;">ለ <strong>"${opts.periodName}"</strong> አዲስ ምዘና ጊዜ ተጨምረዋል።</p>
+      <p style="color:#555;font-size:14px;">የቀድሞ የይለፍ ቃልዎን ተጠቅመው ከዚህ ሊገቡ ይችላሉ፡</p>
+      <a href="${loginUrl}" style="display:inline-block;margin:16px 0;padding:12px 28px;background:#1d4ed8;color:white;text-decoration:none;border-radius:8px;font-weight:bold;">
+        ወደ ምዘና ፖርታሉ ግባ
+      </a>
+      <p style="color:#888;font-size:12px;margin-top:24px;">ICODiS — የምዘና ፖርታል</p>
+    </div>`;
+
+  const text = `ሰላም ${opts.name}፣\nለ"${opts.periodName}" ምዘና ጊዜ ተጨምረዋል።\nይግቡ: ${loginUrl}`;
+
+  return tryNotify(opts.phone, opts.email, smsMessage, `ICODiS — ለ"${opts.periodName}" ምዘና ጊዜ ተጨምረዋል`, html, text);
+}
