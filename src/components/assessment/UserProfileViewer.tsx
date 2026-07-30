@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, User, Briefcase, GraduationCap, Building } from 'lucide-react';
+import { Loader2, User, Briefcase, GraduationCap, Building, Download, History } from 'lucide-react';
+import { downloadPDFDocument } from '@/lib/exportToPDF';
+import { AllAssessmentsReportPDF } from './AllAssessmentsReportPDF';
 
 interface UserProfileViewerProps {
   userId: string;
@@ -14,6 +16,7 @@ export function UserProfileViewer({ userId }: UserProfileViewerProps) {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [downloadingAll, setDownloadingAll] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -88,6 +91,26 @@ export function UserProfileViewer({ userId }: UserProfileViewerProps) {
       fetchProfile();
     }
   }, [userId]);
+
+  const handleDownloadAllPDF = async () => {
+    if (history.length === 0) return;
+    setDownloadingAll(true);
+    try {
+      const fileName = `${user?.full_name ? user.full_name.replace(/\s+/g, '_') : 'User'}_All_Assessments.pdf`;
+      const docElement = (
+        <AllAssessmentsReportPDF
+          user={user}
+          profile={profile}
+          history={history}
+        />
+      );
+      await downloadPDFDocument(docElement, fileName);
+    } catch (err) {
+      console.error('Error downloading all assessments PDF:', err);
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -207,16 +230,28 @@ export function UserProfileViewer({ userId }: UserProfileViewerProps) {
 
               {/* History Section */}
               <div className="space-y-4 md:col-span-2 mt-4">
-                <div className="flex items-center gap-2 mb-3 border-b border-border pb-2">
-                  <User className="w-4 h-4 text-brand-blue" />
-                  <h3 className="font-heading font-medium text-text-primary">የምዘና ታሪክ (Assessment History)</h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <History className="w-4 h-4 text-brand-blue" />
+                    <h3 className="font-heading font-medium text-text-primary">የምዘና ታሪክ (Assessment History)</h3>
+                  </div>
+                  {history.length > 0 && (
+                    <button
+                      onClick={handleDownloadAllPDF}
+                      disabled={downloadingAll}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 transition-all shadow-sm disabled:opacity-50"
+                    >
+                      {downloadingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                      <span>{downloadingAll ? 'ፒዲኤፍ በማውረድ ላይ...' : 'ሁሉንም ምዘናዎች በ PDF አውርድ (Download All PDF)'}</span>
+                    </button>
+                  )}
                 </div>
                 {history.length === 0 ? (
                   <p className="text-text-muted text-sm py-2">ምንም የምዘና ታሪክ አልተገኘም። (No assessment history found.)</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {history.map(h => (
-                      <div key={h.periodId} className="bg-surface-secondary/50 rounded-xl border border-border/80 p-4">
+                      <div key={h.periodId} className="bg-surface-secondary/50 rounded-xl border border-border/80 p-4 hover:border-brand-blue/30 transition-all">
                         <div className="flex justify-between items-center mb-3">
                           <span className="font-medium text-text-primary text-sm">{h.periodName}</span>
                           <span className={`text-[10px] px-2 py-1 rounded-md font-semibold ${h.status === 'finalized' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>

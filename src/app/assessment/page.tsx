@@ -8,7 +8,8 @@ import { LeadershipEvaluationView } from '@/components/assessment/LeadershipEval
 import { ApproverDashboardView } from '@/components/assessment/ApproverDashboardView';
 import { FinalRevealView } from '@/components/assessment/FinalRevealView';
 import { UserProfileViewer } from '@/components/assessment/UserProfileViewer';
-import { Loader2 } from 'lucide-react';
+import { PreviousAssessmentsView } from '@/components/assessment/PreviousAssessmentsView';
+import { Loader2, CheckCircle2, ChevronDown, ChevronUp, Eye, EyeOff, History } from 'lucide-react';
 
 export default function AssessmentModulePage() {
   const router = useRouter();
@@ -178,6 +179,7 @@ export default function AssessmentModulePage() {
 
     // After self-assessment is locked, give them the tabbed layout
     return <AssessmentDashboardLayout 
+      session={session}
       membership={membership} 
       period={period} 
       selfAssessment={selfAssessment} 
@@ -194,12 +196,13 @@ export default function AssessmentModulePage() {
   );
 }
 
-function AssessmentDashboardLayout({ membership, period, selfAssessment, allMembers, evaluations }: any) {
+function AssessmentDashboardLayout({ session, membership, period, selfAssessment, allMembers, evaluations }: any) {
   const canEvaluate = membership.role === 'evaluator' || membership.role === 'approver' || membership.role === 'leader' || membership.role === 'admin';
   const isApprover = membership.role === 'approver' || membership.role === 'admin';
 
   const defaultTab = isApprover ? 'approve' : canEvaluate ? 'eval' : 'self';
-  const [activeTab, setActiveTab] = useState<'self' | 'eval' | 'approve'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'self' | 'history' | 'eval' | 'approve'>(defaultTab);
+  const [showSelfDetails, setShowSelfDetails] = useState(false);
 
   return (
     <div className="flex-1 flex flex-col bg-background">
@@ -215,6 +218,17 @@ function AssessmentDashboardLayout({ membership, period, selfAssessment, allMemb
               }`}
             >
               የኔ ግምገማ (My Assessment)
+            </button>
+
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`py-4 px-2 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === 'history'
+                  ? 'border-brand-blue text-brand-blue font-semibold'
+                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+              }`}
+            >
+              የቀደሙ ምዘናዎች (Previous Assessments)
             </button>
 
             {canEvaluate && (
@@ -248,18 +262,62 @@ function AssessmentDashboardLayout({ membership, period, selfAssessment, allMemb
       
       <div className="flex-1 flex flex-col">
         {activeTab === 'self' && (
-          <div className="space-y-4">
-            {!canEvaluate && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-2xl text-sm text-blue-800 dark:text-blue-200 flex items-center gap-3">
-                <span className="text-xl">✅</span>
-                <div>
-                  <p className="font-semibold">የግል ምዘናዎን በተሳካ ሁኔታ አጠናቀዋል!</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-300">የቡድን አመራሮች ግምገማውን አጠናቀው ውጤት ሲያጸድቁ የመጨረሻው ውጤት እዚህ ይገለጻል።</p>
+          <div className="space-y-6">
+            <div className="relative overflow-hidden p-6 sm:p-8 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-teal-500/10 dark:from-emerald-950/40 dark:via-emerald-950/20 dark:to-teal-950/30 border border-emerald-500/30 dark:border-emerald-700/40 rounded-3xl shadow-lg backdrop-blur-md">
+              <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-5 sm:gap-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
+                  <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <h2 className="text-2xl sm:text-3xl font-heading font-bold text-emerald-950 dark:text-emerald-100">
+                    የግል ምዘናዎን በተሳካ ሁኔታ አጠናቀዋል!
+                  </h2>
+                  <p className="text-sm sm:text-base text-emerald-800/90 dark:text-emerald-300/90 leading-relaxed max-w-2xl">
+                    የቡድን አመራሩ ግምገማውን አጠናቀው ውጤት ሲያፀድቁ የመጨረሻው ውጤት እዚህ ይገለፃል።
+                  </p>
+                  {selfAssessment?.score_10 !== undefined && (
+                    <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
+                      <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 px-4 py-1.5 rounded-full border border-emerald-500/20 flex items-center gap-2">
+                        <span>የተመዘገበ የግል ውጤት (Self Score):</span>
+                        <strong className="text-emerald-950 dark:text-emerald-100 font-bold text-base">{Number(selfAssessment.score_10).toFixed(2)} / 10</strong>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              <div className="mt-6 pt-6 border-t border-emerald-500/20 flex justify-center sm:justify-end">
+                <button
+                  onClick={() => setShowSelfDetails(!showSelfDetails)}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm bg-surface-primary hover:bg-surface-secondary border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 hover:text-emerald-950 dark:hover:text-white"
+                >
+                  {showSelfDetails ? (
+                    <>
+                      <EyeOff className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>ምዘናውን ደብቅ (Hide Assessment)</span>
+                      <ChevronUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>የተሞላውን ምዘና ተመልከት (Show Assessment)</span>
+                      <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {showSelfDetails && (
+              <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                <SelfAssessmentView periodId={period.id} existingData={selfAssessment} readOnly={true} />
+              </div>
             )}
-            <SelfAssessmentView periodId={period.id} existingData={selfAssessment} readOnly={true} />
           </div>
+        )}
+
+        {activeTab === 'history' && (
+          <PreviousAssessmentsView userId={session.user.id} />
         )}
 
         {activeTab === 'eval' && canEvaluate && (

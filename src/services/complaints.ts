@@ -174,13 +174,17 @@ export const complaintService = {
     }
 
     if (formData.phone || formData.email) {
-      notifyComplaintSubmitted({
-        phone: formData.phone,
-        email: formData.email,
-        name: formData.name,
-        trackingCode,
-        type: formData.type,
-      });
+      try {
+        await notifyComplaintSubmitted({
+          phone: formData.phone,
+          email: formData.email,
+          name: formData.name,
+          trackingCode,
+          type: formData.type,
+        });
+      } catch (notifyErr) {
+        console.error('Failed to send complaint submission notification:', notifyErr);
+      }
     }
 
     const { data: admins } = await supabase
@@ -189,24 +193,28 @@ export const complaintService = {
       .eq('status', 'Active');
 
     if (admins) {
-      const targetAdmins = admins.filter(a => 
-        a.role === 'super_admin' || 
+      const targetAdmins = admins.filter(a =>
+        a.role === 'super_admin' ||
         (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma')))
       );
-      
+
       const typeLabel = formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
       const adminMessage = `አዲስ ${typeLabel} ገብቷል። መከታተያ ኮድ፡ ${trackingCode}`;
 
       for (const admin of targetAdmins) {
         if (admin.phone || admin.email) {
-          notifyReportUpdate({
-            phone: admin.phone || undefined,
-            email: admin.email || undefined,
-            name: 'አስተዳዳሪ',
-            subject: `ICODS — አዲስ ${typeLabel}`,
-            message: adminMessage,
-            loginPath: '/dashboard',
-          });
+          try {
+            await notifyReportUpdate({
+              phone: admin.phone || undefined,
+              email: admin.email || undefined,
+              name: 'አስተዳዳሪ',
+              subject: `ICODiS — አዲስ ${typeLabel}`,
+              message: adminMessage,
+              loginPath: '/dashboard',
+            });
+          } catch (notifyErr) {
+            console.error('Failed to notify admin of new complaint:', notifyErr);
+          }
         }
       }
     }
@@ -286,15 +294,19 @@ export const complaintService = {
     }
 
     if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
-      notifyComplaintStatusUpdate({
-        phone: updatedComplaint.phone,
-        email: (updatedComplaint as any).email,
-        name: updatedComplaint.name,
-        type: updatedComplaint.type,
-        status: newStatus,
-        trackingCode: updatedComplaint.tracking_code || '',
-        resolution: resolution?.message,
-      });
+      try {
+        await notifyComplaintStatusUpdate({
+          phone: updatedComplaint.phone,
+          email: (updatedComplaint as any).email,
+          name: updatedComplaint.name,
+          type: updatedComplaint.type,
+          status: newStatus,
+          trackingCode: updatedComplaint.tracking_code || '',
+          resolution: resolution?.message,
+        });
+      } catch (notifyErr) {
+        console.error('Failed to send complaint status notification:', notifyErr);
+      }
     }
 
     return true;

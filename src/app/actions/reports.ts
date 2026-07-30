@@ -284,7 +284,7 @@ export async function provideAdminFeedbackAction(
           phone: user.phone_number,
           email: (user as any).email,
           name: user.full_name || 'ተወካይ',
-          subject: 'ICODS — የሪፖርት ግብረ መልስ',
+          subject: 'ICODiS — የሪፖርት ግብረ መልስ',
           message: `ለ${report.region} ክልል ባስገቡት ሪፖርት ላይ ግብረ መልስ ተሰጥቷል። እባክዎ ዳሽቦርድዎን ይጎብኙ።`,
           loginPath: '/representative/login',
         });

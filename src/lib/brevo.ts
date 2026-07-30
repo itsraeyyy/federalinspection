@@ -24,7 +24,7 @@ function wrapEmail(title: string, subtitle: string, body: string): string {
   <div class="container">
     <div class="header"><h1>${title}</h1><p>${subtitle}</p></div>
     <div class="content">${body}</div>
-    <div class="footer"><p>የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን | ICODS System</p><p>This is an automated message. Please do not reply.</p></div>
+    <div class="footer"><p>የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን | ICODiS System</p><p>This is an automated message. Please do not reply.</p></div>
   </div></body></html>`;
 }
 
@@ -33,7 +33,7 @@ function wrapEmail(title: string, subtitle: string, body: string): string {
 export async function sendEmail(to: string, subject: string, html: string, textContent?: string) {
   const apiKey = process.env.BREVO_API_KEY;
   const fromEmail = process.env.BREVO_FROM_EMAIL;
-  const fromName = process.env.BREVO_FROM_NAME || "ICODS System";
+  const fromName = process.env.BREVO_FROM_NAME || "ICODiS System";
 
   if (!apiKey || !fromEmail) {
     console.warn("[Brevo] BREVO_API_KEY or BREVO_FROM_EMAIL missing — email skipped.");
@@ -58,7 +58,11 @@ export async function sendEmail(to: string, subject: string, html: string, textC
 
     if (!response.ok) {
       const err = await response.text();
-      console.error(`[Brevo Error ${response.status}]:`, err);
+      if (response.status === 401) {
+        console.error(`[Brevo Error 401 Unauthorized]: Likely IP restriction or invalid API key. ${err}`);
+      } else {
+        console.error(`[Brevo Error ${response.status}]:`, err);
+      }
       return { error: `Brevo API Error (${response.status}): ${err}` };
     }
 
@@ -74,7 +78,7 @@ export async function sendEmail(to: string, subject: string, html: string, textC
 
 export function buildRegistrationEmail(name: string, phone: string, password: string, loginUrl: string) {
   const html = wrapEmail(
-    "ICODS — ምዝገባ ተሳክቷል",
+    "ICODiS — ምዝገባ ተሳክቷል",
     "Assessment Portal Registration",
     `<p>ሰላም <strong>${name}</strong>፣</p>
     <p>ለምዘና ፖርታሉ ተመዝግበዋል። ከዚህ በታች ያለውን የመግቢያ መረጃ ይጠቀሙ:</p>
@@ -93,7 +97,7 @@ export function buildRegistrationEmail(name: string, phone: string, password: st
 
 export function buildPasswordResetEmail(name: string, password: string, loginUrl: string) {
   const html = wrapEmail(
-    "ICODS — የይለፍ ቃል ተቀይሯል",
+    "ICODiS — የይለፍ ቃል ተቀይሯል",
     "Password Reset Notification",
     `<p>ሰላም <strong>${name}</strong>፣</p>
     <p>የይለፍ ቃልዎ ተቀይሯል። ከዚህ በታች ያለውን አዲስ ጊዜያዊ የይለፍ ቃል ይጠቀሙ:</p>
@@ -110,10 +114,10 @@ export function buildPasswordResetEmail(name: string, password: string, loginUrl
 
 export function buildAdminWelcomeEmail(name: string, email: string, password: string, loginUrl: string) {
   const html = wrapEmail(
-    "ICODS — Admin Account Created",
+    "ICODiS — Admin Account Created",
     "Welcome to the Admin Dashboard",
     `<p>Dear <strong>${name}</strong>,</p>
-    <p>An administrator account has been created for you on the ICODS platform. Please use the credentials below to access your dashboard.</p>
+    <p>An administrator account has been created for you on the ICODiS platform. Please use the credentials below to access your dashboard.</p>
     <div class="box">
       <div class="label">Username (Email)</div>
       <div class="value">${email}</div>
@@ -130,7 +134,7 @@ export function buildAdminWelcomeEmail(name: string, email: string, password: st
 export function buildComplaintSubmittedEmail(name: string, trackingCode: string, type: string, trackUrl: string) {
   const typeAmh = type === "Suggestion" ? "ጥቆማ" : "አቤቱታ";
   const html = wrapEmail(
-    `ICODS — ${typeAmh} ተቀብሏል`,
+    `ICODiS — ${typeAmh} ተቀብሏል`,
     "Complaint / Suggestion Received",
     `<p>ሰላም <strong>${name}</strong>፣</p>
     <p>ያቀረቡት ${typeAmh} በተሳካ ሁኔታ ደርሷል። ሁኔታውን ለመከታተል ከዚህ በታች ያለውን ኮድ ይጠቀሙ:</p>
@@ -156,7 +160,7 @@ export function buildComplaintStatusEmail(name: string, type: string, status: st
     ? `<div class="box" style="text-align:left"><div class="label">የተሰጠው ምላሽ</div><p style="margin:8px 0 0;font-size:14px;color:#374151;">${resolution}</p></div>`
     : "";
   const html = wrapEmail(
-    `ICODS — ${typeAmh} ሁኔታ ተሻሽሏል`,
+    `ICODiS — ${typeAmh} ሁኔታ ተሻሽሏል`,
     "Status Update Notification",
     `<p>ሰላም <strong>${name}</strong>፣</p>
     <p>የቀረበው ${typeAmh} ሁኔታ ተሻሽሏል።</p>
@@ -175,7 +179,7 @@ export function buildComplaintStatusEmail(name: string, type: string, status: st
 
 export function buildReportNotificationEmail(name: string, subject: string, message: string, loginUrl: string) {
   const html = wrapEmail(
-    "ICODS — አዲስ ሪፖርት / ማሳወቂያ",
+    "ICODiS — አዲስ ሪፖርት / ማሳወቂያ",
     "Report Notification",
     `<p>ሰላም <strong>${name}</strong>፣</p>
     <p>${message}</p>

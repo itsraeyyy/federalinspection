@@ -11,7 +11,7 @@ import {
   buildReportNotificationEmail,
 } from "@/lib/brevo";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://icods.raey.work";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ICODiS.raey.work";
 
 export type NotifyResult = {
   success: boolean;
@@ -70,7 +70,7 @@ export async function notifyRegistration(opts: {
 
   const { html, text } = buildRegistrationEmail(opts.name, opts.phone, opts.password, loginUrl);
 
-  return tryNotify(opts.phone, opts.email, smsMessage, "ICODS — ምዝገባ ተሳክቷል", html, text);
+  return tryNotify(opts.phone, opts.email, smsMessage, "ICODiS — ምዝገባ ተሳክቷል", html, text);
 }
 
 /** Notify user after password reset with their new temp password */
@@ -90,7 +90,7 @@ export async function notifyPasswordReset(opts: {
 
   const { html, text } = buildPasswordResetEmail(opts.name, opts.password, loginUrl);
 
-  return tryNotify(opts.phone, opts.email, smsMessage, "ICODS — የይለፍ ቃል ተቀይሯል", html, text);
+  return tryNotify(opts.phone, opts.email, smsMessage, "ICODiS — የይለፍ ቃል ተቀይሯል", html, text);
 }
 
 /** Notify admin after their account is created */
@@ -110,7 +110,7 @@ export async function notifyAdminCreated(opts: {
 
   const { html, text } = buildAdminWelcomeEmail(opts.name, opts.email, opts.password, loginUrl);
 
-  return tryNotify(opts.phone, opts.email, smsMessage, "ICODS — Admin Account Created", html, text);
+  return tryNotify(opts.phone, opts.email, smsMessage, "ICODiS — Admin Account Created", html, text);
 }
 
 /** Notify complaint submitter that their complaint was received */
@@ -129,7 +129,7 @@ export async function notifyComplaintSubmitted(opts: {
 
   const { html, text } = buildComplaintSubmittedEmail(opts.name, opts.trackingCode, opts.type, trackUrl);
 
-  return tryNotify(opts.phone, opts.email, smsMessage, `ICODS — ${typeAmh} ተቀብሏል`, html, text);
+  return tryNotify(opts.phone, opts.email, smsMessage, `ICODiS — ${typeAmh} ተቀብሏል`, html, text);
 }
 
 /** Notify complaint submitter that their complaint status changed */
@@ -160,7 +160,7 @@ export async function notifyComplaintStatusUpdate(opts: {
     opts.name, opts.type, opts.status, opts.trackingCode, opts.resolution, trackUrl
   );
 
-  return tryNotify(opts.phone, opts.email, smsMessage, `ICODS — ${typeAmh} ሁኔታ ተሻሽሏል`, html, text);
+  return tryNotify(opts.phone, opts.email, smsMessage, `ICODiS — ${typeAmh} ሁኔታ ተሻሽሏል`, html, text);
 }
 
 /** Notify a representative about a report */
