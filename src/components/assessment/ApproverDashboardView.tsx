@@ -18,6 +18,9 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const [evalScores, setEvalScores] = useState<Record<string, { score: number, is_locked: boolean, is_complete: boolean, submitted_count: number, total_required: number, evaluations: any[] }>>({});
   const [approverScores, setApproverScores] = useState<Record<string, number>>({});
   const [initialApproverScores, setInitialApproverScores] = useState<Record<string, number>>({});
+  const [approverRemarks, setApproverRemarks] = useState<Record<string, string>>({});
+  const [questionRemarks, setQuestionRemarks] = useState<Record<string, string>>({});
+  const [finalizedUserIds, setFinalizedUserIds] = useState<string[]>([]);
   const [isFinalized, setIsFinalized] = useState(false);
 
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
@@ -127,11 +130,21 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           .eq('period_id', periodId);
 
         const aScores: Record<string, number> = {};
+        const aRemarks: Record<string, string> = {};
         approverData?.forEach(a => {
           aScores[a.target_user_id] = Number(a.score_70);
+          aRemarks[a.target_user_id] = a.comments || a.remarks || '';
         });
         setApproverScores(aScores);
         setInitialApproverScores(aScores);
+        setApproverRemarks(aRemarks);
+
+        const { data: finalScoresData } = await supabase
+          .from('final_scores')
+          .select('user_id')
+          .eq('period_id', periodId);
+
+        setFinalizedUserIds((finalScoresData || []).map((f: any) => f.user_id));
 
       } catch (err: any) {
         setError(err.message || 'Failed to load dashboard');
@@ -153,6 +166,84 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
       ...prev,
       [userId]: score
     }));
+  };
+
+  const handleApproverRemarksChange = (userId: string, val: string) => {
+    setApproverRemarks(prev => ({
+      ...prev,
+      [userId]: val
+    }));
+  };
+
+  const handleApproveSinglePerson = async (targetUserId: string) => {
+    const s10 = selfScores[targetUserId]?.score || 0;
+    const e20 = evalScores[targetUserId]?.score || 0;
+    const aScore70 = approverScores[targetUserId] || 0;
+
+    if (s10 <= 0 || e20 <= 0 || aScore70 <= 0) {
+      const missing: string[] = [];
+      if (s10 <= 0) missing.push('የራስ ግምገማ (10%)');
+      if (e20 <= 0) missing.push('የገምጋሚዎች ውጤት (20%)');
+      if (aScore70 <= 0) missing.push('የአጽዳቂ ውጤት (70%)');
+      showToast(`ማፅደቅ አይቻልም! እባክዎን የሚከተሉትን ያሟሉ: ${missing.join(', ')}`, 'error');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      const currentUser: any = (await supabase.auth.getUser()).data?.user || (await supabase.auth.getSession()).data?.session?.user;
+      if (!currentUser) throw new Error('ለማስቀመጥ እባክዎ መጀመሪያ ይግቡ (Not authenticated)');
+
+      const aComments = approverRemarks[targetUserId] || '';
+
+      // 1. Upsert into approver_evaluations
+      const { error: appErr } = await supabase
+        .from('approver_evaluations')
+        .upsert({
+          period_id: periodId,
+          approver_id: currentUser.id,
+          target_user_id: targetUserId,
+          score_70: aScore70,
+          comments: aComments,
+          is_locked: true
+        }, { onConflict: 'period_id, approver_id, target_user_id' });
+
+      if (appErr) throw appErr;
+
+      // 2. Compute final score for this single user
+      const s10 = selfScores[targetUserId]?.score || 0;
+      const e20 = evalScores[targetUserId]?.score || 0;
+      const score30 = Number((s10 + e20).toFixed(2));
+      const final100 = Number((score30 + aScore70).toFixed(2));
+
+      // 3. Upsert into final_scores
+      const { error: finalErr } = await supabase
+        .from('final_scores')
+        .upsert({
+          period_id: periodId,
+          user_id: targetUserId,
+          score_30: score30,
+          final_score_100: final100
+        }, { onConflict: 'period_id, user_id' });
+
+      if (finalErr) throw finalErr;
+
+      setFinalizedUserIds(prev => Array.from(new Set([...prev, targetUserId])));
+      const targetUserObj = members.find(m => m.user_id === targetUserId);
+      const name = targetUserObj?.users?.full_name || 'አባል';
+
+      showToast(`የ ${name} ውጤት በተሳካ ሁኔታ ፀድቋል!`, 'success');
+
+      if (expandedUser === targetUserId) {
+        setExpandedUser(null);
+      }
+    } catch (err: any) {
+      setError(err.message || 'ማፅደቅ አልተሳካም።');
+      showToast(err.message || 'ማፅደቅ አልተሳካም', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleUnlockAssessment = async (type: 'self' | 'eval', userId: string) => {
@@ -204,6 +295,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
         approver_id: currentUser.id,
         target_user_id: m.user_id,
         score_70: approverScores[m.user_id] || 0,
+        comments: approverRemarks[m.user_id] || '',
         is_locked: isFinalizing ? true : false
       }));
 
@@ -454,21 +546,33 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
                       {/* Evaluators 20 points */}
                       <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {s20Data?.submitted_count && s20Data.submitted_count > 0 ? (
-                            <span className="font-mono text-sm font-bold px-3 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
-                              {s20}
-                            </span>
-                          ) : (
-                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50">
-                              በሂደት ላይ (0/{s20Data?.total_required || 0})
-                            </span>
-                          )}
-                          {s20Data?.submitted_count && !s20Data.is_complete ? (
-                            <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                              ({s20Data.submitted_count}/{s20Data.total_required})
-                            </span>
-                          ) : null}
+                        <div className="flex flex-col items-center justify-center gap-1.5">
+                          <div className="flex items-center gap-2">
+                            {s20Data?.submitted_count && s20Data.submitted_count > 0 ? (
+                              <span className="font-mono text-sm font-bold px-3 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                                {s20}
+                              </span>
+                            ) : (
+                              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50">
+                                በሂደት ላይ (0/{s20Data?.total_required || 0})
+                              </span>
+                            )}
+                            {s20Data?.submitted_count && !s20Data.is_complete ? (
+                              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                                ({s20Data.submitted_count}/{s20Data.total_required})
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* View Details button placed under 20% score */}
+                          <button
+                            onClick={() => setExpandedUser(m.user_id)}
+                            className="text-[11px] font-semibold text-brand-blue hover:text-brand-blue/80 bg-brand-blue/10 hover:bg-brand-blue/20 px-2.5 py-1 rounded-lg border border-brand-blue/20 transition-all flex items-center gap-1 shadow-sm"
+                            title="የ 20% ግምገማ ዝርዝር እና ማስተካከያ (View/Edit 20% Details)"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>ዝርዝር (Details)</span>
+                          </button>
                         </div>
                       </td>
 
@@ -487,7 +591,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                           max={70}
                           value={s70 === 0 ? '' : s70}
                           placeholder="0"
-                          disabled={isFinalized}
+                          disabled={isFinalized || finalizedUserIds.includes(m.user_id)}
                           onChange={(e) => handleApproverScoreChange(m.user_id, e.target.value)}
                           className="w-20 text-center font-mono text-sm font-bold text-brand-yellow bg-surface-primary border border-border/80 rounded-xl py-1.5 shadow-inner focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all hover:border-brand-yellow/40 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
@@ -501,23 +605,34 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                       {/* Actions Column */}
                       <td className="px-6 py-4 text-center border-l border-border/40">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => setExpandedUser(m.user_id)}
-                            className="text-xs font-semibold text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 px-3 py-1.5 rounded-xl border border-brand-blue/20 transition-all flex items-center gap-1 shadow-sm"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>ዝርዝር (Details)</span>
-                          </button>
-
-                          {s10Data?.is_locked && (
-                            <button
-                              onClick={() => handleUnlockAssessment('self', m.user_id)}
-                              disabled={saving}
-                              className="text-[11px] font-medium text-text-secondary hover:text-brand-blue bg-surface-secondary px-2 py-1 rounded border border-border transition-all"
-                              title="የራስ ግምገማ ክፈት (Unlock Self)"
-                            >
-                              <Unlock className="w-3 h-3" />
-                            </button>
+                          {finalizedUserIds.includes(m.user_id) || isFinalized ? (
+                            <span className="text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-xl border border-success/20 flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>ፀድቋል</span>
+                            </span>
+                          ) : (
+                            (() => {
+                              const isEligible = s10 > 0 && s20 > 0 && s70 > 0;
+                              return (
+                                <button
+                                  onClick={() => handleApproveSinglePerson(m.user_id)}
+                                  disabled={saving || !isEligible}
+                                  className={`text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 ${
+                                    isEligible
+                                      ? 'text-white bg-brand-blue hover:bg-brand-blue/90 active:scale-95'
+                                      : 'text-text-muted bg-surface-secondary border border-border/80 opacity-60 cursor-not-allowed'
+                                  }`}
+                                  title={
+                                    isEligible
+                                      ? 'የዚህን አባል ውጤት አፅድቅ (Approve)'
+                                      : 'ለማፅደቅ 10%፣ 20% እና 70% መሞላት አለባቸው'
+                                  }
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5" />
+                                  <span>አፅድቅ</span>
+                                </button>
+                              );
+                            })()
                           )}
                         </div>
                       </td>
@@ -598,31 +713,35 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto flex-grow space-y-6">
               
-              {/* Section 1: Edit Approver 70-Point Score */}
-              <div className="bg-brand-yellow/5 border border-brand-yellow/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-                <div>
-                  <h4 className="font-heading font-bold text-text-primary text-base flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-brand-yellow" />
-                    የአጽዳቂ ውጤት (70 ነጥብ)
-                  </h4>
-                  <p className="text-xs text-text-secondary mt-1">
-                    ለዚህ አባል የሚሰጡትን 70 ነጥብ እዚህ ያስገቡ ወይም ያስተካክሉ።
-                  </p>
+              {/* Section 1: Edit Approver 70-Point Score & Required Remarks Box */}
+              <div className="bg-brand-yellow/5 border border-brand-yellow/20 rounded-2xl p-5 flex flex-col gap-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-heading font-bold text-text-primary text-base flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-brand-yellow" />
+                      የአጽዳቂ ውጤት (70 ነጥብ)
+                    </h4>
+                    <p className="text-xs text-text-secondary mt-1">
+                      ለዚህ አባል የሚሰጡትን 70 ነጥብ እዚህ ያስገቡ ወይም ያስተካክሉ።
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-surface-primary p-2 rounded-xl border border-border/80 shadow-sm shrink-0">
+                    <span className="text-xs font-semibold text-text-secondary pl-2">ውጤት:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={70}
+                      value={targetApproverScoreVal === 0 ? '' : targetApproverScoreVal}
+                      placeholder="0"
+                      disabled={isFinalized}
+                      onChange={(e) => handleApproverScoreChange(expandedUser, e.target.value)}
+                      className="w-24 text-center font-mono text-lg font-bold text-brand-yellow bg-surface-secondary border border-border/80 rounded-lg py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all disabled:opacity-50"
+                    />
+                    <span className="text-xs font-semibold text-text-muted pr-2">/ 70</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 bg-surface-primary p-2 rounded-xl border border-border/80 shadow-sm">
-                  <span className="text-xs font-semibold text-text-secondary pl-2">ውጤት:</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={70}
-                    value={targetApproverScoreVal === 0 ? '' : targetApproverScoreVal}
-                    placeholder="0"
-                    disabled={isFinalized}
-                    onChange={(e) => handleApproverScoreChange(expandedUser, e.target.value)}
-                    className="w-24 text-center font-mono text-lg font-bold text-brand-yellow bg-surface-secondary border border-border/80 rounded-lg py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all disabled:opacity-50"
-                  />
-                  <span className="text-xs font-semibold text-text-muted pr-2">/ 70</span>
-                </div>
+
+
               </div>
 
               {/* Section 2: Evaluators Detailed Responses (20 Points) */}
@@ -634,12 +753,12 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
                 {targetEvalScoreForModal?.evaluations?.length && targetEvalScoreForModal.evaluations.length > 0 ? (
                   <div className="space-y-4">
-                    {targetEvalScoreForModal.evaluations.map((ev: any) => (
+                    {targetEvalScoreForModal.evaluations.map((ev: any, eIdx: number) => (
                       <div key={ev.id} className="bg-surface-secondary/30 rounded-2xl border border-border/60 p-4 shadow-sm">
                         <div className="flex justify-between items-center mb-3 pb-2 border-b border-border/40">
                           <span className="font-bold text-sm text-brand-blue flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-brand-blue"></span>
-                            {allUsersMap[ev.evaluator_id] || 'ያልታወቀ ገምጋሚ'}
+                            ገምጋሚ {eIdx + 1} (Evaluator {eIdx + 1})
                           </span>
                           <span className="text-xs font-mono bg-brand-blue/10 px-2.5 py-1 rounded-lg text-brand-blue font-bold border border-brand-blue/20">
                             ውጤት: {ev.score_20} / 20
@@ -647,26 +766,54 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-xs">
                           {LEADERSHIP_EVALUATION_QUESTIONS_20.map(cat => (
-                            cat.questions.map(q => (
-                              <div key={q.question_id} className="flex justify-between items-start py-1.5 border-b border-border/20">
-                                <span className="text-text-secondary pr-3 leading-snug">
-                                  <span className="font-mono font-semibold mr-1.5">{q.question_id}</span>
-                                  {q.criteria}
-                                </span>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={5}
-                                    value={ev.responses?.[q.question_id] ?? ''}
-                                    disabled={isFinalized}
-                                    onChange={(e) => handleEvaluatorScoreChange(ev.id, expandedUser, q.question_id, e.target.value)}
-                                    className="w-10 text-center text-xs font-semibold text-text-primary bg-surface-primary border border-border/80 rounded py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-blue/50 disabled:opacity-50"
+                            cat.questions.map(q => {
+                              const scoreVal = Number(ev.responses?.[q.question_id]);
+                              const ratingTextMap: Record<number, string> = {
+                                5: 'በጣም ከፍተኛ',
+                                4: 'ከፍተኛ',
+                                3: 'መካከለኛ',
+                                2: 'ዝቅተኛ',
+                                1: 'በጣም ዝቅተኛ'
+                              };
+                              const ratingText = ratingTextMap[scoreVal] || 'ያልተሞላ';
+
+                              const qRemarkKey = `${ev.id}:${q.question_id}`;
+
+                              return (
+                                <div key={q.question_id} className="py-2.5 border-b border-border/20 last:border-0">
+                                  {/* Row: question label + rating dropdown */}
+                                  <div className="flex justify-between items-center gap-2 mb-1.5">
+                                    <span className="text-text-secondary leading-snug">
+                                      <span className="font-mono font-semibold mr-1.5">{q.question_id}</span>
+                                      {q.criteria}
+                                    </span>
+                                    <div className="shrink-0">
+                                      <select
+                                        value={scoreVal || 5}
+                                        disabled={isFinalized || finalizedUserIds.includes(expandedUser)}
+                                        onChange={(e) => handleEvaluatorScoreChange(ev.id, expandedUser, q.question_id, e.target.value)}
+                                        className="text-xs font-bold bg-surface-primary text-brand-blue border border-brand-blue/30 rounded-xl px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-brand-blue/50 cursor-pointer disabled:opacity-50 shadow-sm"
+                                      >
+                                        <option value={5}>በጣም ከፍተኛ (5)</option>
+                                        <option value={4}>ከፍተኛ (4)</option>
+                                        <option value={3}>መካከለኛ (3)</option>
+                                        <option value={2}>ዝቅተኛ (2)</option>
+                                        <option value={1}>በጣም ዝቅተኛ (1)</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                  {/* Per-question approver remarks box */}
+                                  <textarea
+                                    value={questionRemarks[qRemarkKey] || ''}
+                                    onChange={(e) => setQuestionRemarks(prev => ({ ...prev, [qRemarkKey]: e.target.value }))}
+                                    disabled={isFinalized || finalizedUserIds.includes(expandedUser)}
+                                    placeholder={`${q.question_id} ላይ አስተያየት ያስገቡ...`}
+                                    rows={2}
+                                    className="w-full text-xs p-2 bg-surface-primary border border-border/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue/40 text-text-primary resize-none placeholder:text-text-muted/60 disabled:opacity-50"
                                   />
-                                  <span className="text-[10px] text-text-muted">/ 5</span>
                                 </div>
-                              </div>
-                            ))
+                              );
+                            })
                           ))}
                         </div>
                       </div>
@@ -682,10 +829,39 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-surface-secondary/60 border-t border-border/60 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-surface-secondary/60 border-t border-border/60 flex items-center justify-between gap-3">
+              <div>
+                {!finalizedUserIds.includes(expandedUser) && !isFinalized && (() => {
+                  const modalS10 = selfScores[expandedUser]?.score || 0;
+                  const modalS20 = evalScores[expandedUser]?.score || 0;
+                  const modalS70 = approverScores[expandedUser] || 0;
+                  const isModalUserEligible = modalS10 > 0 && modalS20 > 0 && modalS70 > 0;
+
+                  return (
+                    <button
+                      onClick={() => handleApproveSinglePerson(expandedUser)}
+                      disabled={saving || !isModalUserEligible}
+                      className={`px-5 py-2.5 rounded-xl font-bold transition-all shadow-md flex items-center gap-2 ${
+                        isModalUserEligible
+                          ? 'text-white bg-brand-blue hover:bg-brand-blue/90 active:scale-95'
+                          : 'text-text-muted bg-surface-secondary border border-border/80 opacity-60 cursor-not-allowed'
+                      }`}
+                      title={
+                        isModalUserEligible
+                          ? 'የዚህን አባል ውጤት አፅድቅ (Approve)'
+                          : 'ለማፅደቅ 10%፣ 20% እና 70% መሞላት አለባቸው'
+                      }
+                    >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                      <span>የ {targetMemberForModal.users?.full_name?.split(' ')[0]} ውጤት አፅድቅ (Approve)</span>
+                    </button>
+                  );
+                })()}
+              </div>
+
               <button
                 onClick={() => setExpandedUser(null)}
-                className="px-6 py-2.5 rounded-xl font-medium text-white bg-brand-blue hover:bg-brand-blue/90 transition-all shadow-md"
+                className="px-6 py-2.5 rounded-xl font-medium text-text-primary bg-surface-primary hover:bg-border transition-all border border-border"
               >
                 እሺ (Done)
               </button>

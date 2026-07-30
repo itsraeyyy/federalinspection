@@ -41,7 +41,7 @@ export function PreviousAssessmentsView({ userId }: PreviousAssessmentsViewProps
         // Fetch scores for all periods
         const [selfRes, evalRes, apprRes, finalRes] = await Promise.all([
           supabase.from('self_assessments').select('*').eq('user_id', userId),
-          supabase.from('evaluations').select('*, evaluator:users!evaluator_id(full_name)').eq('target_user_id', userId),
+          supabase.from('evaluations').select('*, evaluator:users!evaluations_evaluator_id_fkey(full_name)').eq('target_user_id', userId),
           supabase.from('approver_evaluations').select('*, approver:users!approver_id(full_name)').eq('target_user_id', userId),
           supabase.from('final_scores').select('*').eq('user_id', userId)
         ]);
@@ -277,14 +277,18 @@ export function PreviousAssessmentsView({ userId }: PreviousAssessmentsViewProps
             const isSingleDownloading = downloadingSingle[item.periodId];
 
             return (
-              <div key={item.periodId || index} className="premium-card overflow-hidden bg-surface-primary border border-border/80 rounded-3xl shadow-sm hover:shadow-md transition-all">
+              <div 
+                key={item.periodId || index} 
+                onClick={() => setOpenPeriodId(isOpen ? null : item.periodId)}
+                className="premium-card overflow-hidden bg-surface-primary border border-border/80 rounded-3xl shadow-sm hover:shadow-md transition-all cursor-pointer group"
+              >
                 <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="text-xs font-bold text-brand-blue bg-brand-blue/10 px-2.5 py-1 rounded-lg">
                         #{index + 1}
                       </span>
-                      <h3 className="text-lg font-heading font-bold text-text-primary">
+                      <h3 className="text-lg font-heading font-bold text-text-primary group-hover:text-brand-blue transition-colors">
                         {item.periodName}
                       </h3>
                       <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
@@ -314,7 +318,7 @@ export function PreviousAssessmentsView({ userId }: PreviousAssessmentsViewProps
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleDownloadSinglePDF(item)}
                       disabled={isSingleDownloading}
@@ -328,7 +332,7 @@ export function PreviousAssessmentsView({ userId }: PreviousAssessmentsViewProps
                       onClick={() => setOpenPeriodId(isOpen ? null : item.periodId)}
                       className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-brand-blue/30 bg-brand-blue/5 hover:bg-brand-blue/10 text-brand-blue text-xs font-semibold flex items-center justify-center gap-2 transition-all"
                     >
-                      <span>{isOpen ? 'ሪፖርት ደብቅ' : 'ዝርዝር ሪፖርት ተመልከት'}</span>
+                      <span>{isOpen ? 'ዝርዝር ደብቅ' : 'ዝርዝር ሪፖርት ተመልከት'}</span>
                       {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
                   </div>

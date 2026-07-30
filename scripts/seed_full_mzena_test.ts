@@ -180,7 +180,7 @@ async function run() {
   console.log('\n--- Pre-filling Team Evaluations (ቅፅ-2 / Evaluator 20 Points) ---');
   const allUserIds = Object.values(createdUserMap).map(u => u.id);
 
-  for (const phone of ['0922000201', '0922000202', '0922000203']) {
+  for (const phone of ['0922000201', '0922000202']) {
     const evalUser = createdUserMap[phone];
     if (!evalUser) continue;
 
@@ -199,7 +199,13 @@ async function run() {
     }
     console.log(`  - ${evalUser.name}: Pre-filled & UNLOCKED evaluations for team members (${allUserIds.length - 1} members)`);
   }
-  console.log(`  * Evaluator 3 (ዮናስ ታሪኩ - 0922000203): Left UNLOCKED/UNSUBMITTED for manual testing!`);
+  
+  // Clean up Evaluator 3 (0922000203) team evaluations so it is completely fresh for manual testing
+  const eval3User = createdUserMap['0922000203'];
+  if (eval3User) {
+    await supabase.from('evaluations').delete().eq('period_id', periodId).eq('evaluator_id', eval3User.id);
+  }
+  console.log(`  * Evaluator 3 (ዮናስ ታሪኩ - 0922000203): Cleared & Left PENDING for manual testing!`);
 
   // 5. Pre-fill Approver Scores (Approver 1)
   console.log('\n--- Pre-filling Approver Scores (ቅፅ-3 / Approver 70 Points) ---');

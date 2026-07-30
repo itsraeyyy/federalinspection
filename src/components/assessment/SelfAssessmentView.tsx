@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SELF_ASSESSMENT_QUESTIONS } from '@/lib/assessment-data';
 
@@ -79,7 +79,7 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
   };
 
   return (
-    <div className="flex-1 bg-background flex flex-col items-center p-4 sm:p-6 lg:p-12 relative">
+    <div className="flex-1 bg-background flex flex-col items-center pt-2 pb-6 px-3 sm:px-6 relative">
       {toast && (
         <div className={`fixed top-6 right-6 z-[100] px-6 py-3 rounded-xl font-medium shadow-xl flex items-center gap-2 transition-all animate-in slide-in-from-top-2 ${
           toast.type === 'success' ? 'bg-success text-white' : 'bg-danger text-white'
@@ -90,23 +90,35 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
       )}
 
       <div className="max-w-3xl w-full">
-        <div className="mb-8 mt-4 text-center">
-          <div className="inline-flex items-center justify-center p-3 bg-brand-blue/10 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+        {/* Side-by-Side Header & Detailed Instructions */}
+        <div className="mb-4 mt-1 bg-surface-secondary/40 border border-border/60 rounded-xl p-3.5 sm:p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-brand-blue/10 rounded-lg shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-brand-blue" />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold font-heading text-text-primary tracking-tight">
+                የራስ ግምገማ <span className="text-brand-blue text-xs sm:text-sm font-normal font-sans ml-1">(Self Assessment)</span>
+              </h1>
+              <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-1: የ 10% የራስ አፈጻጸም ምዘና ቅጽ</p>
+            </div>
           </div>
-          <h1 className="text-4xl font-heading text-text-primary tracking-tight mb-3">የራስ ግምገማ <span className="text-brand-blue text-2xl ml-2 font-sans font-medium">(Self Assessment)</span></h1>
-          
-          <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-4 max-w-2xl mx-auto mt-4 text-left">
-            <h3 className="font-semibold text-brand-blue flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-5 h-5" />
+
+          <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-lg p-2.5 sm:p-3 text-xs text-text-secondary max-w-md w-full md:w-auto shrink-0">
+            <div className="font-semibold text-brand-blue flex items-center gap-1.5 mb-1 text-xs">
+              <Info className="w-3.5 h-3.5" />
               መመሪያ (Instructions):
-            </h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              1. መስፈርቱን ያንብቡ (Read the criteria).<br/>
-              2. ከ1 (በጣም ደካማ) እስከ 5 (በጣም ጥሩ) ያለውን ቁጥር ይምረጡ (Select a number from 1 to 5).
-            </p>
+            </div>
+            <ul className="space-y-1 text-[11px] text-text-secondary leading-snug">
+              <li>• እያንዳንዱን መስፈርት በጥንቃቄ በማንበብ ከ<b>1 እስከ 5</b> ውጤት ይምረጡ።</li>
+              <li className="text-[10px] text-brand-blue font-medium flex flex-wrap gap-1 mt-1">
+                <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">1 = በጣም ዝቅተኛ</span>
+                <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">2 = ዝቅተኛ</span>
+                <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">3 = መካከለኛ</span>
+                <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">4 = ከፍተኛ</span>
+                <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">5 = በጣም ከፍተኛ</span>
+              </li>
+            </ul>
           </div>
         </div>
 
@@ -117,7 +129,7 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
           </div>
         )}
 
-        <div className="space-y-6 mb-32">
+        <div className="space-y-6 mb-48 lg:mb-16">
           {SELF_ASSESSMENT_QUESTIONS.map((category) => {
             let catAnswered = 0;
             const catTotal = category.questions.length;
@@ -183,7 +195,7 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
                               <div className={`w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-105'} ${isSelected ? 'bg-brand-blue text-white shadow-md scale-110' : 'bg-surface-primary sm:bg-surface-secondary text-text-secondary border border-border/60 hover:bg-border/80'}`}>
                                 {score}
                               </div>
-                              <span className={`sm:hidden text-[9px] text-center mt-1 leading-tight px-0.5 ${isSelected ? 'text-brand-blue font-semibold' : 'text-text-muted font-medium'}`}>
+                              <span className={`text-[9px] text-center mt-1 leading-tight px-0.5 ${isSelected ? 'text-brand-blue font-bold' : 'text-text-muted font-medium'}`}>
                                 {labels[score]}
                               </span>
                             </div>
@@ -198,37 +210,37 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
           })}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border z-40 sm:sticky sm:bottom-4 sm:bg-surface-primary sm:rounded-2xl sm:border sm:shadow-2xl sm:p-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 sm:mb-6 max-w-3xl mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-brand-yellow/10 flex items-center justify-center border border-brand-yellow/20">
-                <span className="text-brand-yellow font-bold text-lg">★</span>
+        <div className="fixed bottom-[58px] left-0 right-0 p-3 sm:p-4 bg-surface-primary/95 backdrop-blur-xl border-t border-border/80 z-30 shadow-2xl lg:sticky lg:bottom-4 lg:bg-surface-primary lg:rounded-2xl lg:border lg:p-6">
+          <div className="flex items-center justify-between gap-3 mb-3 max-w-3xl mx-auto">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-brand-yellow/10 flex items-center justify-center border border-brand-yellow/20 shrink-0">
+                <span className="text-brand-yellow font-bold text-sm sm:text-lg">★</span>
               </div>
               <div>
-                <p className="text-sm font-medium text-text-secondary">አጠቃላይ ውጤት (Total Score)</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-heading font-bold text-text-primary">{displayScore}</span>
-                  <span className="text-lg font-medium text-text-muted">/ 10</span>
+                <p className="text-xs sm:text-sm font-medium text-text-secondary leading-tight">አጠቃላይ ውጤት (Total Score)</p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-xl sm:text-3xl font-heading font-bold text-text-primary">{displayScore}</span>
+                  <span className="text-xs sm:text-lg font-medium text-text-muted">/ 10</span>
                 </div>
               </div>
             </div>
             
-            <div className="w-full sm:w-auto">
+            <div>
               {!allAnswered ? (
-                <div className="bg-warning/10 text-warning px-4 py-2 rounded-lg text-sm font-medium text-center border border-warning/20">
-                  {totalQuestions - totalAnswered} ጥያቄዎች ይቀራሉ (Remaining)
+                <div className="bg-warning/10 text-warning px-3 py-1.5 rounded-lg text-xs font-medium text-center border border-warning/20">
+                  {totalQuestions - totalAnswered} ይቀራሉ
                 </div>
               ) : (
-                <div className="bg-success/10 text-success px-4 py-2 rounded-lg text-sm font-medium text-center border border-success/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> ሁሉም ተመልሷል (Complete)
+                <div className="bg-success/10 text-success px-3 py-1.5 rounded-lg text-xs font-medium text-center border border-success/20 flex items-center justify-center">
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> ተመልሷል
                 </div>
               )}
             </div>
           </div>
           
-          <div className="flex gap-3 sm:gap-4 max-w-3xl mx-auto">
+          <div className="flex gap-2.5 sm:gap-4 max-w-3xl mx-auto">
             {readOnly ? (
-              <div className="flex-1 py-3.5 px-4 rounded-xl font-semibold text-text-secondary bg-surface-secondary border border-border flex items-center justify-center">
+              <div className="flex-1 py-2.5 sm:py-3.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-secondary bg-surface-secondary border border-border flex items-center justify-center">
                 ይህ ግምገማ ተቆልፏል (This assessment is locked)
               </div>
             ) : (
@@ -236,17 +248,17 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
                 <button
                   onClick={() => handleSave(false)}
                   disabled={loading}
-                  className="flex-1 py-3.5 px-4 rounded-xl font-semibold text-text-primary bg-surface-secondary hover:bg-border transition-colors disabled:opacity-50 border border-border flex items-center justify-center"
+                  className="flex-1 py-2.5 sm:py-3.5 px-3 rounded-xl font-semibold text-xs sm:text-sm text-text-primary bg-surface-secondary hover:bg-border transition-colors disabled:opacity-50 border border-border flex items-center justify-center"
                 >
-                  አስቀምጥ (Save Draft)
+                  አስቀምጥ (Draft)
                 </button>
                 <button
                   onClick={() => handleSave(true)}
                   disabled={loading || !allAnswered}
-                  className="flex-[2] flex items-center justify-center py-3.5 px-4 rounded-xl font-semibold text-white bg-brand-blue disabled:opacity-50 transition-all shadow-md hover:shadow-lg hover:bg-brand-blue/90"
+                  className="flex-[2] flex items-center justify-center py-2.5 sm:py-3.5 px-3 rounded-xl font-semibold text-xs sm:text-sm text-white bg-brand-blue disabled:opacity-50 transition-all shadow-md hover:shadow-lg hover:bg-brand-blue/90"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                  ቆልፍ እና ላክ (Lock & Submit)
+                  {loading ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin mr-1.5" /> : null}
+                  ቆልፍ እና ላክ (Submit)
                 </button>
               </>
             )}

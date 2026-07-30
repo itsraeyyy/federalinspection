@@ -1,63 +1,78 @@
-# ICODS — Test Assessment Users & Admin Credentials
+# ICODS — Testing Assessment Credentials & Setup Guide
 
-This document provides a complete list of pre-configured test accounts for the Assessment Portal (ምዘና ፖርታል) and Admin Dashboard.
+This document contains all pre-configured test accounts for the Assessment Portal (ምዘና ፖርታል) and Admin Dashboard.
 
----
-
-## 1. Assessment Portal Test Users (የምዘና ፖርታል ተጠቃሚዎች)
-
-**Login URL:** `/assessment/login`  
-**Default Password for Mzena Test Suite:** `Password123!`
-
-### 👥 Regular Members (ተመዛኞች / Tegemgami)
-| Phone Number | Password | Full Name | Role | Status / Notes |
-|---|---|---|---|---|
-| `0911000101` | `Password123!` | አበበ ከበደ | Regular | Self-Assessment Submitted (Score 4) |
-| `0911000102` | `Password123!` | ቻላ በቀለ | Regular | Self-Assessment Submitted (Score 5) |
-| `0911000103` | `Password123!` | ሰለሞን ተስፋዬ | Regular | Self-Assessment Submitted (Score 4) |
-| `0911000104` | `Password123!` | መሳይ ሀይሉ | Regular | Self-Assessment Submitted (Score 5) |
-| `0911000105` | `Password123!` | ትግስት አለሙ | Regular | **Unsubmitted** (Ready for manual testing) |
+> **Test Configuration Rule:**
+> - All users except **1 person per role** have their evaluations pre-filled and completed.
+> - Exactly **1 person per role** is left pending so you can manually log in and fill out the assessment yourself.
 
 ---
 
-### 🔍 Evaluators (ገምጋሚዎች / Team Evaluators)
-| Phone Number | Password | Full Name | Role | Status / Notes |
-|---|---|---|---|---|
-| `0922000201` | `Password123!` | ዳዊት ገብሬ | Evaluator | Self & Team Evals Submitted |
-| `0922000202` | `Password123!` | ማርታ ታደሰ | Evaluator | Self & Team Evals Submitted |
-| `0922000203` | `Password123!` | ዮናስ ታሪኩ | Evaluator | **Team Evals Unsubmitted** (Ready for testing) |
+## 🔑 Login URLs & Passwords
+
+- **Assessment Portal Login:** `/assessment/login`  
+- **Default Password for Assessment Accounts:** `Password123!`
+- **Admin Dashboard Login:** `/auth/login`
 
 ---
 
-### 👑 Approvers & Committee Leaders (አጽዳቂዎች)
-| Phone Number | Password | Full Name | Role | Status / Notes |
-|---|---|---|---|---|
-| `0933000301` | `Password123!` | ተክሌ ወልደጻድቅ | Approver | Pre-filled 70% scores (Ready for final approval testing) |
+## 1. Tegemgami Test Accounts (ተመዛኞች / Regular Members)
+*Evaluates Self-Assessment (10% ቅፅ-1)*
 
----
-
-### 🧪 Basic E2E Test Accounts
-| Phone Number | Password | Role |
-|---|---|---|
-| `0911000001` | `Password123` | Regular Member |
-| `0911000002` | `Password123` | Evaluator |
-| `0911000003` | `Password123` | Approver |
-
----
-
-## 2. Admin Dashboard Credentials (የአስተዳዳሪ መግቢያ)
-
-**Login URL:** `/auth/login`
-
-| Email (Username) | Password | Role | Permissions |
+| Phone Number | Password | Full Name | Status / Action |
 |---|---|---|---|
-| `superadmin@commission.gov` | `SuperAdmin#123` | Super Admin | Full System Access |
-| `admin@commission.gov` | `Admin@123` | Admin | System Operations Access |
+| `0911000101` | `Password123!` | አበበ ከበደ | ✅ Pre-filled & Completed |
+| `0911000102` | `Password123!` | ቻላ በቀለ | ✅ Pre-filled & Completed |
+| `0911000103` | `Password123!` | ሰለሞን ተስፋዬ | ✅ Pre-filled & Completed |
+| `0911000104` | `Password123!` | መሳይ ሀይሉ | ✅ Pre-filled & Completed |
+| `0911000105` | `Password123!` | **ትግስት አለሙ** | 📝 **PENDING (Fill Manually for Testing)** |
 
 ---
 
-## 💡 Quick Tips for Testing
-1. **To test Self-Assessment submission**: Log in with `0911000105` (`Password123!`).
-2. **To test Team Evaluation submission**: Log in with `0922000203` (`Password123!`).
-3. **To test Approver Approval & Finalizing Scores**: Log in with `0933000301` (`Password123!`).
-4. **To view & download PDF reports**: Log in with any finalized/completed user (e.g., `0911000101`).
+## 2. Gemgami Test Accounts (ገምጋሚዎች / Team Evaluators)
+*Evaluates Team Members (20% ቅፅ-2)*
+
+| Phone Number | Password | Full Name | Status / Action |
+|---|---|---|---|
+| `0922000201` | `Password123!` | ዳዊት ገብሬ | ✅ Pre-filled & Completed |
+| `0922000202` | `Password123!` | ማርታ ታደሰ | ✅ Pre-filled & Completed |
+| `0922000203` | `Password123!` | **ዮናስ ታሪኩ** | 📝 **PENDING (Fill Manually for Testing)** |
+
+---
+
+## 3. Atsedaki Test Accounts (አጽዳቂዎች / Approvers & Committee Leaders)
+*Evaluates & Finalizes Scores (70% ቅፅ-3)*
+
+| Phone Number | Password | Full Name | Status / Action |
+|---|---|---|---|
+| `0933000301` | `Password123!` | **ተክሌ ወልደጻድቅ** | 📝 **PENDING (Review & Finalize Manually)** |
+
+---
+
+## 4. Admin Dashboard Credentials (የአስተዳዳሪ መግቢያ)
+*URL: `/auth/login`*
+
+| Email | Password | System Role | Access Level |
+|---|---|---|---|
+| `superadmin@commission.gov` | `SuperAdmin#123` | Super Admin | Full System Operations |
+| `admin@commission.gov` | `Admin@123` | Admin | Administrative Operations |
+
+---
+
+## 🧪 Manual Testing Instructions
+
+1. **Test Tegemgami (Self Assessment 10%)**:
+   - Log in with `0911000105` / `Password123!`.
+   - Go to **Addis Mzena (አዲስ ምዘና)** tab to fill out all 33 self-assessment questions and submit.
+
+2. **Test Gemgami (Peer Evaluation 20%)**:
+   - Log in with `0922000203` / `Password123!`.
+   - Go to **Evaluate Team (የስራ ባልደረቦች ምዘና)** tab to evaluate your team members and submit.
+
+3. **Test Atsedaki (Approver Score 70% & Finalization)**:
+   - Log in with `0933000301` / `Password123!`.
+   - Go to **Approve Scores (ውጤት ማጽደቂያ)** tab to review, edit 70-point scores, approve, and finalize assessment periods.
+
+4. **Test Download Reports & History**:
+   - Log in with `0911000101` / `Password123!`.
+   - Go to **Yalefu Mzenawoch (ያለፉ ምዘናዎች)** tab to view detailed report tables and download PDFs.

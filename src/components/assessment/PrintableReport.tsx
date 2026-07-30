@@ -1,7 +1,7 @@
 'use client';
 
 import React, { forwardRef } from 'react';
-import { SELF_ASSESSMENT_QUESTIONS, LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
+import { SELF_ASSESSMENT_QUESTIONS } from '@/lib/assessment-data';
 
 interface PrintableReportProps {
   data: any;
@@ -21,219 +21,157 @@ interface PrintableReportProps {
   appr70: number;
   final100: number;
   grade: string;
+  approverRemarks?: string;
 }
 
 export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(({
-  data, user, profile, period,
-  evaluators = [],
-  peerRows, peerTotalWeight, evaluatorTotals = [], peerTotalScore, peer20,
-  selfRows, selfTotalWeight, self10,
-  sum30, appr70, final100, grade
+  user, profile, period,
+  peerRows = [], peer20 = 0,
+  selfRows = [], self10 = 0,
+  sum30 = 0, appr70 = 0, final100 = 0, grade = '-',
+  approverRemarks = 'አስተያየት አልተሰጠም።'
 }, ref) => {
+  const today = new Date().toLocaleDateString('am-ET');
+
   return (
     <div 
       ref={ref}
       id="printable-report" 
-      className="bg-white text-black p-4 sm:p-12 shadow-2xl print:shadow-none print:p-0 mx-auto w-full max-w-5xl border border-gray-300 print:border-none print:m-0"
+      className="bg-white text-black p-4 sm:p-10 shadow-2xl print:shadow-none print:p-0 mx-auto w-full max-w-5xl border border-gray-300 print:border-none print:m-0"
       style={{ fontFamily: 'Arial, sans-serif' }}
     >
-      <div className="text-center mb-8" style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <h1 className="text-2xl font-bold font-heading mb-4" style={{ fontSize: '24px', fontWeight: 'bold' }}>የሰራተኛ የአፈጻጸም ግምገማ ቅጽ</h1>
+      <div className="text-center mb-6" style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h1 className="text-2xl font-bold font-heading mb-2" style={{ fontSize: '22px', fontWeight: 'bold' }}>የአፈጻጸም ግምገማ ሪፖርት</h1>
       </div>
 
-      <table className="w-full text-sm border-collapse mb-8" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px', fontSize: '14px' }}>
+      {/* 1. Full User Profile Table */}
+      <table className="w-full text-xs border-collapse mb-6" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
         <tbody>
           <tr>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የግምገማው ዓይነት</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>{period?.name || 'ዓመታዊ - 6 ወር'}</td>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ዕለት</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>{new Date().toLocaleDateString('am-ET')}</td>
+            <td className="p-2 font-bold w-1/5" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የተመዛኙ ሙሉ ስም</td>
+            <td className="p-2 font-bold w-3/10" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold' }}>{user?.full_name || '-'}</td>
+            <td className="p-2 font-bold w-1/5" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ስልክ ቁጥር</td>
+            <td className="p-2 w-3/10" style={{ border: '1px solid black', padding: '6px' }}>{user?.phone_number || '-'}</td>
           </tr>
           <tr>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የሰራተኛው ስም</td>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>{user?.full_name}</td>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የተገመገመበት ቀን</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>{new Date().toLocaleDateString('am-ET')}</td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የሚሰራበት ተቋም</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{profile?.institution || '-'}</td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የሙያ መስክ</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{profile?.professional_field || '-'}</td>
           </tr>
           <tr>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የስራ መደብ</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>{profile.system_role || 'Member'}</td>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የተገመገመበት ሰዓት</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>
-              {data?.created_at ? new Date(data.created_at).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' })}
-            </td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ኃላፊነት (መንግስት)</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{profile?.current_responsibility_gov || '-'}</td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ኃላፊነት (ኮሚሽን)</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{profile?.current_responsibility_com || '-'}</td>
           </tr>
           <tr>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የክፍል ስም</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>-</td>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ገምጋሚ(ዎች)</td>
-            <td className="p-2 text-xs" style={{ border: '1px solid black', padding: '8px', fontSize: '12px' }}>
-              {evaluators.length > 0 
-                ? evaluators.map(e => e?.evaluator?.full_name || '-').join(' / ') 
-                : '-'}
-            </td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ክልል / ክፍለ ከተማ</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{profile?.region || profile?.subcity || '-'}</td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ዞን / ወረዳ</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{profile?.zone || profile?.woreda || '-'}</td>
+          </tr>
+          <tr>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የምዘና ጊዜ</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{period?.name || 'ዓመታዊ - 6 ወር'}</td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የተገመገመበት ቀን</td>
+            <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{today}</td>
           </tr>
         </tbody>
       </table>
 
-      {/* 20% Peer Evaluation */}
-      <h2 className="text-md font-bold mb-2" style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>ከ 20% ግምገማ ({evaluators.length} ገምጋሚዎች)</h2>
-      <table className="w-full text-sm border-collapse mb-8" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px', fontSize: '12px' }}>
+      {/* 2. Main Criteria Evaluation Table */}
+      <h2 className="text-md font-bold mb-2" style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '10px' }}>የግምገማ መስፈርቶችና የአፈጻጸም ውጤት ዝርዝር</h2>
+      <table className="w-full text-xs border-collapse mb-6" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '11.5px' }}>
         <thead>
           <tr style={{ backgroundColor: '#f3f4f6' }}>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '40px' }}>ተ.ቁ</th>
-            <th className="p-2 text-left" style={{ border: '1px solid black', padding: '8px', textAlign: 'left' }}>የግምገማ መስፈርቶች</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>ክብደት</th>
-            {evaluators.map((_, idx) => (
-              <th key={idx} className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>ገም. {idx + 1}</th>
-            ))}
-            {evaluators.length === 0 && (
-              <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>ገምጋሚዎች የሉም</th>
-            )}
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>አማካይ</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>ውጤት</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '80px' }}>ምርመራ</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '38px' }}>ተ.ቁ</th>
+            <th className="p-2 text-left" style={{ border: '1px solid black', padding: '6px', textAlign: 'left' }}>የግምገማ መስፈርቶች</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 10%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 20%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 30%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 70%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 100%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '75px' }}>ደረጃ</th>
           </tr>
         </thead>
         <tbody>
-          {LEADERSHIP_EVALUATION_QUESTIONS_20.map((cat) => (
+          {SELF_ASSESSMENT_QUESTIONS.map((cat) => (
             <React.Fragment key={cat.category_id}>
               <tr className="font-bold" style={{ backgroundColor: '#f9fafb', fontWeight: 'bold' }}>
-                <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{cat.category_id}</td>
-                <td className="p-2" colSpan={8} style={{ border: '1px solid black', padding: '8px' }}>{cat.category_id}. {cat.category_name}</td>
+                <td className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center' }}>{cat.category_id}</td>
+                <td className="p-2" colSpan={7} style={{ border: '1px solid black', padding: '6px' }}>{cat.category_id}. {cat.category_name}</td>
               </tr>
               {cat.questions.map(q => {
-                const row = peerRows.find(r => r.id === q.question_id);
-                if (!row) return null;
+                const sRow = selfRows.find(r => r.id === q.question_id);
+                const pRow = peerRows.find(r => r.id === q.question_id);
+
+                const sScoreVal = sRow ? parseFloat(sRow.score || '0') / 10 : 0;
+                const pScoreVal = pRow ? parseFloat(pRow.score || '0') / 5 : 0;
+                const sub30Val = sScoreVal + pScoreVal;
+
                 return (
                   <tr key={q.question_id}>
-                    <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{row.id}</td>
-                    <td className="p-2 text-xs" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{row.criteria}</td>
-                    <td className="p-2 text-center font-semibold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontWeight: '600' }}>{row.weight}</td>
-                    {evaluators.map((_, idx) => (
-                      <td key={idx} className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>
-                        {row.scores && row.scores[idx] !== undefined ? row.scores[idx] : '-'}
-                      </td>
-                    ))}
-                    {evaluators.length === 0 && (
-                      <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>-</td>
-                    )}
-                    <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', backgroundColor: '#f9fafb' }}>{row.avgRaw}</td>
-                    <td className="p-2 text-center font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>{row.score}</td>
-                    <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}></td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{q.question_id}</td>
+                    <td className="p-1.5 text-xs" style={{ border: '1px solid black', padding: '4px', fontSize: '11px' }}>{q.criteria}</td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{sScoreVal > 0 ? sScoreVal.toFixed(2) : '-'}</td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{pScoreVal > 0 ? pScoreVal.toFixed(2) : '-'}</td>
+                    <td className="p-1.5 text-center font-bold" style={{ border: '1px solid black', padding: '4px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f9fafb' }}>
+                      {sub30Val > 0 ? sub30Val.toFixed(2) : '-'}
+                    </td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>-</td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>-</td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>-</td>
                   </tr>
                 );
               })}
             </React.Fragment>
           ))}
-          <tr className="font-bold" style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold' }}>
-            <td className="p-2 text-right" colSpan={2} style={{ border: '1px solid black', padding: '8px', textAlign: 'right' }}>ወደ 20% ሲቀየር</td>
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{peerTotalWeight}</td>
-            {evaluators.map((_, idx) => (
-              <td key={idx} className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>
-                {evaluatorTotals[idx] !== undefined ? (evaluatorTotals[idx] / 5).toFixed(2) : '-'}
-              </td>
-            ))}
-            {evaluators.length === 0 && (
-              <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>-</td>
-            )}
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{(peerTotalScore/100*20).toFixed(2)}</td>
-            <td className="p-2 text-center text-lg" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontSize: '16px' }}>{peer20.toFixed(2)}</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}></td>
+
+          {/* Table Final Totals Row */}
+          <tr className="font-bold" style={{ backgroundColor: '#e5e7eb', fontWeight: 'bold' }}>
+            <td className="p-2 text-right" colSpan={2} style={{ border: '1px solid black', padding: '8px', textAlign: 'right' }}>አጠቃላይ ድምር ውጤት (Total)</td>
+            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{self10.toFixed(2)}</td>
+            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{peer20.toFixed(2)}</td>
+            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', color: '#0284c7' }}>{sum30.toFixed(2)}</td>
+            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{appr70.toFixed(2)}</td>
+            <td className="p-2 text-center text-md font-extrabold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontSize: '14px', color: '#0284c7' }}>{`${final100.toFixed(2)}%`}</td>
+            <td className="p-2 text-center text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', color: '#0284c7' }}>{grade}</td>
           </tr>
         </tbody>
       </table>
 
-      {/* 10% Self Evaluation */}
-      <div className="break-before-page" style={{ pageBreakBefore: 'always', marginTop: '40px' }}></div>
-      <h2 className="text-md font-bold mb-2 mt-8" style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>ከ 10% ግምገማ (የራስ ግምገማ)</h2>
-      <table className="w-full text-sm border-collapse mb-8" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px', fontSize: '12px' }}>
-        <thead>
-          <tr style={{ backgroundColor: '#f3f4f6' }}>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '40px' }}>ተ.ቁ</th>
-            <th className="p-2 text-left" style={{ border: '1px solid black', padding: '8px', textAlign: 'left' }}>የግምገማ መስፈርቶች</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>ክብደት</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>ደረጃ</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '60px' }}>ውጤት</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', width: '80px' }}>ምርመራ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {selfRows.map(row => (
-            <tr key={row.id}>
-              <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{row.id}</td>
-              <td className="p-2 text-xs" style={{ border: '1px solid black', padding: '8px', fontSize: '11px' }}>{row.criteria}</td>
-              <td className="p-2 text-center font-semibold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontWeight: '600' }}>{row.weight}</td>
-              <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{row.raw}</td>
-              <td className="p-2 text-center font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>{row.score}</td>
-              <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}></td>
-            </tr>
-          ))}
-          <tr className="font-bold" style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold' }}>
-            <td className="p-2 text-right" colSpan={2} style={{ border: '1px solid black', padding: '8px', textAlign: 'right' }}>ወደ 10% ሲቀየር</td>
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{selfTotalWeight}</td>
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}></td>
-            <td className="p-2 text-center text-lg" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontSize: '16px' }}>{self10.toFixed(2)}</td>
-            <td className="p-2" style={{ border: '1px solid black', padding: '8px' }}></td>
-          </tr>
-        </tbody>
-      </table>
+      {/* 3. Approver Remarks Box */}
+      <div className="mb-6 p-3 border border-black rounded" style={{ border: '1px solid black', padding: '8px', marginBottom: '16px' }}>
+        <h3 className="font-bold text-xs mb-1" style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', backgroundColor: '#f3f4f6', padding: '4px' }}>
+          የአጽዳቂው/የኮሚቴው አስተያየት እና ማጠቃለያ (Approver Remarks & Recommendation):
+        </h3>
+        <p className="text-xs text-gray-800 leading-relaxed" style={{ fontSize: '11.5px', color: '#111' }}>
+          {approverRemarks}
+        </p>
+      </div>
 
-      {/* Final Summary */}
-      <h2 className="text-md font-bold mb-2" style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>የግምገማ ማጠቃለያ</h2>
-      <div style={{ display: 'flex', gap: '30px' }}>
-        <table className="text-sm border-collapse" style={{ width: '50%', borderCollapse: 'collapse', fontSize: '14px' }}>
-          <tbody>
-            <tr>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የተገመገመው ሰው ስም</td>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>{user?.full_name}</td>
-            </tr>
-            <tr>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ከ 10 ያገኘው ውጤት (የራስ)</td>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>{self10.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>ከ 20 ያገኘው ውጤት (አቻ)</td>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>{peer20.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#e0f2fe', color: '#0284c7' }}>ከ 30 ያገኘው ድምር (20 + 10)</td>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#e0f2fe', color: '#0284c7' }}>{sum30.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የበላይ ኃላፊ (ከ 70)</td>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>{appr70.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td className="p-3 font-bold text-lg" style={{ border: '1px solid black', padding: '12px', fontWeight: 'bold', backgroundColor: '#e5e7eb', fontSize: '18px' }}>ከ 100 የተገኘው ውጤት</td>
-              <td className="p-3 font-bold text-lg" style={{ border: '1px solid black', padding: '12px', fontWeight: 'bold', backgroundColor: '#f9fafb', fontSize: '18px' }}>{final100.toFixed(2)}%</td>
-            </tr>
-            <tr>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የውጤት ደረጃ</td>
-              <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold', color: '#0284c7' }}>{grade}</td>
-            </tr>
-          </tbody>
-        </table>
-
+      {/* 4. Grade Scale & Signatures */}
+      <div style={{ display: 'flex', gap: '24px', marginTop: '16px' }}>
         <div style={{ width: '50%' }}>
-          <table className="w-full text-sm border-collapse mb-4" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', marginBottom: '20px' }}>
+          <table className="w-full text-xs border-collapse" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
             <thead>
               <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <th className="p-2 text-left" colSpan={2} style={{ border: '1px solid black', padding: '8px', textAlign: 'left' }}>የውጤት አሰጣጥ መመሪያ</th>
+                <th className="p-2 text-left" colSpan={2} style={{ border: '1px solid black', padding: '6px', textAlign: 'left' }}>የውጤት አሰጣጥ መመሪያ</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>1. በጣም ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>ከ 90% እስከ 100%</td></tr>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>2. ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>ከ 80% እስከ 89%</td></tr>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>3. መካከለኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>ከ 70% እስከ 79%</td></tr>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '8px', fontWeight: 'bold' }}>4. ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '8px' }}>ከ 70% በታች</td></tr>
+              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>1. በጣም ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 90% እስከ 100%</td></tr>
+              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>2. ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 80% እስከ 89%</td></tr>
+              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>3. መካከለኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% እስከ 79%</td></tr>
+              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>4. ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% በታች</td></tr>
             </tbody>
           </table>
-          
-          <div style={{ marginTop: '40px' }}>
-            <p className="font-bold mb-6" style={{ fontWeight: 'bold', marginBottom: '24px' }}>የተገመገመው ሰው ፊርማ: _________________________</p>
-            <p className="font-bold mb-6" style={{ fontWeight: 'bold', marginBottom: '24px' }}>የበላይ ኃላፊ ፊርማ: _________________________</p>
-          </div>
+        </div>
+
+        <div style={{ width: '50%', paddingTop: '10px' }}>
+          <p className="font-bold mb-4" style={{ fontWeight: 'bold', marginBottom: '16px' }}>የተገመገመው ሰው ፊርማ: _________________________</p>
+          <p className="font-bold" style={{ fontWeight: 'bold' }}>የበላይ ኃላፊ ፊርማ: _________________________</p>
         </div>
       </div>
     </div>
