@@ -41,7 +41,7 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
       style={{ fontFamily: 'Arial, sans-serif' }}
     >
       <div className="text-center mb-6" style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h1 className="text-2xl font-bold font-heading mb-2" style={{ fontSize: '22px', fontWeight: 'bold' }}>የአፈጻጸም ግምገማ ሪፖርት</h1>
+        <h1 className="text-2xl font-bold font-heading mb-2" style={{ fontSize: '22px', fontWeight: 'bold' }}>የአፈጻጸም ምዘና ሪፖርት</h1>
       </div>
 
       {/* 1. Full User Profile Table */}
@@ -74,19 +74,19 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
           <tr>
             <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የምዘና ጊዜ</td>
             <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{period?.name || 'ዓመታዊ - 6 ወር'}</td>
-            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የተገመገመበት ቀን</td>
+            <td className="p-2 font-bold" style={{ border: '1px solid black', padding: '6px', fontWeight: 'bold', backgroundColor: '#f3f4f6' }}>የተመዘነበት ቀን</td>
             <td className="p-2" style={{ border: '1px solid black', padding: '6px' }}>{today}</td>
           </tr>
         </tbody>
       </table>
 
       {/* 2. Main Criteria Evaluation Table */}
-      <h2 className="text-md font-bold mb-2" style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '10px' }}>የግምገማ መስፈርቶችና የአፈጻጸም ውጤት ዝርዝር</h2>
+      <h2 className="text-md font-bold mb-2" style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '10px' }}>የምዘና መስፈርቶችና የአፈጻጸም ውጤት ዝርዝር</h2>
       <table className="w-full text-xs border-collapse mb-4" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px', fontSize: '11.5px' }}>
         <thead>
           <tr style={{ backgroundColor: '#f3f4f6' }}>
             <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '38px' }}>ተ.ቁ</th>
-            <th className="p-2 text-left" style={{ border: '1px solid black', padding: '6px', textAlign: 'left' }}>የግምገማ መስፈርቶች</th>
+            <th className="p-2 text-left" style={{ border: '1px solid black', padding: '6px', textAlign: 'left' }}>የምዘና መስፈርቶች</th>
             <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 10%</th>
             <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 20%</th>
             <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 30%</th>

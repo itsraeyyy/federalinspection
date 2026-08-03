@@ -206,7 +206,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
       if (upsertError) throw upsertError;
 
       setLockedMemberIds(prev => [...prev, targetUserId]);
-      showToast(`የ ${targetMember.users?.full_name} ግምገማ በተሳካ ሁኔታ ተልኳል!`, 'success');
+      showToast(`የ ${targetMember.users?.full_name} ምዘና በተሳካ ሁኔታ ተልኳል!`, 'success');
 
       // Auto advance to next un-submitted member if any
       const nextUnlockedIdx = members.findIndex((m, idx) => idx > currentIndex && !lockedMemberIds.includes(m.user_id) && m.user_id !== targetUserId);
@@ -215,7 +215,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err: any) {
-      setError(err.message || 'ግምገማ መላክ አልተሳካም።');
+      setError(err.message || 'ምዘና መላክ አልተሳካም።');
       showToast('ማስቀመጥ አልተሳካም', 'error');
     } finally {
       setLoading(false);
@@ -263,12 +263,12 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
       const allIds = members.map(m => m.user_id);
       setLockedMemberIds(allIds);
       setIsSubmittedLocal(true);
-      showToast('ግምገማዎቹ በተሳካ ሁኔታ ተልከዋል! (Evaluations submitted successfully)', 'success');
+      showToast('ምዘናዎቹ በተሳካ ሁኔታ ተልከዋል! (Evaluations submitted successfully)', 'success');
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'ግምገማዎችን መላክ አልተሳካም። (Failed to submit evaluations)');
+      setError(err.message || 'ምዘናዎችን መላክ አልተሳካም። (Failed to submit evaluations)');
       showToast('ማስቀመጥ አልተሳካም (Failed to submit)', 'error');
     } finally {
       setLoading(false);
@@ -305,13 +305,13 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-bold font-heading text-text-primary">
-                  የአመራር ግምገማ <span className="text-brand-blue text-xs sm:text-sm font-normal font-sans ml-1">(Leadership Evaluation)</span>
+                  የአመራር ምዘና <span className="text-brand-blue text-xs sm:text-sm font-normal font-sans ml-1">(Leadership Evaluation)</span>
                 </h1>
                 <span className="text-[10px] font-semibold text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-full border border-brand-blue/20">
                   {currentIndex + 1} ከ {members.length} አባላት
                 </span>
               </div>
-              <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-2: የ 20% የአቻ ግምገማ ቅጽ (ለእያንዳንዱ ጥያቄ ምክንያት/አስተያየት መጻፍ ግዴታ ነው)</p>
+              <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-2: የ 20% የአቻ ምዘና ቅጽ (ለእያንዳንዱ ጥያቄ ምክንያት/አስተያየት መጻፍ ግዴታ ነው)</p>
             </div>
           </div>
 
@@ -542,7 +542,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
           {isCurrentMemberLocked ? (
             <div className="flex-[2] flex items-center justify-center rounded-xl bg-success/10 text-success font-semibold border border-success/20 text-xs sm:text-sm py-3 px-2">
               <CheckCircle2 className="w-4 h-4 mr-1.5 shrink-0" />
-              <span>የ {currentMember?.users?.full_name?.split(' ')[0]} ግምገማ ተልኳል (Submitted)</span>
+              <span>የ {currentMember?.users?.full_name?.split(' ')[0]} ምዘና ተልኳል (Submitted)</span>
             </div>
           ) : (
             <button

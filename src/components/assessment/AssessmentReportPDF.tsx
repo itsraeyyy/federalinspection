@@ -173,7 +173,7 @@ export function AssessmentReportPDF({
   return (
     <Document title={`${user?.full_name || 'Assessment'} Report`} author="Federal Inspection">
       <Page size="A4" orientation="portrait" style={styles.page}>
-        <Text style={styles.title}>{'የአፈጻጸም ግምገማ ሪፖርት'}</Text>
+        <Text style={styles.title}>{'የአፈጻጸም ምዘና ሪፖርት'}</Text>
 
         {/* 1. Full User Profile Block */}
         <View style={styles.infoTable}>
@@ -204,18 +204,17 @@ export function AssessmentReportPDF({
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabelCell, { borderBottom: 'none' }]}>{'የምዘና ጊዜ'}</Text>
             <Text style={[styles.infoValueCell, { borderBottom: 'none' }]}>{period?.name || 'ዓመታዊ - 6 ወር'}</Text>
-            <Text style={[styles.infoLabelCell, { borderBottom: 'none' }]}>{'የተገመገመበት ቀን'}</Text>
+            <Text style={[styles.infoLabelCell, { borderBottom: 'none' }]}>{'የተመዘነበት ቀን'}</Text>
             <Text style={[styles.infoValueCell, { borderRight: 'none', borderBottom: 'none' }]}>{today}</Text>
           </View>
         </View>
 
-        {/* 2. Main Evaluation Table (Columns: ተ.ቁ | የግምገማ መስፈርቶች | ከ10% | ከ20% | ከ30% | ከ70% | ከ100% | ደረጃ) */}
-        {/* 2. Main Evaluation Table (Columns: ተ.ቁ | የግምገማ መስፈርቶች | ከ10% | ከ20% | ከ30% | ደረጃ) */}
-        <Text style={styles.sectionTitle}>{'የግምገማ መስፈርቶችና የአፈጻጸም ውጤት ዝርዝር'}</Text>
+        {/* 2. Main Evaluation Table */}
+        <Text style={styles.sectionTitle}>{'የምዘና መስፈርቶችና የአፈጻጸም ውጤት ዝርዝር'}</Text>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
             <Text style={[styles.cell, { width: 24, fontWeight: 700 }]}>{'ተ.ቁ'}</Text>
-            <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700 }]}>{'የግምገማ መስፈርቶች'}</Text>
+            <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700 }]}>{'የምዘና መስፈርቶች'}</Text>
             <Text style={[styles.cellBold, { width: 42 }]}>{'ከ 10%'}</Text>
             <Text style={[styles.cellBold, { width: 42 }]}>{'ከ 20%'}</Text>
             <Text style={[styles.cellBold, { width: 42 }]}>{'ከ 30%'}</Text>

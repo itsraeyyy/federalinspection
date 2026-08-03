@@ -106,7 +106,7 @@ export function SummaryReportPDF({ periodName, members = [] }: SummaryReportPDFP
             {/* Responsibility spans 2 sub-columns - simulated with parent */}
             <Text style={[styles.th, { width: 120 }]}>{'ኃላፊነት'}</Text>
             <Text style={[styles.th, { width: 52 }]}>{'የግል ምዘና ውጤት 10%'}</Text>
-            <Text style={[styles.th, { width: 58 }]}>{'በጋራ የተገመገመ ምዘና ውጤት 20%'}</Text>
+            <Text style={[styles.th, { width: 58 }]}>{'በጋራ የተመዘነ ምዘና ውጤት 20%'}</Text>
             <Text style={[styles.th, { width: 80 }]}>{'አባል የሆነበት የኮሚሽን/የመንግስት የዕቅድ አፈፃፀም ውጤት 70%'}</Text>
             <Text style={[styles.th, { width: 52 }]}>{'አጠቃላይ ውጤት ከ100%'}</Text>
             <Text style={[styles.th, { width: 56, borderRight: 'none' }]}>{'የአፈፃፀም ደረጃ'}</Text>

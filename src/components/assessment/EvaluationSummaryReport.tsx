@@ -92,7 +92,7 @@ export const EvaluationSummaryReport = forwardRef<HTMLDivElement, EvaluationSumm
               rowSpan={2} 
               style={{ border: '1px solid black', padding: '8px 4px', textAlign: 'center', verticalAlign: 'middle', width: '11%' }}
             >
-              በጋራ<br/>የተገመገመ<br/>ምዘና ውጤት<br/>20%
+              በጋራ<br/>የተመዘነ<br/>ምዘና ውጤት<br/>20%
             </th>
             <th 
               rowSpan={2} 

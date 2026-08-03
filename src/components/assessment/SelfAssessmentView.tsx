@@ -113,7 +113,7 @@ export function SelfAssessmentView({
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-bold font-heading text-text-primary tracking-tight">
-                የራስ ግምገማ <span className="text-brand-blue text-xs sm:text-sm font-normal font-sans ml-1">(Self Assessment)</span>
+                የራስ ምዘና <span className="text-brand-blue text-xs sm:text-sm font-normal font-sans ml-1">(Self Assessment)</span>
               </h1>
               <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-1: የ 10% የራስ አፈጻጸም ምዘና ቅጽ</p>
             </div>
@@ -257,7 +257,7 @@ export function SelfAssessmentView({
             {isReadOnly ? (
               <div className="flex-1 py-2.5 sm:py-3.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-secondary bg-surface-secondary border border-border flex items-center justify-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-success" />
-                ይህ ግምገማ ተቆልፏል (This assessment is locked)
+                ይህ ምዘና ተቆልፏል (This assessment is locked)
               </div>
             ) : (
               <>

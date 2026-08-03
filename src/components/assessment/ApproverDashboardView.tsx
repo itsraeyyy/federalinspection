@@ -184,7 +184,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
     if (s10 <= 0 || !s20Data?.is_complete || aScore70 <= 0) {
       const missing: string[] = [];
-      if (s10 <= 0) missing.push('የራስ ግምገማ (10%)');
+      if (s10 <= 0) missing.push('የራስ ምዘና (10%)');
       if (!s20Data?.is_complete) missing.push(`የመዛኞች ውጤት (20%) (${s20Data?.submitted_count || 0}/${s20Data?.total_required || 0} ተሞልቷል)`);
       if (aScore70 <= 0) missing.push('የአጽዳቂ ውጤት (70%)');
       showToast(`ማፅደቅ አይቻልም! እባክዎን የሚከተሉትን ያሟሉ: ${missing.join(', ')}`, 'error');
@@ -280,7 +280,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           ...prev,
           [userId]: { ...prev[userId], is_locked: false }
         }));
-        showToast('የራስ ግምገማው በተሳካ ሁኔታ ተከፍቷል! (Self assessment unlocked)', 'success');
+        showToast('የራስ ምዘናው በተሳካ ሁኔታ ተከፍቷል! (Self assessment unlocked)', 'success');
       } else {
         const { error } = await supabase
           .from('evaluations')
@@ -328,7 +328,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
       if (!isFinalizing) {
         setInitialApproverScores({ ...approverScores });
-        showToast('ግምገማዎቹ በተሳካ ሁኔታ ተቀምጠዋል! (Saved successfully)', 'success');
+        showToast('ምዘናዎቹ በተሳካ ሁኔታ ተቀምጠዋል! (Saved successfully)', 'success');
       }
     } catch (err: any) {
       setError(err.message || 'Error saving evaluations');
@@ -354,7 +354,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
         if (incompleteMember) {
           const name = incompleteMember.users?.full_name || 'አባል';
-          showToast(`የ ${name} ግምገማዎች አልተጠናቀቁም። (ለማፅደቅ 10%፣ 20% እና 70% በሙሉ መሞላት አለባቸው)`, 'error');
+          showToast(`የ ${name} ምዘናዎች አልተጠናቀቁም። (ለማፅደቅ 10%፣ 20% እና 70% በሙሉ መሞላት አለባቸው)`, 'error');
           return;
         }
 
@@ -523,7 +523,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                 <tr>
                   <th className="px-6 py-4">ተጠቃሚ (User)</th>
                   <th className="px-6 py-4 text-center">
-                    የራስ ግምገማ <span className="text-xs font-normal text-text-muted ml-1">(10 ነጥብ)</span>
+                    የራስ ምዘና <span className="text-xs font-normal text-text-muted ml-1">(10 ነጥብ)</span>
                   </th>
                   <th className="px-6 py-4 text-center">
                     የመዛኞች ውጤት <span className="text-xs font-normal text-text-muted ml-1">(20 ነጥብ)</span>
@@ -595,7 +595,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                           <button
                             onClick={() => setExpandedUser(m.user_id)}
                             className="text-[11px] font-semibold text-brand-blue hover:text-brand-blue/80 bg-brand-blue/10 hover:bg-brand-blue/20 px-2.5 py-1 rounded-lg border border-brand-blue/20 transition-all flex items-center gap-1 shadow-sm"
-                            title="የ 20% ግምገማ ዝርዝር እና ማስተካከያ (View/Edit 20% Details)"
+                            title="የ 20% ምዘና ዝርዝር እና ማስተካከያ (View/Edit 20% Details)"
                           >
                             <Eye className="w-3 h-3" />
                             <span>ዝርዝር (Details)</span>
@@ -683,7 +683,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           {isFinalized ? (
             <div className="w-full flex items-center justify-center py-3.5 px-6 rounded-xl font-semibold text-success bg-success/10 border border-success/30 shadow-sm">
               <CheckCircle2 className="w-5 h-5 mr-2" />
-              ግምገማው አስቀድሞ ፀድቋል (Evaluations already finalized)
+              ምዘናው አስቀድሞ ፀድቋል (Evaluations already finalized)
             </div>
           ) : (
             <>
