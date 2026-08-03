@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 
+import { SletenaNavGroup } from '@/components/layout/SletenaNavGroup';
+
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const { t, language, setLanguage } = useI18n();
   const pathname = usePathname();
@@ -68,6 +70,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
       setIsCollapsed(false);
     }
   }, [pathname]);
+
   const navItems = [
     { label: 'ዳሽቦርድ', icon: IconDashboard, href: '/dashboard', id: 'dashboard' },
     { label: 'ዜና', icon: IconNews, href: '/dashboard/news', id: 'news' },
@@ -157,6 +160,12 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
               {t('quickAccess')}
             </div>
           )}
+
+          {/* Sletena Training & Analytics Submenu */}
+          <SletenaNavGroup isCollapsed={isCollapsed} onItemClick={() => setMobileMenuOpen(false)} />
+
+          <div className="my-2 border-t border-border/40" />
+
           {allowedNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
