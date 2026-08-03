@@ -27,8 +27,6 @@ const setAutoColumnWidths = (worksheet: XLSX.WorkSheet, data: any[]) => {
 export const exportBulkOverview = (data: any[], fileName: string = 'assessment_overview.xlsx') => {
   const exportData = data.map(row => ({
     'ስም (Name)': row.name || '-',
-    'ስልክ (Phone)': row.phone || '-',
-    'ሚና (Role)': row.role || '-',
     'የራስ ምዘና (10%)': Number(Number(row.s10 || 0).toFixed(1)),
     'የመዛኞች ውጤት (20%)': Number(Number(row.s20 || 0).toFixed(1)),
     'ድምር (30%)': Number(Number(row.s30 || 0).toFixed(1)),
