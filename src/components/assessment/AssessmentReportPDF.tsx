@@ -309,19 +309,9 @@ export function AssessmentReportPDF({
           </View>
         </View>
 
-        {/* 3. Approver Remarks Box */}
-        <View style={{ border: '1pt solid #000000', padding: 5, marginBottom: 8 }}>
-          <Text style={{ fontSize: 7.5, fontWeight: 700, marginBottom: 2, backgroundColor: '#f3f4f6', padding: 2 }}>
-            {'የአጽዳቂው/የኮሚቴው አስተያየት እና ማጠቃለያ (Approver Remarks & Recommendation):'}
-          </Text>
-          <Text style={{ fontSize: 7, color: '#111111', lineHeight: 1.2 }}>
-            {approverRemarks || data?.appr?.comments || data?.appr?.remarks || 'አስተያየት አልተሰጠም።'}
-          </Text>
-        </View>
-
-        {/* 4. Grade Scale & Signatures */}
+        {/* 4. Grade Scale */}
         <View style={styles.bottomSection}>
-          <View style={styles.gradeTable}>
+          <View style={[styles.gradeTable, { width: '100%' }]}>
             <View style={[styles.gradeRow, { backgroundColor: '#f3f4f6' }]}>
               <Text style={[styles.gradeLabel, { fontWeight: 700, width: '100%' }]}>{'የውጤት አሰጣጥ መመሪያ'}</Text>
             </View>
@@ -341,11 +331,6 @@ export function AssessmentReportPDF({
               <Text style={styles.gradeLabel}>{'4. ዝቅተኛ'}</Text>
               <Text style={styles.gradeValue}>{'ከ 70% በታች'}</Text>
             </View>
-          </View>
-
-          <View style={styles.signatureSection}>
-            <Text style={styles.signatureLine}>{'የተገመገመው ሰው ፊርማ: ___________________'}</Text>
-            <Text style={[styles.signatureLine, { marginTop: 12 }]}>{'የበላይ ኃላፊ ፊርማ: ___________________'}</Text>
           </View>
         </View>
       </Page>

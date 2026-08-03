@@ -174,19 +174,9 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
         </div>
       </div>
 
-      {/* 3. Approver Remarks Box */}
-      <div className="mb-6 p-3 border border-black rounded" style={{ border: '1px solid black', padding: '8px', marginBottom: '16px' }}>
-        <h3 className="font-bold text-xs mb-1" style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', backgroundColor: '#f3f4f6', padding: '4px' }}>
-          የአጽዳቂው/የኮሚቴው አስተያየት እና ማጠቃለያ (Approver Remarks & Recommendation):
-        </h3>
-        <p className="text-xs text-gray-800 leading-relaxed" style={{ fontSize: '11.5px', color: '#111' }}>
-          {approverRemarks}
-        </p>
-      </div>
-
-      {/* 4. Grade Scale & Signatures */}
-      <div style={{ display: 'flex', gap: '24px', marginTop: '16px' }}>
-        <div style={{ width: '50%' }}>
+      {/* 4. Grade Scale */}
+      <div style={{ marginTop: '16px' }}>
+        <div style={{ width: '100%' }}>
           <table className="w-full text-xs border-collapse" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
             <thead>
               <tr style={{ backgroundColor: '#f3f4f6' }}>
@@ -200,11 +190,6 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
               <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>4. ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% በታች</td></tr>
             </tbody>
           </table>
-        </div>
-
-        <div style={{ width: '50%', paddingTop: '10px' }}>
-          <p className="font-bold mb-4" style={{ fontWeight: 'bold', marginBottom: '16px' }}>የተገመገመው ሰው ፊርማ: _________________________</p>
-          <p className="font-bold" style={{ fontWeight: 'bold' }}>የበላይ ኃላፊ ፊርማ: _________________________</p>
         </div>
       </div>
     </div>
