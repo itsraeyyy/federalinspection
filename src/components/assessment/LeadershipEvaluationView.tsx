@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, User } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, User, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
 
@@ -13,7 +13,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmittedLocal, setIsSubmittedLocal] = useState(false);
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -29,10 +29,41 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
   // Determine if all members in the group are locked
   const readOnly = isSubmittedLocal || (members.length > 0 && members.every(m => lockedMemberIds.includes(m.user_id)));
 
+  // Scores State: userId -> { qId -> score }
   const [responses, setResponses] = useState<Record<string, Record<string, number>>>(() => {
     const initial: Record<string, Record<string, number>> = {};
     (evaluations || []).forEach(e => {
-      initial[e.target_user_id] = e.responses || {};
+      const uId = e.target_user_id;
+      const resp = e.responses || {};
+      initial[uId] = {};
+      Object.keys(resp).forEach(k => {
+        if (!k.endsWith('_comment')) {
+          if (typeof resp[k] === 'number') {
+            initial[uId][k] = resp[k];
+          } else if (typeof resp[k] === 'object' && resp[k]?.score !== undefined) {
+            initial[uId][k] = Number(resp[k].score);
+          }
+        }
+      });
+    });
+    return initial;
+  });
+
+  // Comments State: userId -> { qId -> comment }
+  const [comments, setComments] = useState<Record<string, Record<string, string>>>(() => {
+    const initial: Record<string, Record<string, string>> = {};
+    (evaluations || []).forEach(e => {
+      const uId = e.target_user_id;
+      const resp = e.responses || {};
+      initial[uId] = {};
+      Object.keys(resp).forEach(k => {
+        if (k.endsWith('_comment')) {
+          const qId = k.replace('_comment', '');
+          initial[uId][qId] = String(resp[k] || '');
+        } else if (typeof resp[k] === 'object' && resp[k]?.comment !== undefined) {
+          initial[uId][k] = String(resp[k].comment || '');
+        }
+      });
     });
     return initial;
   });
@@ -44,6 +75,17 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
       [userId]: {
         ...(prev[userId] || {}),
         [qId]: score
+      }
+    }));
+  };
+
+  const handleCommentChange = (userId: string, qId: string, comment: string) => {
+    if (readOnly || lockedMemberIds.includes(userId)) return;
+    setComments(prev => ({
+      ...prev,
+      [userId]: {
+        ...(prev[userId] || {}),
+        [qId]: comment
       }
     }));
   };
@@ -66,8 +108,9 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
   const isCurrentMemberLocked = currentMember ? lockedMemberIds.includes(currentMember.user_id) : false;
   const isLast = currentIndex === members.length - 1;
   const currentResponses = currentMember ? (responses[currentMember.user_id] || {}) : {};
+  const currentComments = currentMember ? (comments[currentMember.user_id] || {}) : {};
 
-  // Compute total score for current member
+  // Compute total score and complete questions for current member
   let currentTotalRawScore = 0;
   let currentTotalAnswered = 0;
   let totalQuestions = 0;
@@ -75,42 +118,65 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
   LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(category => {
     category.questions.forEach(q => {
       totalQuestions++;
-      if (currentResponses[q.question_id] !== undefined) {
+      const score = currentResponses[q.question_id];
+      const comment = (currentComments[q.question_id] || '').trim();
+      if (score !== undefined && comment !== '') {
         currentTotalAnswered++;
-        currentTotalRawScore += q.weight * currentResponses[q.question_id];
+      }
+      if (score !== undefined) {
+        currentTotalRawScore += q.weight * score;
       }
     });
   });
 
   const currentFinalScore20 = currentTotalRawScore / 5;
-  const displayScore = currentFinalScore20.toFixed(2);
+  const displayScore = currentFinalScore20.toFixed(1);
   const isCurrentComplete = currentTotalAnswered === totalQuestions;
 
-  // Check if all members are fully evaluated
-  const allMembersEvaluated = members.every(m => {
-    const memResp = responses[m.user_id] || {};
-    return Object.keys(memResp).length === totalQuestions;
-  });
+  // Helper to build full payload for Supabase
+  const buildPayloadResponses = (userId: string) => {
+    const memResp = responses[userId] || {};
+    const memComm = comments[userId] || {};
+    const payloadResp: Record<string, any> = {};
+    LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(cat => {
+      cat.questions.forEach(q => {
+        const score = memResp[q.question_id];
+        const comm = (memComm[q.question_id] || '').trim();
+        if (score !== undefined) {
+          payloadResp[q.question_id] = score;
+        }
+        if (comm) {
+          payloadResp[`${q.question_id}_comment`] = comm;
+        }
+      });
+    });
+    return payloadResp;
+  };
 
   // Submit single member's 20% evaluation
   const handleSubmitSingleMember = async (targetMember: any) => {
     if (!targetMember) return;
     const targetUserId = targetMember.user_id;
     const memResp = responses[targetUserId] || {};
+    const memComm = comments[targetUserId] || {};
 
     let totalAns = 0;
     let rawScore = 0;
     LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(cat => {
       cat.questions.forEach(q => {
-        if (memResp[q.question_id] !== undefined) {
+        const score = memResp[q.question_id];
+        const comm = (memComm[q.question_id] || '').trim();
+        if (score !== undefined && comm !== '') {
           totalAns++;
-          rawScore += q.weight * memResp[q.question_id];
+        }
+        if (score !== undefined) {
+          rawScore += q.weight * score;
         }
       });
     });
 
     if (totalAns !== totalQuestions) {
-      showToast(`እባክዎን የ ${targetMember.users?.full_name}ን ግምገማ ያጠናቅቁ (${totalAns}/${totalQuestions} ተሞልቷል)`, 'error');
+      showToast(`እባክዎን ለ ${targetMember.users?.full_name} የሁሉም ጥያቄዎች (1.1, 1.2...) ውጤት እና ምክንያት/አስተያየት ይሙሉ (${totalAns}/${totalQuestions} ተሞልቷል)`, 'error');
       return;
     }
 
@@ -122,13 +188,14 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
       if (!currentUser) throw new Error('ለማስቀመጥ እባክዎ መጀመሪያ ይግቡ (Not authenticated)');
 
       const score_20 = rawScore / 5;
+      const payloadResponses = buildPayloadResponses(targetUserId);
 
       const payload = {
         period_id: periodId,
         evaluator_id: currentUser.id,
         target_user_id: targetUserId,
-        score_20: parseFloat(score_20.toFixed(2)),
-        responses: memResp,
+        score_20: parseFloat(score_20.toFixed(1)),
+        responses: payloadResponses,
         is_locked: true,
       };
 
@@ -175,13 +242,14 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
           });
         });
         const score_20 = raw_score / 5;
+        const payloadResponses = buildPayloadResponses(m.user_id);
 
         return {
           period_id: periodId,
           evaluator_id: currentUser.id,
           target_user_id: m.user_id,
-          score_20: parseFloat(score_20.toFixed(2)),
-          responses: memResp,
+          score_20: parseFloat(score_20.toFixed(1)),
+          responses: payloadResponses,
           is_locked: true,
         };
       });
@@ -221,9 +289,8 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
   return (
     <div className="flex-1 bg-background pt-2 pb-6 px-3 sm:px-4 flex flex-col items-center relative">
       {toast && (
-        <div className={`fixed top-6 right-6 z-[100] px-6 py-3 rounded-xl font-medium shadow-xl flex items-center gap-2 transition-all animate-in slide-in-from-top-2 ${
-          toast.type === 'success' ? 'bg-success text-white' : 'bg-danger text-white'
-        }`}>
+        <div className={`fixed top-6 right-6 z-[100] px-6 py-3 rounded-xl font-medium shadow-xl flex items-center gap-2 transition-all animate-in slide-in-from-top-2 ${toast.type === 'success' ? 'bg-success text-white' : 'bg-danger text-white'
+          }`}>
           {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           {toast.message}
         </div>
@@ -244,7 +311,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                   {currentIndex + 1} ከ {members.length} አባላት
                 </span>
               </div>
-              <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-2: የ 20% የአቻ ግምገማ ቅጽ</p>
+              <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-2: የ 20% የአቻ ግምገማ ቅጽ (ለእያንዳንዱ ጥያቄ ምክንያት/አስተያየት መጻፍ ግዴታ ነው)</p>
             </div>
           </div>
 
@@ -254,7 +321,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
               መመሪያ (Instructions):
             </div>
             <ul className="space-y-1 text-[11px] text-text-secondary leading-snug">
-              <li>• አባላቱን መርጠው ለእያንዳንዱ መስፈርት ከ<b>1 እስከ 5</b> ውጤት ይስጡ።</li>
+              <li>• ለእያንዳንዱ መስፈርት ከ<b>1 እስከ 5</b> ውጤት ይስጡ እና <b>ምክንያት/አስተያየት</b> ይጻፉ።</li>
               <li className="text-[10px] text-brand-blue font-medium flex flex-wrap gap-1 mt-1">
                 <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">1 = በጣም ዝቅተኛ</span>
                 <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">2 = ዝቅተኛ</span>
@@ -272,9 +339,18 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
           <div className="flex gap-2 overflow-x-auto pb-2.5 no-scrollbar snap-x border-b border-border/40 mb-2.5">
             {members.map((m, idx) => {
               const memResp = responses[m.user_id] || {};
-              const isComplete = Object.keys(memResp).length === totalQuestions;
+              const memComm = comments[m.user_id] || {};
+              let memAnsCount = 0;
+              LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(cat => {
+                cat.questions.forEach(q => {
+                  if (memResp[q.question_id] !== undefined && (memComm[q.question_id] || '').trim() !== '') {
+                    memAnsCount++;
+                  }
+                });
+              });
+              const isComplete = memAnsCount === totalQuestions;
               const isActive = currentIndex === idx;
-              
+
               // Calculate live score out of 20 for this member
               let mRaw = 0;
               LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(cat => {
@@ -292,13 +368,12 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                   onClick={() => {
                     setCurrentIndex(idx);
                   }}
-                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium text-xs whitespace-nowrap shrink-0 transition-all ${
-                    isActive
+                  className={`snap-start flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-medium text-xs whitespace-nowrap shrink-0 transition-all ${isActive
                       ? 'bg-brand-blue text-white shadow-md'
                       : isComplete
-                      ? 'bg-success/10 text-success border border-success/20 hover:bg-success/20'
-                      : 'bg-surface-secondary text-text-secondary border border-border/60 hover:bg-border/60'
-                  }`}
+                        ? 'bg-success/10 text-success border border-success/20 hover:bg-success/20'
+                        : 'bg-surface-secondary text-text-secondary border border-border/60 hover:bg-border/60'
+                    }`}
                 >
                   <User className="w-3.5 h-3.5" />
                   <span>{m.users?.full_name || 'Member'}</span>
@@ -318,8 +393,8 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
               <span className="text-brand-blue font-bold text-sm truncate max-w-[130px] sm:max-w-[220px]">
                 {currentMember.users?.full_name}
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] shrink-0 ${isCurrentComplete ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                {currentTotalAnswered}/{totalQuestions}
+              <span className={`px-2 py-0.5 rounded-full text-[10px] shrink-0 font-bold ${isCurrentComplete ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                {currentTotalAnswered}/{totalQuestions} ተሞልቷል
               </span>
             </div>
 
@@ -343,7 +418,9 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
             let catAnswered = 0;
             const catTotal = category.questions.length;
             category.questions.forEach(q => {
-              if (currentResponses[q.question_id] !== undefined) catAnswered++;
+              const score = currentResponses[q.question_id];
+              const comment = (currentComments[q.question_id] || '').trim();
+              if (score !== undefined && comment !== '') catAnswered++;
             });
             const catComplete = catAnswered === catTotal;
 
@@ -364,52 +441,85 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                     {catAnswered} / {catTotal}
                   </span>
                 </div>
-                
+
                 <div className="flex flex-col">
                   <div className="hidden sm:flex bg-surface-secondary/20 border-b border-border/40 p-3">
                     <div className="w-1/2 pl-5 text-sm font-semibold text-text-secondary">መስፈርት (Criteria)</div>
                     <div className="w-1/2 flex justify-between">
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">1<br/><span className="text-[10px] font-normal text-text-muted">በጣም ዝቅተኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">2<br/><span className="text-[10px] font-normal text-text-muted">ዝቅተኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">3<br/><span className="text-[10px] font-normal text-text-muted">መካከለኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">4<br/><span className="text-[10px] font-normal text-text-muted">ከፍተኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">5<br/><span className="text-[10px] font-normal text-text-muted">በጣም ከፍተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">1<br /><span className="text-[10px] font-normal text-text-muted">በጣም ዝቅተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">2<br /><span className="text-[10px] font-normal text-text-muted">ዝቅተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">3<br /><span className="text-[10px] font-normal text-text-muted">መካከለኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">4<br /><span className="text-[10px] font-normal text-text-muted">ከፍተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">5<br /><span className="text-[10px] font-normal text-text-muted">በጣም ከፍተኛ</span></div>
                     </div>
                   </div>
-                  
+
                   {category.questions.map((q) => (
-                    <div key={q.question_id} className="flex flex-col sm:flex-row border-b border-border/20 hover:bg-surface-secondary/20 transition-colors p-4 sm:p-3 sm:pl-5">
-                      <div className="w-full sm:w-1/2 mb-4 sm:mb-0 sm:pr-4 flex items-start">
-                        <div className="flex gap-2 w-full">
-                          <span className="text-xs font-bold text-brand-blue bg-brand-blue/10 px-1.5 py-0.5 rounded self-start mt-0.5 shrink-0">
-                            {q.question_id}
-                          </span>
-                          <span className="text-[14px] sm:text-sm text-text-primary leading-snug">
-                            {q.criteria}
-                          </span>
+                    <div key={q.question_id} className="flex flex-col border-b border-border/20 hover:bg-surface-secondary/20 transition-colors p-4 sm:p-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="w-full sm:w-1/2 flex items-start">
+                          <div className="flex gap-2.5 w-full">
+                            <span className="text-xs font-bold text-brand-blue bg-brand-blue/10 px-2 py-1 rounded self-start mt-0.5 shrink-0 border border-brand-blue/20">
+                              {q.question_id}
+                            </span>
+                            <span className="text-sm text-text-primary leading-snug font-medium">
+                              {q.criteria}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="w-full sm:w-1/2 flex justify-between items-start bg-surface-secondary/40 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-border/40 sm:border-transparent">
+                          {[1, 2, 3, 4, 5].map((score) => {
+                            const isSelected = currentResponses[q.question_id] === score;
+                            const labels: Record<number, string> = {
+                              1: 'በጣም ዝቅተኛ',
+                              2: 'ዝቅተኛ',
+                              3: 'መካከለኛ',
+                              4: 'ከፍተኛ',
+                              5: 'በጣም ከፍተኛ'
+                            };
+                            return (
+                              <div
+                                key={score}
+                                className="flex-1 flex flex-col items-center justify-start"
+                                onClick={() => !readOnly && !isCurrentMemberLocked && handleScoreChange(currentMember.user_id, q.question_id, score)}
+                              >
+                                <div className={`w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${readOnly || isCurrentMemberLocked ? 'cursor-default' : 'cursor-pointer hover:scale-105'
+                                  } ${isSelected ? 'bg-brand-blue text-white shadow-md scale-110' : 'bg-surface-primary sm:bg-surface-secondary text-text-secondary border border-border/60 hover:bg-border/80'
+                                  }`}>
+                                  {score}
+                                </div>
+                                <span className={`text-[9px] text-center mt-1 leading-tight px-0.5 ${isSelected ? 'text-brand-blue font-bold' : 'text-text-muted font-medium'}`}>
+                                  {labels[score]}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                      <div className="w-full sm:w-1/2 flex justify-between items-start bg-surface-secondary/30 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-border/40 sm:border-transparent">
-                        {[1, 2, 3, 4, 5].map((score) => {
-                          const isSelected = currentResponses[q.question_id] === score;
-                          const labels: Record<number, string> = {
-                            1: 'በጣም ዝቅተኛ',
-                            2: 'ዝቅተኛ',
-                            3: 'መካከለኛ',
-                            4: 'ከፍተኛ',
-                            5: 'በጣም ከፍተኛ'
-                          };
-                          return (
-                            <div key={score} className="flex-1 flex flex-col items-center justify-start" onClick={() => !readOnly && handleScoreChange(currentMember.user_id, q.question_id, score)}>
-                              <div className={`w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-105'} ${isSelected ? 'bg-brand-blue text-white shadow-md scale-110' : 'bg-surface-primary sm:bg-surface-secondary text-text-secondary border border-border/60 hover:bg-border/80'}`}>
-                                {score}
-                              </div>
-                              <span className={`text-[9px] text-center mt-1 leading-tight px-0.5 ${isSelected ? 'text-brand-blue font-bold' : 'text-text-muted font-medium'}`}>
-                                {labels[score]}
-                              </span>
-                            </div>
-                          );
-                        })}
+
+                      {/* Required Question Comment / Reason Text Box */}
+                      <div className="w-full mt-3 pt-3 border-t border-border/30">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+                            <MessageSquare className="w-3.5 h-3.5 text-brand-blue" />
+                            <span>ለጥያቄ {q.question_id} ምክንያት / ማብራሪያ (Reason for {q.question_id})</span>
+                            <span className="text-danger font-bold text-xs">* (ግዴታ)</span>
+                          </label>
+                          {!(currentComments[q.question_id] || '').trim() && (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded font-semibold border border-amber-500/20">
+                              ማብራሪያ ይፈልጋል
+                            </span>
+                          )}
+                        </div>
+                        <textarea
+                          rows={2}
+                          disabled={readOnly || isCurrentMemberLocked}
+                          value={currentComments[q.question_id] || ''}
+                          onChange={(e) => handleCommentChange(currentMember.user_id, q.question_id, e.target.value)}
+                          placeholder={`ለጥያቄ ${q.question_id} የሰጡትን ውጤት ምክንያት ወይም ማብራሪያ እዚህ ይጻፉ... (Required)`}
+                          className="w-full p-3 bg-surface-secondary/50 border border-border/80 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue disabled:opacity-60 transition-all placeholder:text-text-muted/60"
+                        />
                       </div>
                     </div>
                   ))}
@@ -428,7 +538,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
             <ChevronLeft className="w-5 h-5 sm:mr-1" />
             <span className="hidden sm:inline">ወደኋላ</span>
           </button>
-          
+
           {isCurrentMemberLocked ? (
             <div className="flex-[2] flex items-center justify-center rounded-xl bg-success/10 text-success font-semibold border border-success/20 text-xs sm:text-sm py-3 px-2">
               <CheckCircle2 className="w-4 h-4 mr-1.5 shrink-0" />
@@ -441,7 +551,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
               className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-brand-blue text-white font-bold text-xs sm:text-sm hover:bg-brand-blue/90 disabled:opacity-40 transition-all shadow-md py-3 px-3"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
-              <span>የ {currentMember?.users?.full_name?.split(' ')[0]} ግምገማ ላክ ({displayScore}/20)</span>
+              <span>የ {currentMember?.users?.full_name?.split(' ')[0]} ምዘና ላክ ({displayScore}/20)</span>
             </button>
           )}
 
@@ -454,42 +564,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
             <ChevronRight className="w-5 h-5 sm:ml-1" />
           </button>
         </div>
-
-        {!isCurrentMemberLocked && !isCurrentComplete && (
-          <p className="text-xs text-text-muted text-center mt-2 mb-8 font-medium bg-surface-secondary/50 py-1.5 px-3 rounded-lg max-w-md mx-auto">
-            የ {currentMember?.users?.full_name}ን ግምገማ ለመላክ ሁሉንም {totalQuestions} መስፈርቶች ይመልሱ ({currentTotalAnswered}/{totalQuestions} ተሞልቷል)።
-          </p>
-        )}
       </div>
-
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-primary max-w-md w-full rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 border border-border">
-            <h3 className="text-xl font-heading font-semibold text-text-primary mb-3">ማረጋገጫ (Confirmation)</h3>
-            <p className="text-text-secondary mb-6 leading-relaxed">
-              ሁሉንም ግምገማዎች መላክ እንደሚፈልጉ እርግጠኛ ነዎት? አንዴ ከተላከ በኋላ ውጤቶችን መቀየር አይቻልም።<br/><br/>
-              (Are you sure you want to submit all evaluations? This cannot be undone.)
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={loading}
-                className="flex-1 py-3 px-4 rounded-xl font-medium text-text-primary bg-surface-secondary hover:bg-border transition-colors border border-border"
-              >
-                ሰርዝ (Cancel)
-              </button>
-              <button
-                onClick={handleSubmitAll}
-                disabled={loading}
-                className="flex-1 flex items-center justify-center py-3 px-4 rounded-xl font-medium text-white bg-brand-blue hover:bg-brand-blue/90 transition-colors shadow-md"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                አረጋግጥ (Confirm)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

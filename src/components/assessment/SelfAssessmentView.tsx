@@ -6,12 +6,26 @@ import { Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SELF_ASSESSMENT_QUESTIONS } from '@/lib/assessment-data';
 
-export function SelfAssessmentView({ periodId, existingData, readOnly = false }: { periodId: string, existingData: any, readOnly?: boolean }) {
+export function SelfAssessmentView({
+  periodId,
+  existingData,
+  readOnly = false,
+  onLocked
+}: {
+  periodId: string,
+  existingData: any,
+  readOnly?: boolean,
+  onLocked?: (savedData: any) => void
+}) {
   const router = useRouter();
   const [responses, setResponses] = useState<Record<string, number>>(existingData?.responses || {});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+  const [isLockedLocally, setIsLockedLocally] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const isReadOnly = readOnly || isLockedLocally || !!existingData?.is_locked;
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -36,11 +50,11 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
 
   // For Form 1 (ቅፅ-1) - Out of 10: The raw score is simply converted into a 10% scale by dividing the total raw score by 10.
   const finalScore10 = totalRawScore / 10;
-  const displayScore = finalScore10.toFixed(2);
+  const displayScore = finalScore10.toFixed(1);
   const allAnswered = totalAnswered === totalQuestions;
 
   const handleScoreChange = (qId: string, score: number) => {
-    if (readOnly) return;
+    if (isReadOnly) return;
     setResponses(prev => ({ ...prev, [qId]: score }));
   };
 
@@ -66,7 +80,9 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
       if (upsertError) throw upsertError;
 
       if (lock) {
-        window.location.reload();
+        setIsLockedLocally(true);
+        setShowSuccessModal(true);
+        onLocked?.(payload);
       } else {
         showToast('በተሳካ ሁኔታ ተቀምጧል (Draft saved successfully)', 'success');
       }
@@ -81,9 +97,8 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
   return (
     <div className="flex-1 bg-background flex flex-col items-center pt-2 pb-6 px-3 sm:px-6 relative">
       {toast && (
-        <div className={`fixed top-6 right-6 z-[100] px-6 py-3 rounded-xl font-medium shadow-xl flex items-center gap-2 transition-all animate-in slide-in-from-top-2 ${
-          toast.type === 'success' ? 'bg-success text-white' : 'bg-danger text-white'
-        }`}>
+        <div className={`fixed top-6 right-6 z-[100] px-6 py-3 rounded-xl font-medium shadow-xl flex items-center gap-2 transition-all animate-in slide-in-from-top-2 ${toast.type === 'success' ? 'bg-success text-white' : 'bg-danger text-white'
+          }`}>
           {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           {toast.message}
         </div>
@@ -155,19 +170,19 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
                     {catAnswered} / {catTotal}
                   </span>
                 </div>
-                
+
                 <div className="flex flex-col">
                   <div className="hidden sm:flex bg-surface-secondary/20 border-b border-border/40 p-3">
                     <div className="w-1/2 pl-5 text-sm font-semibold text-text-secondary">መስፈርት (Criteria)</div>
                     <div className="w-1/2 flex justify-between">
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">1<br/><span className="text-[10px] font-normal text-text-muted">በጣም ዝቅተኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">2<br/><span className="text-[10px] font-normal text-text-muted">ዝቅተኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">3<br/><span className="text-[10px] font-normal text-text-muted">መካከለኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">4<br/><span className="text-[10px] font-normal text-text-muted">ከፍተኛ</span></div>
-                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">5<br/><span className="text-[10px] font-normal text-text-muted">በጣም ከፍተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">1<br /><span className="text-[10px] font-normal text-text-muted">በጣም ዝቅተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">2<br /><span className="text-[10px] font-normal text-text-muted">ዝቅተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">3<br /><span className="text-[10px] font-normal text-text-muted">መካከለኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">4<br /><span className="text-[10px] font-normal text-text-muted">ከፍተኛ</span></div>
+                      <div className="flex-1 text-center text-xs font-semibold text-text-secondary">5<br /><span className="text-[10px] font-normal text-text-muted">በጣም ከፍተኛ</span></div>
                     </div>
                   </div>
-                  
+
                   {category.questions.map((q) => (
                     <div key={q.question_id} className="flex flex-col sm:flex-row border-b border-border/20 hover:bg-surface-secondary/20 transition-colors p-4 sm:p-3 sm:pl-5">
                       <div className="w-full sm:w-1/2 mb-4 sm:mb-0 sm:pr-4 flex items-start">
@@ -191,8 +206,8 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
                             5: 'በጣም ከፍተኛ'
                           };
                           return (
-                            <div key={score} className="flex-1 flex flex-col items-center justify-start" onClick={() => !readOnly && handleScoreChange(q.question_id, score)}>
-                              <div className={`w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-105'} ${isSelected ? 'bg-brand-blue text-white shadow-md scale-110' : 'bg-surface-primary sm:bg-surface-secondary text-text-secondary border border-border/60 hover:bg-border/80'}`}>
+                            <div key={score} className="flex-1 flex flex-col items-center justify-start" onClick={() => !isReadOnly && handleScoreChange(q.question_id, score)}>
+                              <div className={`w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${isReadOnly ? 'cursor-default' : 'cursor-pointer hover:scale-105'} ${isSelected ? 'bg-brand-blue text-white shadow-md scale-110' : 'bg-surface-primary sm:bg-surface-secondary text-text-secondary border border-border/60 hover:bg-border/80'}`}>
                                 {score}
                               </div>
                               <span className={`text-[9px] text-center mt-1 leading-tight px-0.5 ${isSelected ? 'text-brand-blue font-bold' : 'text-text-muted font-medium'}`}>
@@ -224,7 +239,7 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
                 </div>
               </div>
             </div>
-            
+
             <div>
               {!allAnswered ? (
                 <div className="bg-warning/10 text-warning px-3 py-1.5 rounded-lg text-xs font-medium text-center border border-warning/20">
@@ -237,10 +252,11 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
               )}
             </div>
           </div>
-          
+
           <div className="flex gap-2.5 sm:gap-4 max-w-3xl mx-auto">
-            {readOnly ? (
-              <div className="flex-1 py-2.5 sm:py-3.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-secondary bg-surface-secondary border border-border flex items-center justify-center">
+            {isReadOnly ? (
+              <div className="flex-1 py-2.5 sm:py-3.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-secondary bg-surface-secondary border border-border flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-success" />
                 ይህ ግምገማ ተቆልፏል (This assessment is locked)
               </div>
             ) : (
@@ -265,6 +281,45 @@ export function SelfAssessmentView({ periodId, existingData, readOnly = false }:
           </div>
         </div>
       </div>
+
+      {/* Success Modal Popup */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in"
+            onClick={() => setShowSuccessModal(false)}
+          />
+          <div className="relative w-full max-w-md bg-surface-primary rounded-3xl p-6 sm:p-8 shadow-2xl border border-border flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center mb-4 ring-8 ring-emerald-500/10">
+              <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12" />
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-bold font-heading text-text-primary mb-2">
+              ምዘናው በተሳካ ሁኔታ ተቆልፎ ተልኳል!
+            </h2>
+            <p className="text-xs sm:text-sm text-text-secondary mb-6 leading-relaxed">
+              የራስ ምዘናዎ በተሳካ ሁኔታ ተመዝግቧል። ከዚያ በኋላ ማስተካከል አይቻልም።
+            </p>
+
+            <div className="w-full bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 mb-6 flex flex-col items-center">
+              <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-1">
+                የተመዘገበ የ 10% የራስ ውጤት
+              </span>
+              <div className="flex items-baseline gap-1 text-emerald-600 dark:text-emerald-400">
+                <span className="text-3xl font-extrabold font-heading">{displayScore}</span>
+                <span className="text-sm font-semibold">/ 10</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full py-3.5 px-6 rounded-2xl bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-sm shadow-md transition-all active:scale-98"
+            >
+              እሺ (OK)
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

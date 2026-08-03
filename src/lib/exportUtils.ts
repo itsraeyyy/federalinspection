@@ -6,11 +6,12 @@ export const exportBulkOverview = (data: any[], fileName: string = 'assessment_o
     'ስም (Name)': row.name,
     'ስልክ (Phone)': row.phone,
     'ሚና (Role)': row.role,
-    'የራስ ግምገማ (Self - 10%)': row.s10,
-    'የገምጋሚ ውጤት (Eval - 20%)': row.s20,
+    'የራስ ምዘና (Self - 10%)': row.s10,
+    'የመዛኞች ውጤት (Eval - 20%)': row.s20,
     'ድምር (Subtotal - 30%)': row.s30,
     'የአጽዳቂ ውጤት (Approver - 70%)': row.s70,
-    'አጠቃላይ ድምር (Total - 100%)': row.total
+    'አጠቃላይ ድምር (Total - 100%)': row.total,
+    'ሁኔታ (Status)': row.status || 'ያልፀደቀ (Not Approved)'
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -35,11 +36,11 @@ export const exportDetailedUserReport = (
     { 'ክፍል (Section)': 'ስልክ (Phone)', 'መረጃ (Details)': userOverview.phone },
     { 'ክፍል (Section)': 'ሚና (Role)', 'መረጃ (Details)': userOverview.role },
     { 'ክፍል (Section)': 'የምዘና ጊዜ (Period)', 'መረጃ (Details)': userOverview.periodName },
-    { 'ክፍል (Section)': 'የራስ ግምገማ (10)', 'መረጃ (Details)': userOverview.s10 },
-    { 'ክፍል (Section)': 'የገምጋሚ ውጤት (20)', 'መረጃ (Details)': userOverview.s20 },
-    { 'ክፍል (Section)': 'ድምር (30)', 'መረጃ (Details)': userOverview.s30 },
-    { 'ክፍል (Section)': 'የአጽዳቂ ውጤት (70)', 'መረጃ (Details)': userOverview.s70 },
-    { 'ክፍል (Section)': 'አጠቃላይ ድምር (100)', 'መረጃ (Details)': userOverview.total }
+    { 'ክፍል (Section)': 'የራስ ምዘና (10)', 'መረጃ (Details)': Number(userOverview.s10 || 0).toFixed(1) },
+    { 'ክፍል (Section)': 'የመዛኞች ውጤት (20)', 'መረጃ (Details)': Number(userOverview.s20 || 0).toFixed(1) },
+    { 'ክፍል (Section)': 'ድምር (30)', 'መረጃ (Details)': Number(userOverview.s30 || 0).toFixed(1) },
+    { 'ክፍል (Section)': 'የአጽዳቂ ውጤት (70)', 'መረጃ (Details)': Number(userOverview.s70 || 0).toFixed(1) },
+    { 'ክፍል (Section)': 'አጠቃላይ ድምር (100)', 'መረጃ (Details)': Number(userOverview.total || 0).toFixed(1) }
   ];
   const overviewSheet = XLSX.utils.json_to_sheet(overviewData);
   XLSX.utils.book_append_sheet(workbook, overviewSheet, 'አጠቃላይ መረጃ (Overview)');
@@ -60,31 +61,33 @@ export const exportDetailedUserReport = (
       });
     });
   }
-  const selfSheet = XLSX.utils.json_to_sheet(selfAssessmentExport.length > 0 ? selfAssessmentExport : [{ 'መረጃ (Info)': 'የራስ ግምገማ አልተገኘም (No self assessment found)' }]);
-  XLSX.utils.book_append_sheet(workbook, selfSheet, 'የራስ ግምገማ (Self Assessment)');
+  const selfSheet = XLSX.utils.json_to_sheet(selfAssessmentExport.length > 0 ? selfAssessmentExport : [{ 'መረጃ (Info)': 'የራስ ምዘና አልተገኘም (No self assessment found)' }]);
+  XLSX.utils.book_append_sheet(workbook, selfSheet, 'የራስ ምዘና (Self Assessment)');
 
   // Sheet 3: Evaluations
   const evalExport: any[] = [];
   if (evaluationsData && evaluationsData.length > 0) {
     evaluationsData.forEach((evaluation, index) => {
-      const evaluatorName = evaluation.evaluatorName || `ገምጋሚ (Evaluator) ${index + 1}`;
+      const evaluatorName = evaluation.evaluatorName || `መዛኝ (Evaluator) ${index + 1}`;
       LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(cat => {
         cat.questions.forEach(q => {
           const answer = evaluation.responses?.[q.question_id];
+          const comment = evaluation.responses?.[`${q.question_id}_comment`] || '-';
           evalExport.push({
-            'ገምጋሚ (Evaluator)': evaluatorName,
+            'መዛኝ (Evaluator)': evaluatorName,
             'ምድብ (Category)': cat.category_name,
             'መለያ (ID)': q.question_id,
             'መስፈርት (Criteria)': q.criteria,
             'ክብደት (Weight)': q.weight,
-            'የተሰጠ ውጤት (Score 1-5)': answer !== undefined ? answer : 'ያልተመለሰ (Not Answered)'
+            'የተሰጠ ውጤት (Score 1-5)': answer !== undefined ? answer : 'ያልተመለሰ (Not Answered)',
+            'ምክንያት / ማብራሪያ (Comment / Reason)': comment
           });
         });
       });
     });
   }
-  const evalSheet = XLSX.utils.json_to_sheet(evalExport.length > 0 ? evalExport : [{ 'መረጃ (Info)': 'የገምጋሚ ውጤት አልተገኘም (No evaluations found)' }]);
-  XLSX.utils.book_append_sheet(workbook, evalSheet, 'የገምጋሚ ውጤቶች (Evaluations)');
+  const evalSheet = XLSX.utils.json_to_sheet(evalExport.length > 0 ? evalExport : [{ 'መረጃ (Info)': 'የመዛኞች ውጤት አልተገኘም (No evaluations found)' }]);
+  XLSX.utils.book_append_sheet(workbook, evalSheet, 'የመዛኞች ውጤቶች (Evaluations)');
 
   // Sheet 4: Approver (just the raw score since no questions are attached)
   const approverExport = [

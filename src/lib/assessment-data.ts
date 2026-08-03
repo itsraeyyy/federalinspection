@@ -402,3 +402,11 @@ export const LEADERSHIP_EVALUATION_QUESTIONS_20: Category[] = [
     ]
   }
 ];
+
+export function getPerformanceGradeLabel(score: number): string {
+  if (score >= 90) return 'በጣም ከፍተኛ';
+  if (score >= 80) return 'ከፍተኛ';
+  if (score >= 70) return 'መካከለኛ';
+  if (score >= 60) return 'ዝቅተኛ';
+  return 'በጣም ዝቅተኛ';
+}

@@ -208,3 +208,38 @@ export async function notifyNewPeriodEnrollment(opts: {
 
   return tryNotify(opts.phone, opts.email, smsMessage, `ICODiS — ለ"${opts.periodName}" ምዘና ጊዜ ተጨምረዋል`, html, text);
 }
+
+import { getPerformanceGradeLabel } from "@/lib/assessment-data";
+
+/** Notify user when their final score out of 100 is approved by supervisor */
+export async function notifyFinalScoreApproved(opts: {
+  phone: string;
+  email?: string;
+  name: string;
+  periodName: string;
+  finalScore: number;
+}): Promise<NotifyResult> {
+  const loginUrl = `${SITE_URL}/assessment/login`;
+  const gradeLabel = getPerformanceGradeLabel(opts.finalScore);
+
+  const smsMessage =
+    `ሰላም ${opts.name}፣\n` +
+    `የ"${opts.periodName}" ምዘና አጠቃላይ ውጤትዎ ${opts.finalScore.toFixed(1)}/100 (${gradeLabel}) ሆኖ ፀድቋል!\n` +
+    `በስልክ ቁጥርዎ እና በይለፍ ቃልዎ በመግባት ዝርዝሩን ይመልከቱ: ${loginUrl}`;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:32px;background:#f9f9f9;border-radius:12px;">
+      <h2 style="color:#059669;margin-bottom:8px;">የምዘና ውጤትዎ ፀድቋል!</h2>
+      <p style="color:#333;font-size:15px;">ሰላም <strong>${opts.name}</strong>፣</p>
+      <p style="color:#333;font-size:15px;">የ <strong>"${opts.periodName}"</strong> ምዘና አጠቃላይ ውጤትዎ <strong>${opts.finalScore.toFixed(1)} / 100 (${gradeLabel})</strong> ሆኖ በአጽዳቂው ፀድቋል።</p>
+      <p style="color:#555;font-size:14px;">በስልክ ቁጥርዎ እና በይለፍ ቃልዎ በመግባት ዝርዝር የምዘና መረጃዎችን ከዚህ ይመልከቱ፡</p>
+      <a href="${loginUrl}" style="display:inline-block;margin:16px 0;padding:12px 28px;background:#059669;color:white;text-decoration:none;border-radius:8px;font-weight:bold;">
+        ውጤቱን ይመልከቱ
+      </a>
+      <p style="color:#888;font-size:12px;margin-top:24px;">ICODiS — የምዘና ፖርታል</p>
+    </div>`;
+
+  const text = `ሰላም ${opts.name}፣\nየ"${opts.periodName}" ምዘና አጠቃላይ ውጤትዎ ${opts.finalScore.toFixed(1)}/100 (${gradeLabel}) ሆኖ ፀድቋል!\nበስልክ ቁጥርዎና በይለፍ ቃልዎ በመግባት ዝርዝሩን ይመልከቱ: ${loginUrl}`;
+
+  return tryNotify(opts.phone, opts.email, smsMessage, `ICODiS — የምዘና ውጤትዎ ፀድቋል (${opts.finalScore.toFixed(1)}/100 - ${gradeLabel})`, html, text);
+}

@@ -461,3 +461,48 @@ export async function resetPasswordWithOtpAction(phone: string, otpCode: string,
     return { error: error.message || 'An unexpected error occurred' };
   }
 }
+
+export async function updateUserProfileSelfAction(userId: string, data: {
+  gender?: string | null;
+  age?: number | null;
+  educationLevel?: string | null;
+  professionalField?: string | null;
+  expProfessional?: number | null;
+  expLeadership?: number | null;
+  institution?: string | null;
+  govResponsibility?: string | null;
+  partyResponsibility?: string | null;
+}) {
+  try {
+    if (!userId) return { error: 'User ID is required' };
+
+    const profilePayload = {
+      user_id: userId,
+      gender: data.gender || null,
+      age: data.age !== null && data.age !== undefined && data.age !== ('' as any) ? Number(data.age) : null,
+      education_level: data.educationLevel || null,
+      professional_field: data.professionalField || null,
+      experience_professional: data.expProfessional !== null && data.expProfessional !== undefined && data.expProfessional !== ('' as any) ? Number(data.expProfessional) : null,
+      experience_leadership: data.expLeadership !== null && data.expLeadership !== undefined && data.expLeadership !== ('' as any) ? Number(data.expLeadership) : null,
+      institution: data.institution || null,
+      current_responsibility_gov: data.govResponsibility || null,
+      current_responsibility_com: data.partyResponsibility || null,
+    };
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('user_profiles')
+      .upsert(profilePayload, { onConflict: 'user_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to update user profile:", error);
+      return { error: error.message || 'Failed to save user profile' };
+    }
+
+    return { success: true, profile: updated };
+  } catch (err: any) {
+    console.error("updateUserProfileSelfAction error:", err);
+    return { error: err.message || 'An unexpected error occurred' };
+  }
+}

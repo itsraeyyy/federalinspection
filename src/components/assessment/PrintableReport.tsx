@@ -82,17 +82,15 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
 
       {/* 2. Main Criteria Evaluation Table */}
       <h2 className="text-md font-bold mb-2" style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '10px' }}>የግምገማ መስፈርቶችና የአፈጻጸም ውጤት ዝርዝር</h2>
-      <table className="w-full text-xs border-collapse mb-6" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '11.5px' }}>
+      <table className="w-full text-xs border-collapse mb-4" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px', fontSize: '11.5px' }}>
         <thead>
           <tr style={{ backgroundColor: '#f3f4f6' }}>
             <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '38px' }}>ተ.ቁ</th>
             <th className="p-2 text-left" style={{ border: '1px solid black', padding: '6px', textAlign: 'left' }}>የግምገማ መስፈርቶች</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 10%</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 20%</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 30%</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '55px' }}>ከ 70%</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 100%</th>
-            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '75px' }}>ደረጃ</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 10%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 20%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '65px' }}>ከ 30%</th>
+            <th className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', width: '90px' }}>ደረጃ</th>
           </tr>
         </thead>
         <tbody>
@@ -100,7 +98,7 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
             <React.Fragment key={cat.category_id}>
               <tr className="font-bold" style={{ backgroundColor: '#f9fafb', fontWeight: 'bold' }}>
                 <td className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center' }}>{cat.category_id}</td>
-                <td className="p-2" colSpan={7} style={{ border: '1px solid black', padding: '6px' }}>{cat.category_id}. {cat.category_name}</td>
+                <td className="p-2" colSpan={5} style={{ border: '1px solid black', padding: '6px' }}>{cat.category_id}. {cat.category_name}</td>
               </tr>
               {cat.questions.map(q => {
                 const sRow = selfRows.find(r => r.id === q.question_id);
@@ -110,36 +108,71 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
                 const pScoreVal = pRow ? parseFloat(pRow.score || '0') / 5 : 0;
                 const sub30Val = sScoreVal + pScoreVal;
 
+                const w = q.weight || 1.0;
+                const max30ForQ = (w * 0.1) + (w * 0.2);
+                const pct = max30ForQ > 0 ? (sub30Val / max30ForQ) * 100 : 0;
+
+                let rowGrade = '-';
+                if (sub30Val > 0) {
+                  if (pct >= 90) rowGrade = 'በጣም ከፍተኛ';
+                  else if (pct >= 80) rowGrade = 'ከፍተኛ';
+                  else if (pct >= 70) rowGrade = 'መካከለኛ';
+                  else rowGrade = 'ዝቅተኛ';
+                }
+
                 return (
                   <tr key={q.question_id}>
                     <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{q.question_id}</td>
                     <td className="p-1.5 text-xs" style={{ border: '1px solid black', padding: '4px', fontSize: '11px' }}>{q.criteria}</td>
-                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{sScoreVal > 0 ? sScoreVal.toFixed(2) : '-'}</td>
-                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{pScoreVal > 0 ? pScoreVal.toFixed(2) : '-'}</td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{sScoreVal > 0 ? sScoreVal.toFixed(1) : '-'}</td>
+                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{pScoreVal > 0 ? pScoreVal.toFixed(1) : '-'}</td>
                     <td className="p-1.5 text-center font-bold" style={{ border: '1px solid black', padding: '4px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f9fafb' }}>
-                      {sub30Val > 0 ? sub30Val.toFixed(2) : '-'}
+                      {sub30Val > 0 ? sub30Val.toFixed(1) : '-'}
                     </td>
-                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>-</td>
-                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>-</td>
-                    <td className="p-1.5 text-center" style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>-</td>
+                    <td className="p-1.5 text-center text-xs" style={{ border: '1px solid black', padding: '4px', textAlign: 'center', fontSize: '10.5px' }}>
+                      {rowGrade}
+                    </td>
                   </tr>
                 );
               })}
             </React.Fragment>
           ))}
 
-          {/* Table Final Totals Row */}
+          {/* Table 30% Subtotal Row */}
           <tr className="font-bold" style={{ backgroundColor: '#e5e7eb', fontWeight: 'bold' }}>
-            <td className="p-2 text-right" colSpan={2} style={{ border: '1px solid black', padding: '8px', textAlign: 'right' }}>አጠቃላይ ድምር ውጤት (Total)</td>
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{self10.toFixed(2)}</td>
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{peer20.toFixed(2)}</td>
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', color: '#0284c7' }}>{sum30.toFixed(2)}</td>
-            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{appr70.toFixed(2)}</td>
-            <td className="p-2 text-center text-md font-extrabold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', fontSize: '14px', color: '#0284c7' }}>{`${final100.toFixed(2)}%`}</td>
-            <td className="p-2 text-center text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center', color: '#0284c7' }}>{grade}</td>
+            <td className="p-2 text-right" colSpan={2} style={{ border: '1px solid black', padding: '6px', textAlign: 'right' }}>የ30% አጠቃላይ ድምር ውጤት (30% Total)</td>
+            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center' }}>{self10.toFixed(1)}</td>
+            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center' }}>{peer20.toFixed(1)}</td>
+            <td className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', color: '#0284c7' }}>{sum30.toFixed(1)}</td>
+            <td className="p-2 text-center text-xs" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', color: '#0284c7' }}>
+              {sum30 >= 27 ? 'በጣም ከፍተኛ' : sum30 >= 24 ? 'ከፍተኛ' : sum30 >= 21 ? 'መካከለኛ' : 'ዝቅተኛ'}
+            </td>
           </tr>
         </tbody>
       </table>
+
+      {/* 3. Overall Evaluation Score Summary Block */}
+      <div className="mb-6 border border-black" style={{ border: '1px solid black', marginBottom: '16px' }}>
+        <div style={{ backgroundColor: '#f3f4f6', padding: '6px', borderBottom: '1px solid black', fontWeight: 'bold', fontSize: '12px' }}>
+          የአፈጻጸም ማጠቃለያ ውጤት (Overall Evaluation Score Summary)
+        </div>
+        <div style={{ display: 'flex', borderBottom: '1px solid black', fontSize: '11.5px' }}>
+          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የራስ ምዘና (10%)</div>
+          <div style={{ width: '11%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{self10.toFixed(1)}</div>
+          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የአቻዎች ምዘና (20%)</div>
+          <div style={{ width: '12%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{peer20.toFixed(1)}</div>
+          <div style={{ width: '21%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የ30% ድምር</div>
+          <div style={{ width: '14%', padding: '6px', fontWeight: 'bold', color: '#0284c7', textAlign: 'center' }}>{sum30.toFixed(1)}</div>
+        </div>
+        <div style={{ display: 'flex', fontSize: '11.5px' }}>
+          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የአጽዳቂ/ኮሚቴ (70%)</div>
+          <div style={{ width: '11%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{appr70.toFixed(1)}</div>
+          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የ100% አጠቃላይ ውጤት</div>
+          <div style={{ width: '12%', padding: '6px', fontWeight: 'bold', color: '#0284c7', borderRight: '1px solid black', textAlign: 'center' }}>{`${final100.toFixed(1)}%`}</div>
+          <div style={{ width: '21%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የበላይ ደረጃ</div>
+          <div style={{ width: '14%', padding: '6px', fontWeight: 'bold', color: '#0284c7', textAlign: 'center' }}>{grade}</div>
+        </div>
+      </div>
 
       {/* 3. Approver Remarks Box */}
       <div className="mb-6 p-3 border border-black rounded" style={{ border: '1px solid black', padding: '8px', marginBottom: '16px' }}>

@@ -210,23 +210,22 @@ export function AssessmentReportPDF({
         </View>
 
         {/* 2. Main Evaluation Table (Columns: ተ.ቁ | የግምገማ መስፈርቶች | ከ10% | ከ20% | ከ30% | ከ70% | ከ100% | ደረጃ) */}
+        {/* 2. Main Evaluation Table (Columns: ተ.ቁ | የግምገማ መስፈርቶች | ከ10% | ከ20% | ከ30% | ደረጃ) */}
         <Text style={styles.sectionTitle}>{'የግምገማ መስፈርቶችና የአፈጻጸም ውጤት ዝርዝር'}</Text>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={[styles.cell, { width: 22, fontWeight: 700 }]}>{'ተ.ቁ'}</Text>
+            <Text style={[styles.cell, { width: 24, fontWeight: 700 }]}>{'ተ.ቁ'}</Text>
             <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700 }]}>{'የግምገማ መስፈርቶች'}</Text>
-            <Text style={[styles.cellBold, { width: 34 }]}>{'ከ 10%'}</Text>
-            <Text style={[styles.cellBold, { width: 34 }]}>{'ከ 20%'}</Text>
-            <Text style={[styles.cellBold, { width: 34 }]}>{'ከ 30%'}</Text>
-            <Text style={[styles.cellBold, { width: 34 }]}>{'ከ 70%'}</Text>
-            <Text style={[styles.cellBold, { width: 38 }]}>{'ከ 100%'}</Text>
-            <Text style={[styles.cellBold, { width: 44, borderRight: 'none' }]}>{'ደረጃ'}</Text>
+            <Text style={[styles.cellBold, { width: 42 }]}>{'ከ 10%'}</Text>
+            <Text style={[styles.cellBold, { width: 42 }]}>{'ከ 20%'}</Text>
+            <Text style={[styles.cellBold, { width: 42 }]}>{'ከ 30%'}</Text>
+            <Text style={[styles.cellBold, { width: 60, borderRight: 'none' }]}>{'ደረጃ'}</Text>
           </View>
 
           {SELF_ASSESSMENT_QUESTIONS.map((cat) => (
             <React.Fragment key={cat.category_id}>
               <View style={styles.categoryRow}>
-                <Text style={[styles.cellBold, { width: 22 }]}>{cat.category_id}</Text>
+                <Text style={[styles.cellBold, { width: 24 }]}>{cat.category_id}</Text>
                 <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700, borderRight: 'none' }]}>
                   {`${cat.category_id}. ${cat.category_name}`}
                 </Text>
@@ -240,34 +239,73 @@ export function AssessmentReportPDF({
                 const pScoreVal = pRow ? parseFloat(pRow.score || '0') / 5 : 0;
                 const sub30Val = sScoreVal + pScoreVal;
 
+                const w = q.weight || 1.0;
+                const max30ForQ = (w * 0.1) + (w * 0.2); // max 30% weight component
+                const pct = max30ForQ > 0 ? (sub30Val / max30ForQ) * 100 : 0;
+
+                let rowGrade = '-';
+                if (sub30Val > 0) {
+                  if (pct >= 90) rowGrade = 'በጣም ከፍተኛ';
+                  else if (pct >= 80) rowGrade = 'ከፍተኛ';
+                  else if (pct >= 70) rowGrade = 'መካከለኛ';
+                  else rowGrade = 'ዝቅተኛ';
+                }
+
                 return (
                   <View key={q.question_id} style={styles.tableRow}>
-                    <Text style={[styles.cell, { width: 22 }]}>{q.question_id}</Text>
+                    <Text style={[styles.cell, { width: 24 }]}>{q.question_id}</Text>
                     <Text style={[styles.cellLeft, { flex: 1, fontSize: 6.5 }]}>{q.criteria}</Text>
-                    <Text style={[styles.cell, { width: 34 }]}>{sScoreVal > 0 ? sScoreVal.toFixed(2) : '-'}</Text>
-                    <Text style={[styles.cell, { width: 34 }]}>{pScoreVal > 0 ? pScoreVal.toFixed(2) : '-'}</Text>
-                    <Text style={[styles.cellBold, { width: 34, backgroundColor: '#f9fafb' }]}>
-                      {sub30Val > 0 ? sub30Val.toFixed(2) : '-'}
+                    <Text style={[styles.cell, { width: 42 }]}>{sScoreVal > 0 ? sScoreVal.toFixed(1) : '-'}</Text>
+                    <Text style={[styles.cell, { width: 42 }]}>{pScoreVal > 0 ? pScoreVal.toFixed(1) : '-'}</Text>
+                    <Text style={[styles.cellBold, { width: 42, backgroundColor: '#f9fafb' }]}>
+                      {sub30Val > 0 ? sub30Val.toFixed(1) : '-'}
                     </Text>
-                    <Text style={[styles.cell, { width: 34 }]}>{'-'}</Text>
-                    <Text style={[styles.cell, { width: 38 }]}>{'-'}</Text>
-                    <Text style={[styles.cell, { width: 44, borderRight: 'none' }]}>{'-'}</Text>
+                    <Text style={[styles.cell, { width: 60, borderRight: 'none', fontSize: 6 }]}>
+                      {rowGrade}
+                    </Text>
                   </View>
                 );
               })}
             </React.Fragment>
           ))}
 
-          {/* Table Final Totals Row (Sums 10%, 20%, 30%, 70%, 100%, & Grade) */}
+          {/* Table 30% Subtotal Row */}
           <View style={styles.totalRow}>
-            <Text style={[styles.cellBold, { width: 22 }]}>{''}</Text>
-            <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700, fontSize: 7.5 }]}>{'አጠቃላይ ድምር ውጤት (Total)'}</Text>
-            <Text style={[styles.cellBold, { width: 34 }]}>{self10.toFixed(2)}</Text>
-            <Text style={[styles.cellBold, { width: 34 }]}>{peer20.toFixed(2)}</Text>
-            <Text style={[styles.cellBold, { width: 34, color: '#0284c7' }]}>{sum30.toFixed(2)}</Text>
-            <Text style={[styles.cellBold, { width: 34 }]}>{appr70.toFixed(2)}</Text>
-            <Text style={[styles.cellBold, { width: 38, fontSize: 8, color: '#0284c7' }]}>{`${final100.toFixed(2)}%`}</Text>
-            <Text style={[styles.cellBold, { width: 44, borderRight: 'none', color: '#0284c7', fontSize: 7.5 }]}>{grade}</Text>
+            <Text style={[styles.cellBold, { width: 24 }]}>{''}</Text>
+            <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700, fontSize: 7.5 }]}>{'የ30% አጠቃላይ ድምር ውጤት (30% Total)'}</Text>
+            <Text style={[styles.cellBold, { width: 42 }]}>{self10.toFixed(1)}</Text>
+            <Text style={[styles.cellBold, { width: 42 }]}>{peer20.toFixed(1)}</Text>
+            <Text style={[styles.cellBold, { width: 42, color: '#0284c7' }]}>{sum30.toFixed(1)}</Text>
+            <Text style={[styles.cellBold, { width: 60, borderRight: 'none', color: '#0284c7', fontSize: 7 }]}>
+              {sum30 >= 27 ? 'በጣም ከፍተኛ' : sum30 >= 24 ? 'ከፍተኛ' : sum30 >= 21 ? 'መካከለኛ' : 'ዝቅተኛ'}
+            </Text>
+          </View>
+        </View>
+
+        {/* 3. Overall Summary Score Block (Includes 70%, 100%, and Final Grade) */}
+        <View style={{ border: '1pt solid #000000', marginBottom: 8, backgroundColor: '#ffffff' }}>
+          <View style={{ backgroundColor: '#f3f4f6', padding: '3pt 6pt', borderBottom: '1pt solid #000000' }}>
+            <Text style={{ fontSize: 7.5, fontWeight: 700 }}>{'የአፈጻጸም ማጠቃለያ ውጤት (Overall Evaluation Score Summary)'}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', borderBottom: '1pt solid #000000' }}>
+            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የራስ ምዘና (10%)'}</Text>
+            <Text style={{ width: '11%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{self10.toFixed(1)}</Text>
+            
+            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የአቻዎች ምዘና (20%)'}</Text>
+            <Text style={{ width: '12%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{peer20.toFixed(1)}</Text>
+            
+            <Text style={{ width: '21%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የ30% ድምር'}</Text>
+            <Text style={{ width: '14%', fontSize: 7, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', textAlign: 'center' }}>{sum30.toFixed(1)}</Text>
+          </View>
+          <View style={{ flexDirection: 'row' }}>
+            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የአጽዳቂ/ኮሚቴ (70%)'}</Text>
+            <Text style={{ width: '11%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{appr70.toFixed(1)}</Text>
+            
+            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የ100% አጠቃላይ ውጤት'}</Text>
+            <Text style={{ width: '12%', fontSize: 7.5, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{`${final100.toFixed(1)}%`}</Text>
+            
+            <Text style={{ width: '21%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የበላይ ደረጃ'}</Text>
+            <Text style={{ width: '14%', fontSize: 7.5, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', textAlign: 'center' }}>{grade}</Text>
           </View>
         </View>
 

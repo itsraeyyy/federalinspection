@@ -67,15 +67,20 @@ export function UserProfileDrawer({ isOpen, onClose, userId, periodId }: UserPro
             ? evals.reduce((acc, curr) => acc + Number(curr.score_20), 0) / evals.length 
             : 0;
 
+          const s10Val = Number(s10Data?.score_10 || 0);
+          const s20Val = Number(avgEvalScore || 0);
+          const s70Val = Number(apprData?.score_70 || 0);
+          const totalVal = f100Data?.final_score_100 ?? (s10Val + s20Val + s70Val);
+
           return {
             periodId: pId,
             periodName: m.assessment_periods?.name || 'Unknown Period',
             role: m.role,
             status: m.assessment_periods?.status,
-            s10: s10Data?.score_10 || 0,
-            s20: Number(avgEvalScore.toFixed(2)),
-            s70: apprData?.score_70 || 0,
-            total: f100Data?.final_score_100 || ((s10Data?.score_10 || 0) + avgEvalScore + (apprData?.score_70 || 0)),
+            s10: s10Val.toFixed(1),
+            s20: s20Val.toFixed(1),
+            s70: s70Val.toFixed(1),
+            total: Number(totalVal).toFixed(1),
             raw: {
               self: s10Data,
               evals: evals,
@@ -403,7 +408,7 @@ export function UserProfileDrawer({ isOpen, onClose, userId, periodId }: UserPro
                   
                   {/* Form Fields Mapping */}
                   {[
-                    { label: 'የምዘና ሚና (Assessment Role)', key: 'role', type: 'select', options: ['regular', 'evaluator', 'approver'], displayOptions: ['ተገምጋሚ / አባል (Member)', 'ገምጋሚ (Evaluator)', 'አጽዳቂ (Approver)'] },
+                    { label: 'የምዘና ሚና (Assessment Role)', key: 'role', type: 'select', options: ['regular', 'evaluator', 'approver'], displayOptions: ['ተመዛኝ / አባል (Member)', 'መዛኝ (Evaluator)', 'አጽዳቂ (Approver)'] },
                     { label: 'ፆታ (Gender)', key: 'gender', type: 'select', options: ['ወንድ', 'ሴት'] },
                     { label: 'ዕድሜ (Age)', key: 'age', type: 'number' },
                     { label: 'የትምህርት ደረጃ (Education)', key: 'education_level', type: 'text' },
@@ -480,7 +485,7 @@ export function UserProfileDrawer({ isOpen, onClose, userId, periodId }: UserPro
                                 <p className="font-mono font-medium text-brand-blue">{h.s10}</p>
                               </div>
                               <div className="bg-surface-secondary rounded-lg p-2 border border-border/50">
-                                <p className="text-[10px] text-text-muted font-bold mb-1">ገምጋሚ (20)</p>
+                                <p className="text-[10px] text-text-muted font-bold mb-1">መዛኝ (20)</p>
                                 <p className="font-mono font-medium text-brand-blue">{h.s20}</p>
                               </div>
                               <div className="bg-surface-secondary rounded-lg p-2 border border-border/50">

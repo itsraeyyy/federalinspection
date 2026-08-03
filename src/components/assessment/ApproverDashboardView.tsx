@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, ShieldCheck, Save, Users, AlertCircle, Unlock, CheckCircle2, Eye, X, Printer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
+import { LEADERSHIP_EVALUATION_QUESTIONS_20, getPerformanceGradeLabel } from '@/lib/assessment-data';
+import { notifyFinalApprovalAction } from '@/app/actions/assessment';
 
 export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const router = useRouter();
@@ -114,7 +115,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           const avg = submittedCount > 0 ? (group.scores.reduce((a, b) => a + b, 0) / submittedCount) : 0;
           
           eScores[targetId] = { 
-            score: Number(avg.toFixed(2)), 
+            score: Number(avg.toFixed(1)), 
             is_locked: group.is_locked.length > 0 && group.is_locked.every(l => l === true),
             is_complete: isComplete,
             submitted_count: submittedCount,
@@ -178,12 +179,13 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const handleApproveSinglePerson = async (targetUserId: string) => {
     const s10 = selfScores[targetUserId]?.score || 0;
     const e20 = evalScores[targetUserId]?.score || 0;
+    const s20Data = evalScores[targetUserId];
     const aScore70 = approverScores[targetUserId] || 0;
 
-    if (s10 <= 0 || e20 <= 0 || aScore70 <= 0) {
+    if (s10 <= 0 || !s20Data?.is_complete || aScore70 <= 0) {
       const missing: string[] = [];
       if (s10 <= 0) missing.push('የራስ ግምገማ (10%)');
-      if (e20 <= 0) missing.push('የገምጋሚዎች ውጤት (20%)');
+      if (!s20Data?.is_complete) missing.push(`የመዛኞች ውጤት (20%) (${s20Data?.submitted_count || 0}/${s20Data?.total_required || 0} ተሞልቷል)`);
       if (aScore70 <= 0) missing.push('የአጽዳቂ ውጤት (70%)');
       showToast(`ማፅደቅ አይቻልም! እባክዎን የሚከተሉትን ያሟሉ: ${missing.join(', ')}`, 'error');
       return;
@@ -194,6 +196,16 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
     try {
       const currentUser: any = (await supabase.auth.getUser()).data?.user || (await supabase.auth.getSession()).data?.session?.user;
       if (!currentUser) throw new Error('ለማስቀመጥ እባክዎ መጀመሪያ ይግቡ (Not authenticated)');
+
+      // Self-healing check: Ensure currentUser.id exists in public.users to prevent FK constraint error
+      const { data: userExist } = await supabase.from('users').select('id').eq('id', currentUser.id).maybeSingle();
+      if (!userExist) {
+        await supabase.from('users').insert({
+          id: currentUser.id,
+          full_name: currentUser.email?.split('@')[0] || 'አጽዳቂ (Approver)',
+          phone_number: currentUser.email || currentUser.id
+        });
+      }
 
       const aComments = approverRemarks[targetUserId] || '';
 
@@ -214,8 +226,8 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
       // 2. Compute final score for this single user
       const s10 = selfScores[targetUserId]?.score || 0;
       const e20 = evalScores[targetUserId]?.score || 0;
-      const score30 = Number((s10 + e20).toFixed(2));
-      const final100 = Number((score30 + aScore70).toFixed(2));
+      const score30 = Number((s10 + e20).toFixed(1));
+      const final100 = Number((score30 + aScore70).toFixed(1));
 
       // 3. Upsert into final_scores
       const { error: finalErr } = await supabase
@@ -229,11 +241,18 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
       if (finalErr) throw finalErr;
 
+      // 4. Send SMS notification to the approved user
+      notifyFinalApprovalAction({
+        periodId,
+        userId: targetUserId,
+        finalScore: final100
+      }).catch(err => console.error('Failed to send SMS notification:', err));
+
       setFinalizedUserIds(prev => Array.from(new Set([...prev, targetUserId])));
       const targetUserObj = members.find(m => m.user_id === targetUserId);
       const name = targetUserObj?.users?.full_name || 'አባል';
 
-      showToast(`የ ${name} ውጤት በተሳካ ሁኔታ ፀድቋል!`, 'success');
+      showToast(`የ ${name} ውጤት በተሳካ ሁኔታ ፀድቋል! (SMS ተልኳል)`, 'success');
 
       if (expandedUser === targetUserId) {
         setExpandedUser(null);
@@ -274,7 +293,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           ...prev,
           [userId]: { ...prev[userId], is_locked: false }
         }));
-        showToast('የገምጋሚ ግምገማዎች በተሳካ ሁኔታ ተከፍተዋል! (Evaluations unlocked)', 'success');
+        showToast('የመዛኞች ምዘናዎች በተሳካ ሁኔታ ተከፍተዋል! (Evaluations unlocked)', 'success');
       }
     } catch (err: any) {
       showToast(err.message || 'መክፈት አልተሳካም (Failed to unlock)', 'error');
@@ -326,6 +345,19 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
       title: 'ማረጋገጫ (Finalize Confirmation)',
       message: 'ሁሉንም ውጤቶች ማፅደቅ ይፈልጋሉ? አንዴ ከተፀደቀ መቀየር አይቻልም። (Finalize all scores?)',
       onConfirm: async () => {
+        const incompleteMember = members.find(m => {
+          const s10 = selfScores[m.user_id]?.score || 0;
+          const s20Data = evalScores[m.user_id];
+          const s70 = approverScores[m.user_id] || 0;
+          return s10 <= 0 || !s20Data?.is_complete || s70 <= 0;
+        });
+
+        if (incompleteMember) {
+          const name = incompleteMember.users?.full_name || 'አባል';
+          showToast(`የ ${name} ግምገማዎች አልተጠናቀቁም። (ለማፅደቅ 10%፣ 20% እና 70% በሙሉ መሞላት አለባቸው)`, 'error');
+          return;
+        }
+
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         setSaving(true);
         setError(null);
@@ -372,7 +404,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
         }
       });
     });
-    const updatedScore20 = parseFloat((raw_score / 5).toFixed(2));
+    const updatedScore20 = parseFloat((raw_score / 5).toFixed(1));
 
     const updatedEvaluations = [...targetEvalScore.evaluations];
     updatedEvaluations[evaluationIndex] = {
@@ -383,7 +415,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
     const lockedScores = updatedEvaluations.filter(e => e.is_locked).map(e => e.score_20);
     const newAvg = lockedScores.length > 0
-      ? parseFloat((lockedScores.reduce((a, b) => a + b, 0) / lockedScores.length).toFixed(2))
+      ? parseFloat((lockedScores.reduce((a, b) => a + b, 0) / lockedScores.length).toFixed(1))
       : 0;
 
     setEvalScores(prev => ({
@@ -424,7 +456,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const targetSelfScore = expandedUser ? (selfScores[expandedUser]?.score || 0) : 0;
   const targetEvalScoreVal = targetEvalScoreForModal?.score || 0;
   const targetApproverScoreVal = expandedUser ? (approverScores[expandedUser] || 0) : 0;
-  const targetTotalScore = parseFloat((targetSelfScore + targetEvalScoreVal + targetApproverScoreVal).toFixed(2));
+  const targetTotalScore = parseFloat((targetSelfScore + targetEvalScoreVal + targetApproverScoreVal).toFixed(1));
 
   const hasChanges = members.some(
     m => (approverScores[m.user_id] || 0) !== (initialApproverScores[m.user_id] || 0)
@@ -453,7 +485,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
             </h1>
           </div>
           <p className="text-text-secondary text-sm max-w-3xl leading-relaxed">
-            እዚህ ላይ የተጠቃሚዎችን ግምገማ ውጤት ይመለከታሉ፣ አማካይ የገምጋሚዎችን (20 ነጥብ) ይገመግማሉ፣ የራስዎን (70 ነጥብ) ይሞላሉ፣ እንዲሁም ያፀድቃሉ። (Review averages, rate out of 70, and finalize.)
+            እዚህ ላይ የተጠቃሚዎችን የምዘና ውጤት ይመለከታሉ፣ የመዛኞችን (20 ነጥብ) ይመረምራሉ፣ የራስዎን (70 ነጥብ) ይሞላሉ፣ እንዲሁም ያፀድቃሉ። (Review averages, rate out of 70, and finalize.)
           </p>
         </div>
 
@@ -494,7 +526,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                     የራስ ግምገማ <span className="text-xs font-normal text-text-muted ml-1">(10 ነጥብ)</span>
                   </th>
                   <th className="px-6 py-4 text-center">
-                    የገምጋሚዎች ውጤት <span className="text-xs font-normal text-text-muted ml-1">(20 ነጥብ)</span>
+                    የመዛኞች ውጤት <span className="text-xs font-normal text-text-muted ml-1">(20 ነጥብ)</span>
                   </th>
                   <th className="px-6 py-4 text-center border-l border-border/40 bg-brand-blue/5">
                     ድምር <span className="text-xs font-bold text-brand-blue/80 ml-1">(30 ነጥብ)</span>
@@ -517,7 +549,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                   const s10 = s10Data?.score || 0;
                   const s20 = s20Data?.score || 0;
                   const s70 = approverScores[m.user_id] || 0;
-                  const total = parseFloat((s10 + s20 + s70).toFixed(2));
+                  const total = parseFloat((s10 + s20 + s70).toFixed(1));
 
                   return (
                     <tr key={m.user_id} className="hover:bg-surface-secondary/30 transition-colors">
@@ -532,7 +564,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                           </div>
                           <div>
                             <span className="text-sm font-bold block leading-tight">{m.users?.full_name || 'ያልታወቀ'}</span>
-                            <span className="text-[11px] font-normal text-text-muted">{m.title || 'ተገምጋሚ'}</span>
+                            <span className="text-[11px] font-normal text-text-muted">{m.title || 'ተመዛኝ'}</span>
                           </div>
                         </button>
                       </td>
@@ -548,20 +580,15 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center justify-center gap-1.5">
                           <div className="flex items-center gap-2">
-                            {s20Data?.submitted_count && s20Data.submitted_count > 0 ? (
+                            {s20Data?.is_complete ? (
                               <span className="font-mono text-sm font-bold px-3 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
                                 {s20}
                               </span>
                             ) : (
                               <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50">
-                                በሂደት ላይ (0/{s20Data?.total_required || 0})
+                                በሂደት ላይ ({s20Data?.submitted_count || 0}/{s20Data?.total_required || 0})
                               </span>
                             )}
-                            {s20Data?.submitted_count && !s20Data.is_complete ? (
-                              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                                ({s20Data.submitted_count}/{s20Data.total_required})
-                              </span>
-                            ) : null}
                           </div>
 
                           {/* View Details button placed under 20% score */}
@@ -579,7 +606,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                       {/* 30 points Sum */}
                       <td className="px-6 py-4 text-center border-l border-border/40 bg-brand-blue/5">
                         <span className="font-mono text-sm font-bold text-text-primary">
-                          {parseFloat((s10 + s20).toFixed(2))}
+                          {s10 > 0 && s20Data?.is_complete ? parseFloat((s10 + s20).toFixed(1)) : '-'}
                         </span>
                       </td>
 
@@ -599,7 +626,14 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
                       {/* Total 100 points */}
                       <td className="px-6 py-4 text-center font-mono font-extrabold text-base text-brand-blue border-l border-border/40 bg-surface-secondary/10">
-                        {total}
+                        {s10 > 0 && s20Data?.is_complete && s70 > 0 ? (
+                          <div className="flex flex-col items-center justify-center">
+                            <span>{total}</span>
+                            <span className="text-[10px] font-semibold text-text-secondary bg-surface-secondary px-2 py-0.5 rounded-full border border-border/60">
+                              ({getPerformanceGradeLabel(total)})
+                            </span>
+                          </div>
+                        ) : '-'}
                       </td>
 
                       {/* Actions Column */}
@@ -612,7 +646,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                             </span>
                           ) : (
                             (() => {
-                              const isEligible = s10 > 0 && s20 > 0 && s70 > 0;
+                              const isEligible = s10 > 0 && s20Data?.is_complete && s70 > 0;
                               return (
                                 <button
                                   onClick={() => handleApproveSinglePerson(m.user_id)}
@@ -625,7 +659,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                                   title={
                                     isEligible
                                       ? 'የዚህን አባል ውጤት አፅድቅ (Approve)'
-                                      : 'ለማፅደቅ 10%፣ 20% እና 70% መሞላት አለባቸው'
+                                      : 'ለማፅደቅ የ 10%፣ 20% (100% አባላት) እና 70% መሞላት አለባቸው'
                                   }
                                 >
                                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -699,7 +733,11 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 bg-surface-primary px-3.5 py-1.5 rounded-xl border border-border/60 text-xs font-semibold shadow-sm">
                   <span className="text-text-muted">አጠቃላይ ውጤት:</span>
-                  <span className="text-base font-bold text-brand-blue">{targetTotalScore} / 100</span>
+                  <span className="text-base font-bold text-brand-blue">
+                    {targetSelfScore > 0 && targetEvalScoreForModal?.is_complete && targetApproverScoreVal > 0 
+                      ? `${targetTotalScore} / 100 (${getPerformanceGradeLabel(targetTotalScore)})` 
+                      : 'በሂደት ላይ (In Progress)'}
+                  </span>
                 </div>
                 <button
                   onClick={() => setExpandedUser(null)}
@@ -748,7 +786,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
               <div>
                 <h4 className="font-heading font-bold text-text-primary text-base mb-3 flex items-center gap-2">
                   <Users className="w-5 h-5 text-brand-blue" />
-                  የገምጋሚዎች ዝርዝር ምላሽ (Evaluators Detailed Breakdown)
+                  የመዛኞች ዝርዝር ምላሽ (Evaluators Detailed Breakdown)
                 </h4>
 
                 {targetEvalScoreForModal?.evaluations?.length && targetEvalScoreForModal.evaluations.length > 0 ? (
@@ -758,7 +796,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                         <div className="flex justify-between items-center mb-3 pb-2 border-b border-border/40">
                           <span className="font-bold text-sm text-brand-blue flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-brand-blue"></span>
-                            ገምጋሚ {eIdx + 1} (Evaluator {eIdx + 1})
+                            መዛኝ {eIdx + 1} (Evaluator {eIdx + 1})
                           </span>
                           <span className="text-xs font-mono bg-brand-blue/10 px-2.5 py-1 rounded-lg text-brand-blue font-bold border border-brand-blue/20">
                             ውጤት: {ev.score_20} / 20
@@ -821,7 +859,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                   </div>
                 ) : (
                   <div className="text-center py-8 text-text-secondary text-sm bg-surface-secondary/20 rounded-2xl border border-dashed border-border">
-                    ምንም የገምጋሚ ምላሽ የለም (No evaluator evaluations submitted yet)
+                    ምንም የመዛኝ ምላሽ የለም (No evaluator evaluations submitted yet)
                   </div>
                 )}
               </div>
@@ -833,9 +871,9 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
               <div>
                 {!finalizedUserIds.includes(expandedUser) && !isFinalized && (() => {
                   const modalS10 = selfScores[expandedUser]?.score || 0;
-                  const modalS20 = evalScores[expandedUser]?.score || 0;
+                  const modalS20Data = evalScores[expandedUser];
                   const modalS70 = approverScores[expandedUser] || 0;
-                  const isModalUserEligible = modalS10 > 0 && modalS20 > 0 && modalS70 > 0;
+                  const isModalUserEligible = modalS10 > 0 && modalS20Data?.is_complete && modalS70 > 0;
 
                   return (
                     <button
@@ -849,7 +887,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                       title={
                         isModalUserEligible
                           ? 'የዚህን አባል ውጤት አፅድቅ (Approve)'
-                          : 'ለማፅደቅ 10%፣ 20% እና 70% መሞላት አለባቸው'
+                          : 'ለማፅደቅ የ 10%፣ 20% (100% አባላት) እና 70% መሞላት አለባቸው'
                       }
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}

@@ -141,16 +141,16 @@ export const EvaluationSummaryReport = forwardRef<HTMLDivElement, EvaluationSumm
                 {row?.responsibilityCom || ''}
               </td>
               <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontFamily: 'monospace' }}>
-                {row && row.s10 > 0 ? row.s10.toFixed(2) : (row ? '-' : '')}
+                {row && row.s10 > 0 ? row.s10.toFixed(1) : (row ? '-' : '')}
               </td>
               <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontFamily: 'monospace' }}>
-                {row && row.s20 > 0 ? row.s20.toFixed(2) : (row ? '-' : '')}
+                {row && row.s20 > 0 ? row.s20.toFixed(1) : (row ? '-' : '')}
               </td>
               <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontFamily: 'monospace' }}>
-                {row && row.s70 > 0 ? row.s70.toFixed(2) : (row ? '-' : '')}
+                {row && row.s70 > 0 ? row.s70.toFixed(1) : (row ? '-' : '')}
               </td>
               <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                {row && row.f100 > 0 ? row.f100.toFixed(2) : (row ? '-' : '')}
+                {row && row.f100 > 0 ? row.f100.toFixed(1) : (row ? '-' : '')}
               </td>
               <td style={{ border: '1px solid black', padding: '6px 4px', textAlign: 'center', fontWeight: '600' }}>
                 {row?.grade || ''}

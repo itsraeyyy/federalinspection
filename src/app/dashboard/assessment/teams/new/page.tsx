@@ -2,381 +2,623 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Loader2, ArrowLeft, PlusCircle, CheckCircle2,
-  Search, UserPlus, Users, X, ChevronDown, Bell
+import { 
+  Loader2, 
+  ArrowLeft, 
+  Calendar, 
+  LayoutTemplate, 
+  PlusCircle, 
+  CheckCircle2, 
+  Search, 
+  UserCheck, 
+  Users, 
+  UserPlus, 
+  X, 
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import {
-  createAssessmentPeriodAction,
-  getExistingAssessmentUsersAction,
-  addExistingUsersToNewPeriodAction
+import { 
+  createAssessmentPeriodAction, 
+  getExistingAssessmentUsersAction, 
+  addExistingUsersToNewPeriodAction 
 } from '@/app/actions/assessment';
 import { registerUserAction } from '@/app/actions/auth';
 
-type ExistingUser = { user_id: string; full_name: string; phone_number: string; last_role: string };
-type NewMember = { id: string; fullName: string; phone: string; role: string };
+type ExistingUser = {
+  user_id: string;
+  full_name: string;
+  phone_number: string;
+  email?: string;
+  last_role: string;
+};
+
 type SelectedUser = ExistingUser & { role: string };
 
-const ROLES = [
-  { value: 'regular', label: 'ተገምጋሚ' },
-  { value: 'evaluator', label: 'ገምጋሚ' },
-  { value: 'approver', label: 'አጽዳቂ' },
-  { value: 'admin', label: 'አስተዳዳሪ' },
+type NewMemberDraft = {
+  id: string;
+  fullName: string;
+  phone: string;
+  role: string;
+};
+
+const ROLE_OPTIONS = [
+  { value: 'regular', label: 'ተገምጋሚ (Regular)' },
+  { value: 'evaluator', label: 'ገምጋሚ (Evaluator)' },
+  { value: 'approver', label: 'አጽዳቂ (Approver)' },
+  { value: 'admin', label: 'አስተዳዳሪ (Admin)' },
 ];
 
 export default function CreatePeriodPage() {
   const router = useRouter();
-
-  // Period config
+  
+  // Period Form State
   const [year, setYear] = useState('2019');
-  const [half, setHalf] = useState('1st');
-
-  // Existing users
-  const [existing, setExisting] = useState<ExistingUser[]>([]);
-  const [usersLoading, setUsersLoading] = useState(true);
-  const [selected, setSelected] = useState<Map<string, SelectedUser>>(new Map());
-  const [search, setSearch] = useState('');
-
-  // New members queue
-  const [newMembers, setNewMembers] = useState<NewMember[]>([]);
-  const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
-  const [newRole, setNewRole] = useState('regular');
-
-  // Tab
-  const [tab, setTab] = useState<'existing' | 'new'>('existing');
-
-  // Submit
+  const [periodHalf, setPeriodHalf] = useState('1st');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Existing Users State
+  const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [selectedUsers, setSelectedUsers] = useState<Map<string, SelectedUser>>(new Map());
+  const [search, setSearch] = useState('');
+  
+  // Active Tab for Member Setup ("existing" | "new")
+  const [memberTab, setMemberTab] = useState<'existing' | 'new'>('existing');
+
+  // New Members Draft State
+  const [newMembers, setNewMembers] = useState<NewMemberDraft[]>([]);
+  const [newFullName, setNewFullName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newRole, setNewRole] = useState('regular');
+  const [newFormError, setNewFormError] = useState<string | null>(null);
 
   useEffect(() => {
     getExistingAssessmentUsersAction().then(res => {
-      setExisting(res.users || []);
+      setExistingUsers(res.users || []);
       setUsersLoading(false);
     });
   }, []);
 
-  const filtered = existing.filter(u =>
+  const filteredUsers = existingUsers.filter(u =>
     u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     u.phone_number?.includes(search)
   );
 
-  const toggle = (u: ExistingUser) => {
-    setSelected(prev => {
-      const n = new Map(prev);
-      n.has(u.user_id) ? n.delete(u.user_id) : n.set(u.user_id, { ...u, role: u.last_role || 'regular' });
-      return n;
+  const toggleUser = (user: ExistingUser) => {
+    setSelectedUsers(prev => {
+      const next = new Map(prev);
+      if (next.has(user.user_id)) {
+        next.delete(user.user_id);
+      } else {
+        next.set(user.user_id, { ...user, role: user.last_role || 'regular' });
+      }
+      return next;
     });
   };
 
-  const setRole = (userId: string, role: string) => {
-    setSelected(prev => {
-      const n = new Map(prev);
-      const u = n.get(userId);
-      if (u) n.set(userId, { ...u, role });
-      return n;
+  const setUserRole = (userId: string, role: string) => {
+    setSelectedUsers(prev => {
+      const next = new Map(prev);
+      const u = next.get(userId);
+      if (u) next.set(userId, { ...u, role });
+      return next;
     });
   };
 
-  const addNewMember = () => {
-    if (!newName.trim() || !newPhone.trim()) return;
-    setNewMembers(prev => [...prev, { id: crypto.randomUUID(), fullName: newName.trim(), phone: newPhone.trim(), role: newRole }]);
-    setNewName(''); setNewPhone(''); setNewRole('regular');
+  const handleSelectAllFiltered = () => {
+    setSelectedUsers(prev => {
+      const next = new Map(prev);
+      filteredUsers.forEach(user => {
+        if (!next.has(user.user_id)) {
+          next.set(user.user_id, { ...user, role: user.last_role || 'regular' });
+        }
+      });
+      return next;
+    });
   };
 
-  const removeNew = (id: string) => setNewMembers(prev => prev.filter(m => m.id !== id));
+  const handleDeselectAll = () => {
+    setSelectedUsers(new Map());
+  };
 
-  const totalCount = selected.size + newMembers.length;
+  const handleAddNewDraftMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewFormError(null);
+
+    if (!newFullName.trim() || !newPhone.trim()) {
+      setNewFormError('እባክዎን ስም እና ስልክ ቁጥር ያስገቡ (Please fill in name and phone)');
+      return;
+    }
+
+    const cleanPhone = newPhone.trim();
+    
+    // Check if duplicate in newMembers
+    if (newMembers.some(m => m.phone === cleanPhone)) {
+      setNewFormError('ይህ ስልክ ቁጥር ቀድሞ በረቂቅ ዝርዝር ውስጥ አለ');
+      return;
+    }
+
+    const draftItem: NewMemberDraft = {
+      id: Date.now().toString(),
+      fullName: newFullName.trim(),
+      phone: cleanPhone,
+      role: newRole
+    };
+
+    setNewMembers(prev => [...prev, draftItem]);
+    setNewFullName('');
+    setNewPhone('');
+    setNewRole('regular');
+  };
+
+  const handleRemoveDraftMember = (id: string) => {
+    setNewMembers(prev => prev.filter(m => m.id !== id));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!year) return;
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
-    const periodName = `${year} ዓ.ም - ${half === '1st' ? '1ኛ መንፈቀ አመት' : '2ኛ መንፈቀ አመት'}`;
-    const { success, data, error: err } = await createAssessmentPeriodAction(periodName, year, half);
-    if (!success || !data) { setError(err || 'መፍጠር አልተሳካም'); setLoading(false); return; }
+    const periodName = `${year} ዓ.ም - ${periodHalf === '1st' ? '1ኛ መንፈቀ አመት' : '2ኛ መንፈቀ አመት'}`;
 
-    // Enroll existing selected users
-    if (selected.size > 0) {
-      const arr = Array.from(selected.values()).map(u => ({
-        user_id: u.user_id, full_name: u.full_name, phone_number: u.phone_number, role: u.role
+    // 1. Create period
+    const { success, data, error: submitError } = await createAssessmentPeriodAction(periodName, year, periodHalf);
+
+    if (!success || !data) {
+      setError(submitError || 'የምዘና ጊዜ መፍጠር አልተሳካም። (Failed to create period)');
+      setLoading(false);
+      return;
+    }
+
+    const periodId = data.id;
+
+    // 2. Add existing selected users
+    if (selectedUsers.size > 0) {
+      const usersArr = Array.from(selectedUsers.values()).map(u => ({
+        user_id: u.user_id,
+        full_name: u.full_name,
+        phone_number: u.phone_number,
+        email: u.email,
+        role: u.role,
       }));
-      await addExistingUsersToNewPeriodAction({ periodId: data.id, periodName, users: arr });
+      await addExistingUsersToNewPeriodAction({ periodId, periodName, users: usersArr });
     }
 
-    // Register & enroll new members
-    for (const m of newMembers) {
-      const fd = new FormData();
-      fd.append('periodId', data.id);
-      fd.append('fullName', m.fullName);
-      fd.append('phone', m.phone);
-      fd.append('role', m.role);
-      await registerUserAction(fd);
+    // 3. Register newly added members
+    if (newMembers.length > 0) {
+      for (const m of newMembers) {
+        const formData = new FormData();
+        formData.append('periodId', periodId);
+        formData.append('fullName', m.fullName);
+        formData.append('phone', m.phone);
+        formData.append('role', m.role);
+        await registerUserAction(formData);
+      }
     }
 
-    router.push(`/dashboard/assessment/teams/${data.id}`);
+    const totalAdded = selectedUsers.size + newMembers.length;
+    setSuccessMsg(`"${periodName}" በትክክል ተፈጥሯል${totalAdded > 0 ? ` እና ${totalAdded} አባላት ተመድበዋል!` : '!'}`);
+    
+    setTimeout(() => {
+      router.push(`/dashboard/assessment/teams/${periodId}`);
+    }, 1200);
   };
+
+  const totalMembersCount = selectedUsers.size + newMembers.length;
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
+      <div className="max-w-5xl mx-auto py-6 px-4 space-y-6">
 
-        {/* Back */}
-        <Link href="/dashboard/assessment" className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> ወደ ዳሽቦርድ
-        </Link>
+        {/* Minimal Header */}
+        <div className="flex items-center justify-between gap-4 pb-2 border-b border-border/40">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/assessment"
+              className="p-2 rounded-xl bg-surface-secondary text-text-secondary hover:text-text-primary hover:bg-border/60 transition-all border border-border/50"
+              title="ተመለስ"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-heading font-extrabold text-text-primary">
+                አዲስ የምዘና ጊዜ ፍጠር
+              </h1>
+              <p className="text-xs text-text-muted">
+                አዲስ የምዘና ወቅት ያዘጋጁ እና አባላትን መዝግበው ይመድቡ።
+              </p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold px-3 py-1.5 bg-brand-blue/10 text-brand-blue rounded-full border border-brand-blue/20">
+            <LayoutTemplate className="w-4 h-4" />
+            <span>አዲስ ወቅት</span>
+          </div>
+        </div>
 
-        <h1 className="text-2xl font-heading font-bold text-text-primary mb-1">አዲስ ምዘና ጊዜ</h1>
-        <p className="text-sm text-text-secondary mb-8">ዓ.ም እና መንፈቀ አመት ይምረጡ፣ ከዚያ አባላትን ይጨምሩ።</p>
+        {/* Status Alerts */}
+        {successMsg && (
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-sm font-semibold rounded-2xl flex items-center gap-3 animate-in fade-in">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+            <div>{successMsg}</div>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-semibold rounded-2xl flex items-center gap-3 animate-in fade-in">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+            <div>{error}</div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm rounded-xl">{error}</div>
-          )}
-
-          {/* ── Period Config ─────────────────────────────── */}
-          <div className="bg-surface-primary border border-border/70 rounded-2xl p-5 space-y-5">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">የምዘና ጊዜ</p>
-
-            <div className="flex gap-4 items-end">
-              {/* Year */}
-              <div className="flex-1 space-y-1.5">
-                <label htmlFor="year" className="text-xs font-medium text-text-secondary">ዓ.ም (Year)</label>
-                <input
-                  id="year"
-                  type="text"
-                  required
-                  value={year}
-                  onChange={e => setYear(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-surface-secondary/60 border border-border/70 rounded-xl text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue placeholder:text-text-muted"
-                  placeholder="2019"
-                />
-              </div>
-
-              {/* Half toggle */}
-              <div className="flex gap-2">
-                {[{ v: '1st', l: '1ኛ' }, { v: '2nd', l: '2ኛ' }].map(o => (
-                  <button
-                    key={o.v}
-                    type="button"
-                    onClick={() => setHalf(o.v)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${half === o.v ? 'bg-brand-blue text-white border-brand-blue shadow-sm' : 'bg-surface-secondary/60 text-text-secondary border-border/70 hover:border-border'}`}
-                  >
-                    {o.l} <span className="text-[11px] font-normal opacity-70">መንፈቀ</span>
-                  </button>
-                ))}
-              </div>
+          {/* Section 1: Assessment Period Config (Compact Horizontal Form) */}
+          <div className="bg-surface-primary border border-border/70 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 border-b border-border/40 pb-3">
+              <Calendar className="w-4 h-4 text-brand-blue" />
+              <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                1. የምዘና ጊዜ መረጃ (Period Setup)
+              </h2>
             </div>
 
-            <div className="text-xs text-text-muted bg-surface-secondary/40 rounded-lg px-3 py-2 font-mono">
-              {year} ዓ.ም — {half === '1st' ? '1ኛ' : '2ኛ'} መንፈቀ አመት
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+              {/* Year Input */}
+              <div className="space-y-2">
+                <label htmlFor="year" className="block text-xs font-bold text-text-secondary uppercase">
+                  ዓ.ም (Year)
+                </label>
+                <div className="relative">
+                  <input
+                    id="year"
+                    type="text"
+                    required
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    className="w-full px-4 py-3 bg-surface-secondary/50 border border-border/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue text-text-primary font-mono text-base font-bold"
+                    placeholder="2019"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted pointer-events-none">
+                    ዓ.ም
+                  </div>
+                </div>
+              </div>
+
+              {/* Period Half Selection Buttons */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-text-secondary uppercase">
+                  መንፈቀ አመት (Period Half)
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { v: '1st', label: '1ኛ መንፈቀ አመት' },
+                    { v: '2nd', label: '2ኛ መንፈቀ አመት' }
+                  ].map(opt => (
+                    <button
+                      type="button"
+                      key={opt.v}
+                      onClick={() => setPeriodHalf(opt.v)}
+                      className={`py-3 px-3 rounded-2xl font-bold text-xs transition-all border text-center ${
+                        periodHalf === opt.v
+                          ? 'bg-brand-blue text-white border-brand-blue shadow-md'
+                          : 'bg-surface-secondary/60 text-text-secondary border-border/60 hover:bg-surface-secondary'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* ── Members ──────────────────────────────────── */}
-          <div className="bg-surface-primary border border-border/70 rounded-2xl overflow-hidden">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-text-primary flex items-center gap-2">
-                  <Users className="w-4 h-4 text-brand-blue" /> አባላት
-                </p>
-                <p className="text-xs text-text-muted mt-0.5">ካለፉ ምዘናዎች ወይም አዲስ ይጨምሩ</p>
+          {/* Section 2: Members Assignment & Creation */}
+          <div className="bg-surface-primary border border-border/70 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-brand-blue" />
+                <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
+                  2. ተገምጋሚዎችን እና ገምጋሚዎችን መድብ (Assign Members)
+                </h2>
               </div>
-              {totalCount > 0 && (
-                <span className="text-xs font-bold text-brand-blue bg-brand-blue/10 px-2.5 py-1 rounded-full border border-brand-blue/20">
-                  {totalCount} ተጨምረዋል
-                </span>
-              )}
-            </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-border/50">
-              {([['existing', 'ካሉ ሰዎች ምረጥ'], ['new', 'አዲስ አባል ጨምር']] as const).map(([t, label]) => (
+              {/* Tab Selector */}
+              <div className="flex items-center bg-surface-secondary p-1 rounded-2xl border border-border/60 shrink-0">
                 <button
-                  key={t}
                   type="button"
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-3 text-xs font-semibold transition-all ${tab === t ? 'text-brand-blue border-b-2 border-brand-blue bg-brand-blue/5' : 'text-text-muted hover:text-text-secondary'}`}
+                  onClick={() => setMemberTab('existing')}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    memberTab === 'existing'
+                      ? 'bg-brand-blue text-white shadow-sm'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
                 >
-                  {label}
+                  <Users className="w-3.5 h-3.5" />
+                  <span>ነባር አባላት ({existingUsers.length})</span>
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setMemberTab('new')}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    memberTab === 'new'
+                      ? 'bg-brand-blue text-white shadow-sm'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>አዲስ አባል ጨምር ({newMembers.length})</span>
+                </button>
+              </div>
             </div>
 
-            {/* Existing tab */}
-            {tab === 'existing' && (
-              <div>
-                <div className="px-4 py-3 border-b border-border/30">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+            {/* TAB 1: Existing Users Picker */}
+            {memberTab === 'existing' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                     <input
                       type="text"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
-                      placeholder="ስም ወይም ስልክ ቁጥር..."
-                      className="w-full pl-8 pr-4 py-2 text-xs bg-surface-secondary/60 border border-border/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-blue/30 focus:border-brand-blue text-text-primary placeholder:text-text-muted"
+                      placeholder="ስም ወይም ስልክ ቁጥር ይፈልጉ..."
+                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-surface-secondary/50 border border-border/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-text-primary placeholder:text-text-muted"
                     />
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllFiltered}
+                      className="px-3 py-2 rounded-xl text-[11px] font-bold text-brand-blue bg-brand-blue/10 hover:bg-brand-blue/20 transition-all"
+                    >
+                      ሁሉንም መዝግብ ({filteredUsers.length})
+                    </button>
+                    {selectedUsers.size > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleDeselectAll}
+                        className="px-3 py-2 rounded-xl text-[11px] font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-all"
+                      >
+                        አፅዳ
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="max-h-64 overflow-y-auto divide-y divide-border/30">
+                {/* User List */}
+                <div className="max-h-72 overflow-y-auto divide-y divide-border/30 rounded-2xl border border-border/60 bg-surface-secondary/20">
                   {usersLoading ? (
-                    <div className="py-8 flex items-center justify-center gap-2 text-text-muted text-xs">
-                      <Loader2 className="w-4 h-4 animate-spin" /> በመጫን ላይ...
+                    <div className="py-12 text-center text-xs text-text-muted flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-brand-blue" />
+                      <span>በመጫን ላይ...</span>
                     </div>
-                  ) : filtered.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-text-muted">
-                      {search ? 'ምንም ውጤት አልተገኘም' : 'ምንም ቀደም ሲል የተመዘገቡ ሰዎች የሉም'}
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-text-muted">
+                      {search ? 'ምንም የሚዛመድ አባል አልተገኘም' : 'ምንም ቀደም ሲል የተመዘገቡ ሰዎች የሉም'}
                     </div>
                   ) : (
-                    filtered.map(u => {
-                      const isSel = selected.has(u.user_id);
+                    filteredUsers.map(user => {
+                      const isSelected = selectedUsers.has(user.user_id);
+                      const selUser = selectedUsers.get(user.user_id);
+
                       return (
                         <div
-                          key={u.user_id}
-                          onClick={() => toggle(u)}
-                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${isSel ? 'bg-brand-blue/5' : 'hover:bg-surface-secondary/30'}`}
+                          key={user.user_id}
+                          className={`flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
+                            isSelected ? 'bg-brand-blue/5' : 'hover:bg-surface-secondary/50'
+                          }`}
                         >
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${isSel ? 'bg-brand-blue border-brand-blue' : 'border-border/60'}`}>
-                            {isSel && <CheckCircle2 className="w-3 h-3 text-white" />}
-                          </div>
-                          <div className="w-7 h-7 rounded-full bg-brand-blue/10 text-brand-blue text-xs font-bold flex items-center justify-center shrink-0">
-                            {u.full_name?.charAt(0)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-text-primary truncate">{u.full_name}</div>
-                            <div className="text-xs text-text-muted">{u.phone_number}</div>
-                          </div>
-                          {isSel && (
-                            <select
-                              value={selected.get(u.user_id)?.role}
-                              onChange={e => { e.stopPropagation(); setRole(u.user_id, e.target.value); }}
-                              onClick={e => e.stopPropagation()}
-                              className="text-xs bg-surface-primary border border-border/70 rounded-lg px-2 py-1 text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-blue/30 shrink-0"
+                          <div className="flex items-center gap-3 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => toggleUser(user)}
+                              className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${
+                                isSelected 
+                                  ? 'bg-brand-blue border-brand-blue text-white' 
+                                  : 'border-border/80 bg-surface-primary'
+                              }`}
                             >
-                              {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                            </select>
+                              {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                            </button>
+
+                            <div className="w-8 h-8 rounded-full bg-brand-blue/10 text-brand-blue font-bold text-xs flex items-center justify-center shrink-0 border border-brand-blue/20">
+                              {user.full_name?.charAt(0) || '?'}
+                            </div>
+
+                            <div className="min-w-0" onClick={() => toggleUser(user)} style={{ cursor: 'pointer' }}>
+                              <div className="text-xs font-bold text-text-primary truncate">{user.full_name}</div>
+                              <div className="text-[11px] font-mono text-text-muted truncate">{user.phone_number}</div>
+                            </div>
+                          </div>
+
+                          {/* Role Selector if Selected */}
+                          {isSelected ? (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <select
+                                value={selUser?.role || 'regular'}
+                                onChange={e => setUserRole(user.user_id, e.target.value)}
+                                className="text-xs font-bold bg-surface-primary border border-brand-blue/40 rounded-xl px-2.5 py-1 text-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/30 cursor-pointer shadow-sm"
+                              >
+                                {ROLE_OPTIONS.map(r => (
+                                  <option key={r.value} value={r.value}>{r.label}</option>
+                                ))}
+                              </select>
+                              <UserCheck className="w-4 h-4 text-emerald-500" />
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-text-muted shrink-0 hidden sm:inline">
+                              {user.last_role === 'evaluator' ? 'ገምጋሚ' : user.last_role === 'approver' ? 'አጽዳቂ' : 'ተገምጋሚ'}
+                            </span>
                           )}
                         </div>
                       );
                     })
                   )}
                 </div>
-
-                {selected.size > 0 && (
-                  <div className="px-4 py-3 bg-brand-blue/5 border-t border-brand-blue/20 flex items-center gap-2">
-                    <Bell className="w-3.5 h-3.5 text-brand-blue shrink-0" />
-                    <p className="text-xs text-brand-blue flex-1">
-                      <strong>{selected.size} ሰዎች</strong> ይታከላሉ — SMS ማሳወቂያ ይላካላቸዋል
-                    </p>
-                    <button type="button" onClick={() => setSelected(new Map())} className="text-xs text-text-muted hover:text-danger flex items-center gap-0.5">
-                      <X className="w-3 h-3" /> ሁሉ አጥፋ
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
-            {/* New member tab */}
-            {tab === 'new' && (
-              <div className="p-4 space-y-4">
-                {/* Inline add form */}
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1 space-y-1">
-                    <label className="text-xs text-text-muted">ሙሉ ስም *</label>
-                    <input
-                      type="text"
-                      value={newName}
-                      onChange={e => setNewName(e.target.value)}
-                      placeholder="ሙሉ ስም..."
-                      className="w-full px-3 py-2.5 text-sm bg-surface-secondary/60 border border-border/70 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue placeholder:text-text-muted"
-                    />
+            {/* TAB 2: Add New Member Form */}
+            {memberTab === 'new' && (
+              <div className="space-y-5 animate-in fade-in duration-200">
+                {/* Form to Add to Draft */}
+                <div className="bg-surface-secondary/40 border border-border/60 rounded-2xl p-4 space-y-4">
+                  <h3 className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                    <UserPlus className="w-4 h-4 text-brand-blue" />
+                    <span>አዲስ አባል መረጃ (Add New Person)</span>
+                  </h3>
+
+                  {newFormError && (
+                    <div className="p-2.5 bg-red-50 text-red-600 text-xs font-semibold rounded-xl flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{newFormError}</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-secondary mb-1">
+                        ሙሉ ስም (Full Name) *
+                      </label>
+                      <input
+                        type="text"
+                        value={newFullName}
+                        onChange={e => setNewFullName(e.target.value)}
+                        placeholder="ለምሳሌ፡ ከበደ ታደሰ"
+                        className="w-full px-3 py-2 text-xs bg-surface-primary border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-text-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-secondary mb-1">
+                        ስልክ ቁጥር (Phone) *
+                      </label>
+                      <input
+                        type="text"
+                        value={newPhone}
+                        onChange={e => setNewPhone(e.target.value)}
+                        placeholder="0911..."
+                        className="w-full px-3 py-2 text-xs bg-surface-primary border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-text-primary font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-secondary mb-1">
+                        ኃላፊነት (Role)
+                      </label>
+                      <select
+                        value={newRole}
+                        onChange={e => setNewRole(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-surface-primary border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-text-primary font-semibold"
+                      >
+                        {ROLE_OPTIONS.map(r => (
+                          <option key={r.value} value={r.value}>{r.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div className="w-40 space-y-1">
-                    <label className="text-xs text-text-muted">ስልክ *</label>
-                    <input
-                      type="text"
-                      value={newPhone}
-                      onChange={e => setNewPhone(e.target.value)}
-                      placeholder="09..."
-                      className="w-full px-3 py-2.5 text-sm bg-surface-secondary/60 border border-border/70 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue placeholder:text-text-muted"
-                    />
-                  </div>
-                  <div className="w-32 space-y-1">
-                    <label className="text-xs text-text-muted">ኃላፊነት</label>
-                    <select
-                      value={newRole}
-                      onChange={e => setNewRole(e.target.value)}
-                      className="w-full px-3 py-2.5 text-sm bg-surface-secondary/60 border border-border/70 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
-                    >
-                      {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </select>
-                  </div>
+
                   <button
                     type="button"
-                    onClick={addNewMember}
-                    disabled={!newName.trim() || !newPhone.trim()}
-                    className="shrink-0 px-4 py-2.5 bg-brand-blue text-white rounded-xl text-sm font-semibold hover:bg-brand-blue/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all"
+                    onClick={handleAddNewDraftMember}
+                    className="w-full sm:w-auto px-5 py-2 rounded-xl bg-brand-blue text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-brand-blue/90 transition-all shadow-sm cursor-pointer"
                   >
-                    <PlusCircle className="w-4 h-4" /> ጨምር
+                    <PlusCircle className="w-4 h-4" />
+                    <span>+ ወደ ዝርዝር ጨምር (Add to Draft List)</span>
                   </button>
                 </div>
 
-                {/* Queued new members */}
-                {newMembers.length > 0 ? (
+                {/* Staged New Members List */}
+                {newMembers.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">ለመጨመር የተዘጋጁ ({newMembers.length})</p>
-                    <div className="divide-y divide-border/30 border border-border/50 rounded-xl overflow-hidden">
+                    <div className="text-xs font-bold text-text-primary flex items-center justify-between">
+                      <span>የሚፈጠሩ አዳዲስ አባላት ({newMembers.length})</span>
+                      <span className="text-[11px] text-text-muted font-normal">ምዘናው ሲፈጠር አካውንታቸው ይፈጠራል።</span>
+                    </div>
+
+                    <div className="divide-y divide-border/30 rounded-2xl border border-border/60 bg-surface-primary">
                       {newMembers.map(m => (
-                        <div key={m.id} className="flex items-center gap-3 px-4 py-3 bg-surface-secondary/20">
-                          <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-xs font-bold flex items-center justify-center shrink-0">
-                            {m.fullName.charAt(0)}
+                        <div key={m.id} className="flex items-center justify-between p-3 text-xs">
+                          <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs flex items-center justify-center">
+                              {m.fullName.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-bold text-text-primary">{m.fullName}</div>
+                              <div className="text-[11px] font-mono text-text-muted">{m.phone}</div>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-text-primary truncate">{m.fullName}</div>
-                            <div className="text-xs text-text-muted">{m.phone} · {ROLES.find(r => r.value === m.role)?.label}</div>
+
+                          <div className="flex items-center gap-3">
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-surface-secondary border border-border/60 text-brand-blue">
+                              {ROLE_OPTIONS.find(r => r.value === m.role)?.label.split(' ')[0]}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDraftMember(m.id)}
+                              className="text-text-muted hover:text-red-500 transition-colors p-1"
+                              title="ማስወገድ"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button type="button" onClick={() => removeNew(m.id)} className="text-text-muted hover:text-danger transition-colors">
-                            <X className="w-4 h-4" />
-                          </button>
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-text-muted">አዲስ አባላት ይመዘገቡ እና ምዘናው ሲፈጠር SMS ይላካላቸዋል።</p>
-                  </div>
-                ) : (
-                  <div className="py-6 text-center text-xs text-text-muted border border-dashed border-border/50 rounded-xl">
-                    <UserPlus className="w-6 h-6 mx-auto mb-2 opacity-30" />
-                    ስም እና ስልክ ሞልተው ጨምር ይጫኑ
                   </div>
                 )}
               </div>
             )}
+
           </div>
 
-          {/* ── Submit ───────────────────────────────────── */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard/assessment"
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-text-secondary bg-surface-secondary hover:bg-border/50 transition-all border border-border/60"
-            >
-              ሰርዝ
-            </Link>
-            <button
-              type="submit"
-              disabled={loading || !year}
-              className="flex-1 flex items-center justify-center gap-2 bg-brand-blue text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-blue/90 disabled:opacity-50 shadow-sm transition-all"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
-              {loading ? 'በማቀናጀት ላይ...' : totalCount > 0 ? `ፍጠር እና ${totalCount} አባላት ጨምር` : 'ፍጠር (Create)'}
-            </button>
+          {/* Bottom Floating Summary & Action Bar */}
+          <div className="sticky bottom-4 z-20 bg-surface-primary/95 backdrop-blur-md border border-border/80 rounded-3xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-brand-blue/10 text-brand-blue flex items-center justify-center font-bold text-base shrink-0">
+                {totalMembersCount}
+              </div>
+              <div>
+                <div className="text-xs font-bold text-text-primary">
+                  ተመድበው የሚፈጠሩ አባላት: {totalMembersCount}
+                </div>
+                <div className="text-[11px] text-text-muted">
+                  {selectedUsers.size > 0 ? `${selectedUsers.size} ነባር` : ''}
+                  {selectedUsers.size > 0 && newMembers.length > 0 ? ' + ' : ''}
+                  {newMembers.length > 0 ? `${newMembers.length} አዲስ` : ''}
+                  {totalMembersCount === 0 ? 'ምንም አባል አልተመረጠም (አማራጭ)' : ''}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard/assessment')}
+                className="flex-1 sm:flex-none px-5 py-3 rounded-2xl font-bold text-xs text-text-secondary bg-surface-secondary hover:bg-border/60 transition-all border border-border/60"
+              >
+                ሰርዝ
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading || !year}
+                className="flex-1 sm:flex-none flex items-center justify-center bg-brand-blue text-white px-8 py-3 rounded-2xl font-bold text-xs transition-all hover:bg-brand-blue/90 disabled:opacity-50 shadow-lg shadow-brand-blue/20 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                )}
+                <span>የምዘና ጊዜውን ፍጠር (Create Assessment)</span>
+              </button>
+            </div>
           </div>
 
         </form>

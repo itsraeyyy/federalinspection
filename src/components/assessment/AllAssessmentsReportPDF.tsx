@@ -175,7 +175,7 @@ export function AllAssessmentsReportPDF({ user, profile, history = [] }: AllAsse
             <Text style={[styles.th, { width: '6%' }]}>ተ/ቁ</Text>
             <Text style={[styles.th, { width: '32%' }]}>የምዘና ጊዜ (Assessment Period)</Text>
             <Text style={[styles.th, { width: '12%' }]}>የራስ (10%)</Text>
-            <Text style={[styles.th, { width: '12%' }]}>ገምጋሚ (20%)</Text>
+            <Text style={[styles.th, { width: '12%' }]}>መዛኝ (20%)</Text>
             <Text style={[styles.th, { width: '12%' }]}>አጽዳቂ (70%)</Text>
             <Text style={[styles.th, { width: '13%' }]}>ድምር (100%)</Text>
             <Text style={[styles.th, { width: '13%', borderRight: 'none' }]}>ሁኔታ (Status)</Text>
@@ -192,10 +192,10 @@ export function AllAssessmentsReportPDF({ user, profile, history = [] }: AllAsse
               <View key={item.periodId || idx} style={styles.tableRow}>
                 <Text style={[styles.td, { width: '6%' }]}>{idx + 1}</Text>
                 <Text style={[styles.tdLeft, { width: '32%', fontWeight: 700 }]}>{item.periodName}</Text>
-                <Text style={[styles.td, { width: '12%' }]}>{Number(item.s10 || 0).toFixed(2)}</Text>
-                <Text style={[styles.td, { width: '12%' }]}>{Number(item.s20 || 0).toFixed(2)}</Text>
-                <Text style={[styles.td, { width: '12%' }]}>{Number(item.s70 || 0).toFixed(2)}</Text>
-                <Text style={[styles.td, { width: '13%', fontWeight: 700 }]}>{Number(item.total || 0).toFixed(2)}</Text>
+                <Text style={[styles.td, { width: '12%' }]}>{Number(item.s10 || 0).toFixed(1)}</Text>
+                <Text style={[styles.td, { width: '12%' }]}>{Number(item.s20 || 0).toFixed(1)}</Text>
+                <Text style={[styles.td, { width: '12%' }]}>{Number(item.s70 || 0).toFixed(1)}</Text>
+                <Text style={[styles.td, { width: '13%', fontWeight: 700 }]}>{Number(item.total || 0).toFixed(1)}</Text>
                 <Text style={[styles.td, { width: '13%', borderRight: 'none' }]}>
                   {item.status === 'finalized' ? 'የተጠናቀቀ' : 'በሂደት ላይ'}
                 </Text>

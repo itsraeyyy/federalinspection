@@ -135,16 +135,16 @@ export function SummaryReportPDF({ periodName, members = [] }: SummaryReportPDFP
               <Text style={[styles.tdLeft, { width: 60 }]}>{row?.responsibilityGov || ''}</Text>
               <Text style={[styles.tdLeft, { width: 60 }]}>{row?.responsibilityCom || ''}</Text>
               <Text style={[styles.td, { width: 52 }]}>
-                {row && row.s10 > 0 ? row.s10.toFixed(2) : (row ? '-' : '')}
+                {row && row.s10 > 0 ? row.s10.toFixed(1) : (row ? '-' : '')}
               </Text>
               <Text style={[styles.td, { width: 58 }]}>
-                {row && row.s20 > 0 ? row.s20.toFixed(2) : (row ? '-' : '')}
+                {row && row.s20 > 0 ? row.s20.toFixed(1) : (row ? '-' : '')}
               </Text>
               <Text style={[styles.td, { width: 80 }]}>
-                {row && row.s70 > 0 ? row.s70.toFixed(2) : (row ? '-' : '')}
+                {row && row.s70 > 0 ? row.s70.toFixed(1) : (row ? '-' : '')}
               </Text>
               <Text style={[styles.tdBold, { width: 52 }]}>
-                {row && row.f100 > 0 ? row.f100.toFixed(2) : (row ? '-' : '')}
+                {row && row.f100 > 0 ? row.f100.toFixed(1) : (row ? '-' : '')}
               </Text>
               <Text style={[styles.td, { width: 56, borderRight: 'none', fontWeight: 600 }]}>
                 {row?.grade || ''}

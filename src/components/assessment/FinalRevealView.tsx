@@ -53,8 +53,8 @@ export function FinalRevealView({ data }: { data: any }) {
         criteria: q.criteria,
         weight: w,
         scores,
-        avgRaw: avgRaw.toFixed(2),
-        score: score.toFixed(2)
+        avgRaw: avgRaw.toFixed(1),
+        score: score.toFixed(1)
       };
     })
   );
@@ -79,7 +79,7 @@ export function FinalRevealView({ data }: { data: any }) {
         criteria: q.criteria,
         weight: w,
         raw: sRaw || '-',
-        score: score.toFixed(2)
+        score: score.toFixed(1)
       };
     })
   );

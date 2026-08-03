@@ -1,7 +1,7 @@
 "use server";
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { notifyNewPeriodEnrollment } from '@/lib/notify';
+import { notifyNewPeriodEnrollment, notifyFinalScoreApproved } from '@/lib/notify';
 
 export async function createAssessmentPeriodAction(periodName: string, year: string, periodHalf: string) {
   try {
@@ -21,33 +21,41 @@ export async function createAssessmentPeriodAction(periodName: string, year: str
   }
 }
 
-/** Fetch all unique users who are members in any assessment period (for re-use in new periods) */
+/** Fetch all unique users who are registered assessment users (only users present in period_members) */
 export async function getExistingAssessmentUsersAction() {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data: membersData, error: membersErr } = await supabaseAdmin
       .from('period_members')
-      .select('user_id, role, users(id, full_name, phone_number)');
+      .select('user_id, role, created_at, users(id, full_name, phone_number)')
+      .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (membersErr) throw membersErr;
 
-    // Deduplicate by user_id
-    const seen = new Map<string, any>();
-    for (const row of (data || [])) {
-      const u = row.users as any;
-      if (!u) continue;
-      if (!seen.has(row.user_id)) {
-        seen.set(row.user_id, {
-          user_id: row.user_id,
+    const seenMap = new Map<string, { user_id: string; full_name: string; phone_number: string; last_role: string }>();
+
+    for (const m of (membersData || [])) {
+      const u = m.users as any;
+      if (!u || !u.full_name) continue;
+
+      if (u.full_name.trim().toLowerCase().startsWith('rep')) continue;
+
+      if (!seenMap.has(m.user_id)) {
+        seenMap.set(m.user_id, {
+          user_id: m.user_id,
           full_name: u.full_name,
           phone_number: u.phone_number,
-          email: undefined,
-          last_role: row.role,
+          last_role: m.role || 'regular',
         });
       }
     }
 
-    return { success: true, users: Array.from(seen.values()) };
+    const userList = Array.from(seenMap.values()).sort((a, b) => 
+      a.full_name.localeCompare(b.full_name)
+    );
+
+    return { success: true, users: userList };
   } catch (error: any) {
+    console.error('getExistingAssessmentUsersAction error:', error);
     return { error: error.message, users: [] };
   }
 }
@@ -91,4 +99,40 @@ export async function addExistingUsersToNewPeriodAction(opts: {
   }
 
   return { results };
+}
+
+/** Send SMS notification to user when their final score out of 100 is approved */
+export async function notifyFinalApprovalAction(opts: {
+  periodId: string;
+  userId: string;
+  finalScore: number;
+}) {
+  try {
+    const { data: period } = await supabaseAdmin
+      .from('assessment_periods')
+      .select('name')
+      .eq('id', opts.periodId)
+      .single();
+
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('full_name, phone_number')
+      .eq('id', opts.userId)
+      .single();
+
+    if (!user || !user.phone_number) {
+      return { success: false, error: 'User details or phone not found' };
+    }
+
+    const res = await notifyFinalScoreApproved({
+      phone: user.phone_number,
+      name: user.full_name,
+      periodName: period?.name || 'ምዘና',
+      finalScore: opts.finalScore
+    });
+
+    return { success: res.success, notified: res.smsDelivered };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to send notification' };
+  }
 }

@@ -1,15 +1,31 @@
 'use client';
 
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { ArrowLeft, Trash2, ShieldCheck, Loader2, Plus, QrCode, X, AlertCircle, Power, Pencil, Users, Filter, Download, UserCircle2, FileCheck, Printer } from 'lucide-react';
+import { 
+  ArrowLeft, Trash2, ShieldCheck, Loader2, Plus, QrCode, X, AlertCircle, 
+  Power, Pencil, Users, Filter, Download, UserCircle2, FileCheck, Printer, 
+  Search, UserPlus, Check, CheckCircle2, Clock 
+} from 'lucide-react';
 import Link from 'next/link';
 import { UserProfileDrawer } from '@/components/assessment/UserProfileDrawer';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { registerUserAction } from '@/app/actions/auth';
 import { exportBulkOverview } from '@/lib/exportUtils';
+import { downloadPDFDocument } from '@/lib/exportToPDF';
+import { AssessmentReportPDF } from '@/components/assessment/AssessmentReportPDF';
+import { 
+  LEADERSHIP_EVALUATION_QUESTIONS_20, 
+  SELF_ASSESSMENT_QUESTIONS, 
+  getPerformanceGradeLabel 
+} from '@/lib/assessment-data';
+import { 
+  getExistingAssessmentUsersAction, 
+  addExistingUsersToNewPeriodAction 
+} from '@/app/actions/assessment';
 
 export default function PeriodManagePage() {
   const params = useParams();
@@ -18,11 +34,107 @@ export default function PeriodManagePage() {
 
   const [period, setPeriod] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
-  const [scores, setScores] = useState<Record<string, { s10: number, s20: number, s70: number, f100: number, is20Complete?: boolean, evalProgress?: string }>>({});
+  const [scores, setScores] = useState<Record<string, { s10: number, s20: number, s70: number, f100: number, is20Complete?: boolean, evalProgress?: string, isApproved?: boolean }>>({});
   const [loading, setLoading] = useState(true);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
   const [pendingRoles, setPendingRoles] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [pdfLoadingUserId, setPdfLoadingUserId] = useState<string | null>(null);
+
+  const handleDownloadIndividualPDF = async (member: any) => {
+    const targetUserId = member.user_id;
+    setPdfLoadingUserId(targetUserId);
+    try {
+      const [userRes, selfRes, evalRes, apprRes] = await Promise.all([
+        supabase.from('users').select('*, user_profiles(*)').eq('id', targetUserId).single(),
+        supabase.from('self_assessments').select('*').eq('period_id', periodId).eq('user_id', targetUserId).maybeSingle(),
+        supabase.from('evaluations').select('*').eq('period_id', periodId).eq('target_user_id', targetUserId).eq('is_locked', true),
+        supabase.from('approver_evaluations').select('*').eq('period_id', periodId).eq('target_user_id', targetUserId).maybeSingle()
+      ]);
+
+      const userObj = userRes.data || member.users || {};
+      const profileObj = userRes.data?.user_profiles?.[0] || {};
+      const selfData = selfRes.data;
+      const evals = evalRes.data || [];
+      const apprData = apprRes.data;
+
+      let peerTotalWeight = 0, peerTotalScore = 0;
+      const evaluatorTotals = new Array(evals.length).fill(0);
+
+      const peerRows = LEADERSHIP_EVALUATION_QUESTIONS_20.flatMap(category =>
+        category.questions.map(q => {
+          const w = q.weight;
+          peerTotalWeight += w;
+          let validScores = 0, sumScores = 0;
+          const scores = evals.map((ev, idx) => {
+            const s = ev.responses?.[q.question_id];
+            if (s !== undefined && s !== null) {
+              evaluatorTotals[idx] += s * w;
+              validScores++;
+              sumScores += s;
+              return s;
+            }
+            return '-';
+          });
+
+          const avgRaw = validScores > 0 ? sumScores / validScores : 0;
+          const score = avgRaw * w;
+          peerTotalScore += score;
+
+          return { id: q.question_id, criteria: q.criteria, weight: w, scores, avgRaw: avgRaw.toFixed(2), score: score.toFixed(2) };
+        })
+      );
+      const peer20 = peerTotalScore / 5;
+
+      let selfTotalWeight = 0, selfTotalScore = 0;
+      const selfRows = SELF_ASSESSMENT_QUESTIONS.flatMap(category =>
+        category.questions.map(q => {
+          const w = q.weight;
+          selfTotalWeight += w;
+          const sRaw = selfData?.responses?.[q.question_id];
+          const score = sRaw ? sRaw * w : 0;
+          selfTotalScore += score;
+          return { id: q.question_id, criteria: q.criteria, weight: w, raw: sRaw || '-', score: score.toFixed(2) };
+        })
+      );
+      const self10 = selfTotalScore / 10;
+      const appr70 = Number(apprData?.score_70 || 0);
+      const approverRemarks = apprData?.comments || apprData?.remarks || 'አስተያየት አልተሰጠም።';
+      const sum30 = peer20 + self10;
+      const final100 = sum30 + appr70;
+      const grade = getPerformanceGradeLabel(final100);
+
+      const docEl = React.createElement(AssessmentReportPDF, {
+        user: userObj,
+        profile: profileObj,
+        period: period,
+        evaluators: evals,
+        peerRows,
+        peerTotalWeight,
+        evaluatorTotals,
+        peerTotalScore,
+        peer20,
+        selfRows,
+        selfTotalWeight,
+        self10,
+        sum30,
+        appr70,
+        final100,
+        grade,
+        approverRemarks
+      });
+
+      const safeName = (userObj.full_name || 'Member').replace(/\s+/g, '_');
+      const safePeriod = (period?.name || 'Assessment').replace(/\s+/g, '_');
+      await downloadPDFDocument(docEl, `የ_${safeName}_${safePeriod}_ሪፖርት.pdf`);
+      showToast(`የ ${userObj.full_name || 'አባል'} ፒዲኤፍ ሪፖርት በተሳካ ሁኔታ ወርዷል!`, 'success');
+    } catch (err: any) {
+      console.error('PDF download error:', err);
+      showToast(err.message || 'ፒዲኤፍ ማውረድ አልተሳካም።', 'error');
+    } finally {
+      setPdfLoadingUserId(null);
+    }
+  };
   
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -32,7 +144,17 @@ export default function PeriodManagePage() {
     isDanger?: boolean;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
+  // Add Member Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [addTab, setAddTab] = useState<'existing' | 'new'>('existing');
+
+  // Existing Users State
+  const [existingUsers, setExistingUsers] = useState<{ user_id: string; full_name: string; phone_number: string; last_role: string }[]>([]);
+  const [existingLoading, setExistingLoading] = useState(false);
+  const [existingSearch, setExistingSearch] = useState('');
+  const [selectedExistingMap, setSelectedExistingMap] = useState<Map<string, { user_id: string; full_name: string; phone_number: string; role: string }>>(new Map());
+
+  // New Member Form State
   const [addFullName, setAddFullName] = useState('');
   const [addPhone, setAddPhone] = useState('');
   const [addEmail, setAddEmail] = useState('');
@@ -91,10 +213,10 @@ export default function PeriodManagePage() {
         supabase.from('final_scores').select('user_id, final_score_100').eq('period_id', periodId)
       ]);
 
-      const scoreMap: Record<string, { s10: number, s20: number, s70: number, f100: number, is20Complete?: boolean, evalProgress?: string }> = {};
+      const scoreMap: Record<string, { s10: number, s20: number, s70: number, f100: number, is20Complete?: boolean, evalProgress?: string, isApproved?: boolean }> = {};
       
       selfRes.data?.forEach(s => {
-        if (!scoreMap[s.user_id]) scoreMap[s.user_id] = { s10: 0, s20: 0, s70: 0, f100: 0 };
+        if (!scoreMap[s.user_id]) scoreMap[s.user_id] = { s10: 0, s20: 0, s70: 0, f100: 0, isApproved: false };
         scoreMap[s.user_id].s10 = s.score_10;
       });
 
@@ -121,7 +243,7 @@ export default function PeriodManagePage() {
 
         if (isComplete) {
           const avg = submittedScores.reduce((a, b) => a + b, 0) / submittedCount;
-          scoreMap[targetId].s20 = Number(avg.toFixed(2));
+          scoreMap[targetId].s20 = Number(avg.toFixed(1));
           scoreMap[targetId].is20Complete = true;
         } else {
           scoreMap[targetId].s20 = 0;
@@ -136,8 +258,9 @@ export default function PeriodManagePage() {
       });
 
       finalRes.data?.forEach(f => {
-        if (!scoreMap[f.user_id]) scoreMap[f.user_id] = { s10: 0, s20: 0, s70: 0, f100: 0 };
+        if (!scoreMap[f.user_id]) scoreMap[f.user_id] = { s10: 0, s20: 0, s70: 0, f100: 0, isApproved: false };
         scoreMap[f.user_id].f100 = f.final_score_100;
+        scoreMap[f.user_id].isApproved = true;
       });
 
       setScores(scoreMap as any);
@@ -153,6 +276,73 @@ export default function PeriodManagePage() {
     fetchPeriodData();
   }, [periodId]);
 
+  const handleOpenAddModal = async () => {
+    setShowAddModal(true);
+    setAddTab('existing');
+    setAddError(null);
+    setSelectedExistingMap(new Map());
+    setExistingLoading(true);
+    try {
+      const res = await getExistingAssessmentUsersAction();
+      setExistingUsers(res.users || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExistingLoading(false);
+    }
+  };
+
+  const toggleExistingUser = (u: { user_id: string; full_name: string; phone_number: string; last_role: string }) => {
+    setSelectedExistingMap(prev => {
+      const next = new Map(prev);
+      if (next.has(u.user_id)) {
+        next.delete(u.user_id);
+      } else {
+        next.set(u.user_id, {
+          user_id: u.user_id,
+          full_name: u.full_name,
+          phone_number: u.phone_number,
+          role: u.last_role || 'regular'
+        });
+      }
+      return next;
+    });
+  };
+
+  const setExistingUserRole = (userId: string, role: string) => {
+    setSelectedExistingMap(prev => {
+      const next = new Map(prev);
+      const item = next.get(userId);
+      if (item) {
+        next.set(userId, { ...item, role });
+      }
+      return next;
+    });
+  };
+
+  const handleAddExistingMembers = async () => {
+    if (selectedExistingMap.size === 0) return;
+    setAddLoading(true);
+    setAddError(null);
+    try {
+      const usersToAdd = Array.from(selectedExistingMap.values());
+      await addExistingUsersToNewPeriodAction({
+        periodId,
+        periodName: period?.name || 'ምዘና',
+        users: usersToAdd
+      });
+
+      setShowAddModal(false);
+      setSelectedExistingMap(new Map());
+      showToast(`${usersToAdd.length} አባላት ወደ ምዘናው በተሳካ ሁኔታ ተጨምረዋል!`, 'success');
+      fetchPeriodData();
+    } catch (err: any) {
+      setAddError(err.message || 'አባላትን መጨመር አልተሳካም።');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
   const handleRoleChange = async (memberId: string, newRole: string) => {
     setUpdatingRole(memberId);
     try {
@@ -165,7 +355,6 @@ export default function PeriodManagePage() {
       
       setMembers(members.map(m => m.id === memberId ? { ...m, role: newRole } : m));
       
-      // Remove from pending roles
       const newPending = { ...pendingRoles };
       delete newPending[memberId];
       setPendingRoles(newPending);
@@ -200,16 +389,18 @@ export default function PeriodManagePage() {
           showToast('ሁኔታ በተሳካ ሁኔታ ተቀይሯል!', 'success');
         } catch (err: any) {
           showToast(err.message || 'ሁኔታ መቀየር አልተሳካም።', 'error');
+        } finally {
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }
       }
     });
   };
 
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
+  const handleDeleteMember = async (memberId: string, memberName: string) => {
     setConfirmDialog({
       isOpen: true,
-      title: 'አባል ማስወገድ',
-      message: `እርግጠኛ ነዎት '${memberName}'ን ከምዘናው ማውጣት ይፈልጋሉ?`,
+      title: 'አባል ሰርዝ',
+      message: `እርግጠኛ ነዎት ${memberName}ን ከዚህ ምዘና መሰረዝ ይፈልጋሉ?`,
       isDanger: true,
       onConfirm: async () => {
         try {
@@ -219,11 +410,13 @@ export default function PeriodManagePage() {
             .eq('id', memberId);
 
           if (error) throw error;
-          
+
           setMembers(members.filter(m => m.id !== memberId));
-          showToast('አባል በተሳካ ሁኔታ ተወግዷል!', 'success');
+          showToast('አባል በተሳካ ሁኔታ ተሰርዟል!', 'success');
         } catch (err: any) {
-          showToast(err.message || 'አባል ማስወገድ አልተሳካም።', 'error');
+          showToast(err.message || 'አባል መሰረዝ አልተሳካም።', 'error');
+        } finally {
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }
       }
     });
@@ -231,10 +424,9 @@ export default function PeriodManagePage() {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addFullName || !addPhone) return;
-
     setAddLoading(true);
     setAddError(null);
+    setAddSuccess(false);
 
     try {
       const formData = new FormData();
@@ -274,7 +466,7 @@ export default function PeriodManagePage() {
       setAddPartyResponsibility('');
       setShowAddModal(false);
       showToast('አዲስ አባል በተሳካ ሁኔታ ተጨምሯል!', 'success');
-      fetchPeriodData(); // Refresh list
+      fetchPeriodData();
     } catch (err: any) {
       setAddError(err.message || 'አባል መጨመር አልተሳካም። (Failed to add member)');
     } finally {
@@ -283,8 +475,8 @@ export default function PeriodManagePage() {
   };
 
   const ROLES = [
-    { value: 'regular', label: 'ተገምጋሚ / አባል' },
-    { value: 'evaluator', label: 'ገምጋሚ' },
+    { value: 'regular', label: 'ተመዛኝ / አባል' },
+    { value: 'evaluator', label: 'መዛኝ' },
     { value: 'approver', label: 'አጽዳቂ' }
   ];
 
@@ -319,8 +511,9 @@ export default function PeriodManagePage() {
     }
 
     const exportData = targetMembers.map(m => {
-      const userScores = scores[m.user_id] || { s10: 0, s20: 0, s70: 0, f100: 0 };
+      const userScores = scores[m.user_id] || { s10: 0, s20: 0, s70: 0, f100: 0, isApproved: false };
       const currentTotal = userScores.s10 + userScores.s20 + userScores.s70;
+      const isApproved = userScores.isApproved || period?.status === 'finalized';
       const roleLabel = ROLES.find(r => r.value === m.role)?.label || m.role;
 
       return {
@@ -329,7 +522,7 @@ export default function PeriodManagePage() {
         role: roleLabel,
         s10: userScores.s10,
         s20: userScores.s20,
-        s30: Number((userScores.s10 + userScores.s20).toFixed(2)),
+        s30: Number((userScores.s10 + userScores.s20).toFixed(1)),
         s70: userScores.s70,
         total: period?.status === 'finalized' ? userScores.f100 : currentTotal
       };
@@ -337,6 +530,14 @@ export default function PeriodManagePage() {
 
     exportBulkOverview(exportData, `${period?.name}_Overview.xlsx`);
   };
+
+  // Eligible existing users not currently in this period
+  const currentMemberUserIds = members.map(m => m.user_id);
+  const eligibleExistingUsers = existingUsers.filter(u =>
+    !currentMemberUserIds.includes(u.user_id) &&
+    (u.full_name?.toLowerCase().includes(existingSearch.toLowerCase()) ||
+     u.phone_number?.includes(existingSearch))
+  );
 
   if (loading) {
     return (
@@ -402,11 +603,11 @@ export default function PeriodManagePage() {
               </div>
               
               <button 
-                onClick={() => setShowAddModal(true)}
+                onClick={handleOpenAddModal}
                 className="inline-flex items-center justify-center bg-brand-blue text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-blue/90 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                አዲስ አባል (Add Member)
+                አባል ጨምር (Add Member)
               </button>
             </div>
           </div>
@@ -461,7 +662,7 @@ export default function PeriodManagePage() {
               </div>
               <h3 className="text-lg font-medium text-text-primary mb-1">ምንም ተጠቃሚ የለም (No users yet)</h3>
               <p className="text-text-secondary text-sm">
-                በQR ኮዱ ወይም በመመዝገቢያ ሊንክ ሲመዘገቡ እዚህ ይታያሉ።
+                "አባል ጨምር" የሚለውን በመጫን ነባር ወይም አዲስ አባላትን መመዝገብ ይችላሉ።
               </p>
             </div>
           ) : (
@@ -480,10 +681,11 @@ export default function PeriodManagePage() {
                     <th className="px-2 py-3">ስም (Name)</th>
                     <th className="px-2 py-3">ሚና (Role)</th>
                     <th className="px-2 py-3 text-center">የራስ (10)</th>
-                    <th className="px-2 py-3 text-center">የገምጋሚ (20)</th>
+                    <th className="px-2 py-3 text-center">የመዛኞች (20)</th>
                     <th className="px-2 py-3 text-center font-semibold text-brand-blue/80">ድምር (30)</th>
                     <th className="px-2 py-3 text-center">የአጽዳቂ (70)</th>
                     <th className="px-2 py-3 text-center text-brand-blue">ድምር (100)</th>
+                    <th className="px-2 py-3 text-center">ሁኔታ (STATUS)</th>
                     <th className="pl-2 py-3 text-right">ድርጊት</th>
                   </tr>
                 </thead>
@@ -504,96 +706,118 @@ export default function PeriodManagePage() {
                           />
                         </td>
                         <td className="px-2 py-3">
-                          <button 
-                            onClick={() => {
-                              setSelectedProfileId(member.user_id);
-                              setIsDrawerOpen(true);
-                            }}
-                            className="text-left flex flex-col outline-none focus-visible:ring-2 focus-visible:ring-brand-blue rounded"
-                          >
-                            <span className="font-medium text-text-primary transition-colors truncate max-w-[200px]">
-                              {member.users?.full_name || 'ያልታወቀ'}
-                            </span>
-                            <span className="text-xs text-text-muted mt-0.5">{member.users?.phone_number}</span>
-                          </button>
+                          <div className="font-semibold text-text-primary">
+                            {member.users?.full_name || 'ያልታወቀ ተጠቃሚ'}
+                          </div>
+                          <div className="text-xs text-text-muted">
+                            {member.users?.phone_number}
+                          </div>
                         </td>
                         <td className="px-2 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <select
-                              value={pendingRoles[member.id] || member.role}
-                              onChange={(e) => setPendingRoles({...pendingRoles, [member.id]: e.target.value})}
-                              disabled={period.status !== 'active' || updatingRole === member.id}
-                              className="bg-transparent border-0 hover:bg-surface-secondary/50 text-text-secondary text-sm rounded focus:ring-1 focus:ring-brand-blue focus:border-brand-blue block py-1 disabled:opacity-50 min-w-[100px] transition-colors outline-none cursor-pointer"
+                              value={pendingRoles[member.id] !== undefined ? pendingRoles[member.id] : member.role}
+                              onChange={(e) => setPendingRoles({ ...pendingRoles, [member.id]: e.target.value })}
+                              disabled={updatingRole === member.id}
+                              className="bg-surface-secondary border border-border rounded-lg px-2.5 py-1 text-xs font-medium text-text-primary focus:ring-1 focus:ring-brand-blue cursor-pointer outline-none hover:border-brand-blue/50 transition-colors"
                             >
                               {ROLES.map(r => (
                                 <option key={r.value} value={r.value}>{r.label}</option>
                               ))}
                             </select>
-                            {pendingRoles[member.id] && pendingRoles[member.id] !== member.role && (
+
+                            {pendingRoles[member.id] !== undefined && pendingRoles[member.id] !== member.role && (
                               <button
                                 onClick={() => handleRoleChange(member.id, pendingRoles[member.id])}
                                 disabled={updatingRole === member.id}
-                                className="bg-brand-blue text-white px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-brand-blue/90 transition-all hover:scale-105 active:scale-95"
+                                className="p-1 bg-brand-blue text-white rounded-lg hover:bg-brand-blue/90 transition-all text-xs flex items-center gap-1 shrink-0 shadow-sm"
+                                title="ለወጡትን አስቀምጥ"
                               >
-                                {updatingRole === member.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'አስቀምጥ'}
+                                {updatingRole === member.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                               </button>
                             )}
                           </div>
                         </td>
-                        <td className="px-2 py-3 text-center">
-                          {userScores.s10 > 0 ? (
-                            <span className="text-text-secondary">{userScores.s10}</span>
-                          ) : (
-                            <span className="text-border">-</span>
-                          )}
+                        
+                        <td className="px-2 py-3 text-center font-mono text-xs">
+                          {userScores.s10 > 0 ? userScores.s10.toFixed(1) : '-'}
                         </td>
-                        <td className="px-2 py-3 text-center">
+                        <td className="px-2 py-3 text-center font-mono text-xs">
                           {userScores.is20Complete ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{userScores.s20}</span>
-                          ) : userScores.evalProgress ? (
-                            <span className="text-amber-700 dark:text-amber-300 text-xs font-semibold px-2 py-0.5 bg-amber-50 dark:bg-amber-950/40 rounded border border-amber-200 dark:border-amber-800/50" title="ሁሉም ገምጋሚዎች አልጨረሱም">
-                              {userScores.evalProgress}
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                              {userScores.s20.toFixed(1)}
                             </span>
                           ) : (
-                            <span className="text-border">-</span>
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded font-medium border border-amber-200 dark:border-amber-800">
+                              {userScores.evalProgress ? `${userScores.evalProgress}` : '0'}
+                            </span>
                           )}
                         </td>
-                        <td className="px-2 py-3 text-center font-medium text-text-primary">
-                          {(userScores.s10 > 0 || userScores.s20 > 0) ? (
-                            Number((userScores.s10 + userScores.s20).toFixed(2))
+                        <td className="px-2 py-3 text-center font-mono text-xs font-bold text-brand-blue">
+                          {userScores.s10 > 0 && userScores.is20Complete ? (userScores.s10 + userScores.s20).toFixed(1) : '-'}
+                        </td>
+                        <td className="px-2 py-3 text-center font-mono text-xs">
+                          {userScores.s70 > 0 ? userScores.s70.toFixed(1) : '-'}
+                        </td>
+                        <td className="px-2 py-3 text-center font-mono text-sm font-bold text-text-primary">
+                          {period.status === 'finalized' ? userScores.f100.toFixed(1) : (
+                            userScores.s10 > 0 && userScores.is20Complete && userScores.s70 > 0 ? currentTotal.toFixed(1) : '-'
+                          )}
+                        </td>
+                        <td className="px-2 py-3 text-center whitespace-nowrap">
+                          {userScores.isApproved || period.status === 'finalized' ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 px-2.5 py-1 rounded-full shadow-xs">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>ፀድቋል</span>
+                            </span>
                           ) : (
-                            <span className="text-border">-</span>
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 px-2.5 py-1 rounded-full shadow-xs">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>ያልፀደቀ</span>
+                            </span>
                           )}
                         </td>
-                        <td className="px-2 py-3 text-center">
-                          {userScores.s70 > 0 ? (
-                            <span className="text-text-secondary">{userScores.s70}</span>
-                          ) : (
-                            <span className="text-border">-</span>
-                          )}
-                        </td>
-                        <td className="px-2 py-3 text-center font-bold text-brand-blue">
-                          {period.status === 'finalized' ? userScores.f100 : currentTotal}
-                        </td>
+
                         <td className="pl-2 py-3 text-right">
-                          <div className="flex justify-end gap-1 opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                            {/* Profile Button (Always visible) */}
                             <button
                               onClick={() => {
                                 setSelectedProfileId(member.user_id);
                                 setIsDrawerOpen(true);
                               }}
-                              className="text-text-secondary hover:text-brand-blue hover:bg-brand-blue/10 p-1.5 rounded-md transition-colors"
-                              title="መገለጫ (Profile)"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-secondary hover:bg-border/60 text-text-primary text-xs font-medium border border-border/60 transition-colors cursor-pointer"
+                              title="የአባሉን መረጃ ይመልከቱ"
                             >
-                              <UserCircle2 className="w-4 h-4" />
+                              <UserCircle2 className="w-3.5 h-3.5 text-brand-blue" />
+                              <span>ፕሮፋይል</span>
                             </button>
+
+                            {/* PDF Download Button (Visible ONLY if approved or period finalized) */}
+                            {(userScores.isApproved || period.status === 'finalized') && (
+                              <button
+                                onClick={() => handleDownloadIndividualPDF(member)}
+                                disabled={pdfLoadingUserId === member.user_id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                                title="የፀደቀውን ፒዲኤፍ አውርድ"
+                              >
+                                {pdfLoadingUserId === member.user_id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Download className="w-3.5 h-3.5" />
+                                )}
+                                <span>ፒዲኤፍ</span>
+                              </button>
+                            )}
+
+                            {/* Delete Button (Always visible) */}
                             <button
-                              onClick={() => handleRemoveMember(member.id, member.users?.full_name || 'ያልታወቀ')}
-                              disabled={period.status !== 'active'}
-                              className="text-text-secondary hover:text-danger hover:bg-danger/10 p-1.5 rounded-md transition-colors disabled:opacity-30"
-                              title="አስወግድ (Remove)"
+                              onClick={() => handleDeleteMember(member.id, member.users?.full_name || 'ተጠቃሚ')}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-danger/5 hover:bg-danger/10 text-danger text-xs font-medium border border-danger/20 transition-colors cursor-pointer"
+                              title="አባሉን ይሰርዙ"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>ሰርዝ</span>
                             </button>
                           </div>
                         </td>
@@ -607,264 +831,391 @@ export default function PeriodManagePage() {
         </div>
       </div>
 
-      {/* Add Member Modal */}
+      {/* ADD MEMBER MODAL */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-surface-primary rounded-3xl w-full max-w-4xl shadow-2xl relative max-h-[95vh] flex flex-col border border-border/60 overflow-hidden animate-in zoom-in-95 duration-300">
-            
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setShowAddModal(false)} />
+          <div className="relative bg-surface-primary border border-border rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-border/50 bg-surface-secondary/50 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-blue/80 to-brand-blue/20"></div>
-              <button 
-                onClick={() => setShowAddModal(false)}
-                className="absolute top-6 right-6 text-text-muted hover:text-text-primary bg-surface-primary hover:bg-surface-secondary p-2.5 rounded-full transition-all border border-border/50 hover:shadow-sm"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              <h2 className="text-2xl font-heading font-bold text-text-primary mb-2 flex items-center gap-3">
-                <div className="p-2.5 bg-brand-blue/10 rounded-2xl border border-brand-blue/10">
-                  <UserCircle2 className="w-6 h-6 text-brand-blue" />
+            <div className="p-6 border-b border-border/60 flex items-center justify-between bg-surface-secondary/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+                  <Plus className="w-5 h-5" />
                 </div>
-                አዲስ አባል ጨምር <span className="text-text-muted font-normal text-lg">(Add New Member)</span>
-              </h2>
-              <p className="text-sm text-text-secondary ml-14 max-w-2xl">
-                የአባሉን መረጃ ያስገቡ። ስም፣ ስልክ ቁጥር እና ሚና <span className="text-danger font-medium bg-danger/10 px-1.5 py-0.5 rounded text-xs ml-1">ግዴታ</span> ናቸው። የይለፍ ቃል ተፈጥሮ በፅሁፍ መልዕክት (SMS) ይላካል።
-              </p>
+                <div>
+                  <h2 className="text-xl font-heading font-bold text-text-primary">አባል ወደ ምዘናው ጨምር</h2>
+                  <p className="text-xs text-text-secondary">Add Member to Assessment Period</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="w-8 h-8 rounded-full bg-surface-secondary hover:bg-border flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Tabs */}
+            <div className="flex border-b border-border/60 bg-surface-secondary/30">
+              <button
+                type="button"
+                onClick={() => setAddTab('existing')}
+                className={`flex-1 py-3.5 px-4 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 border-b-2 transition-all ${
+                  addTab === 'existing'
+                    ? 'border-brand-blue text-brand-blue bg-surface-primary'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>ነባር አባል መምረጫ ({selectedExistingMap.size} ተመርጧል)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddTab('new')}
+                className={`flex-1 py-3.5 px-4 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 border-b-2 transition-all ${
+                  addTab === 'new'
+                    ? 'border-brand-blue text-brand-blue bg-surface-primary'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>አዲስ አባል መዝግብ</span>
+              </button>
             </div>
 
             {addError && (
-              <div className="m-6 mb-0 p-4 bg-danger/10 border-l-4 border-danger text-danger text-sm font-medium rounded-r-xl flex items-center">
-                <div className="mr-3 text-lg">•</div>
-                {addError}
+              <div className="m-4 p-4 bg-danger/10 border border-danger/20 text-danger text-sm rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{addError}</span>
               </div>
             )}
 
-            {addSuccess ? (
-              <div className="text-center py-12 flex-1 flex flex-col justify-center items-center">
-                <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mb-6 border border-success/20">
-                  <ShieldCheck className="w-10 h-10 text-success" />
+            {/* TAB 1: SELECT EXISTING MEMBER */}
+            {addTab === 'existing' ? (
+              <div className="flex-1 flex flex-col p-6 overflow-hidden">
+                <div className="relative mb-4">
+                  <Search className="w-4 h-4 text-text-muted absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={existingSearch}
+                    onChange={(e) => setExistingSearch(e.target.value)}
+                    placeholder="የአባሉን ስም ወይም ስልክ ቁጥር ይፈልጉ..."
+                    className="w-full pl-11 pr-4 py-3 bg-surface-secondary/50 border border-border rounded-2xl text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/30 placeholder:text-text-muted font-medium"
+                  />
                 </div>
-                <h3 className="text-2xl font-heading font-bold text-text-primary mb-3">አባል በተሳካ ሁኔታ ተጨምሯል!</h3>
-                <p className="text-text-secondary text-base mb-8 max-w-md">
-                  የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ወደ አባሉ ስልክ ተልኳል። አባሉ በዚህ መረጃ በመጠቀም መግባት ይችላል።
-                </p>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setAddSuccess(false);
-                  }}
-                  className="w-full max-w-xs bg-brand-blue text-white px-6 py-3 rounded-2xl font-semibold hover:bg-brand-blue/90 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                >
-                  ጨርስ (Done)
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-surface-primary/50">
-                  <form id="add-member-form" onSubmit={handleAddMember} className="space-y-10 max-w-3xl mx-auto">
-                    
-                    {/* Mandatory Fields Section */}
-                    <div className="relative">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue shrink-0">
-                          <span className="font-bold text-sm">1</span>
-                        </div>
-                        <h3 className="text-lg font-semibold text-text-primary">አስፈላጊ መረጃዎች (Mandatory Fields)</h3>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-primary p-6 rounded-3xl border border-border/80 shadow-sm">
-                        <div className="space-y-2">
-                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
-                            ሙሉ ስም (Name) <span className="text-danger text-lg leading-none">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={addFullName}
-                            onChange={(e) => setAddFullName(e.target.value)}
-                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
-                            placeholder="አበበ ከበደ"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
-                            ስልክ ቁጥር (Phone) <span className="text-danger text-lg leading-none">*</span>
-                          </label>
-                          <input
-                            type="tel"
-                            required
-                            value={addPhone}
-                            onChange={(e) => setAddPhone(e.target.value)}
-                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
-                            placeholder="0911223344"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
-                            ኢሜይል (Email) <span className="text-xs text-text-muted font-normal">(አማራጭ)</span>
-                          </label>
-                          <input
-                            type="email"
-                            value={addEmail}
-                            onChange={(e) => setAddEmail(e.target.value)}
-                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
-                            placeholder="user@example.com"
-                          />
-                        </div>
-                        <div className="md:col-span-2 space-y-2">
-                          <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
-                            የምዘና ሚና (Assessment Role) <span className="text-danger text-lg leading-none">*</span>
-                          </label>
-                          <select
-                            value={addRole}
-                            onChange={(e) => setAddRole(e.target.value)}
-                            className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary font-medium transition-all cursor-pointer hover:border-border/80"
-                          >
-                            {ROLES.map(role => (
-                              <option key={role.value} value={role.value}>{role.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="w-full h-px bg-border/40"></div>
+                {existingLoading ? (
+                  <div className="py-16 flex flex-col items-center justify-center text-text-muted text-sm gap-2">
+                    <Loader2 className="w-6 h-6 animate-spin text-brand-blue" />
+                    <span>ነባር አባላትን በማውረድ ላይ...</span>
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1 min-h-[220px] max-h-[400px]">
+                    {eligibleExistingUsers.length === 0 ? (
+                      <div className="text-center py-12 text-text-muted text-sm bg-surface-secondary/20 rounded-2xl border border-dashed border-border/80">
+                        {existingSearch ? 'ምንም ነባር አባል አልተገኘም።' : 'ሁሉም ነባር አባላት አስቀድመው በዚህ ምዘና ተመዝግበዋል።'}
+                      </div>
+                    ) : (
+                      eligibleExistingUsers.map(u => {
+                        const isSelected = selectedExistingMap.has(u.user_id);
+                        const selectedItem = selectedExistingMap.get(u.user_id);
 
-                    {/* Optional Profile Fields Section */}
-                    <div className="relative">
-                      <div className="flex items-center gap-3 mb-6 opacity-80">
-                        <div className="w-8 h-8 rounded-full bg-surface-secondary border border-border flex items-center justify-center text-text-muted shrink-0">
-                          <span className="font-bold text-sm">2</span>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-text-primary">ተጨማሪ መረጃዎች</h3>
-                          <p className="text-xs text-text-muted">(Optional Profile Fields)</p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 bg-surface-primary p-6 rounded-3xl border border-border/60 shadow-sm">
-                        <div className="space-y-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ፆታ (Gender)</label>
-                          <select
-                            value={addGender}
-                            onChange={(e) => setAddGender(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm transition-all"
+                        return (
+                          <div
+                            key={u.user_id}
+                            className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${
+                              isSelected
+                                ? 'bg-brand-blue/5 border-brand-blue/40 shadow-sm'
+                                : 'bg-surface-primary border-border/70 hover:border-border'
+                            }`}
                           >
-                            <option value="">ያልተመረጠ (N/A)</option>
-                            <option value="Male">ወንድ (Male)</option>
-                            <option value="Female">ሴት (Female)</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ዕድሜ (Age)</label>
-                          <input
-                            type="number"
-                            value={addAge}
-                            onChange={(e) => setAddAge(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የትምህርት ደረጃ</label>
-                          <input
-                            type="text"
-                            value={addEducationLevel}
-                            onChange={(e) => setAddEducationLevel(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የትምህርት ዘርፍ</label>
-                          <input
-                            type="text"
-                            value={addProfessionalField}
-                            onChange={(e) => setAddProfessionalField(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የስራ ልምድ/አመት</label>
-                          <input
-                            type="number"
-                            value={addExpProfessional}
-                            onChange={(e) => setAddExpProfessional(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የአመራር ልምድ</label>
-                          <input
-                            type="number"
-                            value={addExpLeadership}
-                            onChange={(e) => setAddExpLeadership(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                        <div className="space-y-2 lg:col-span-3">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ተቋም (Institution)</label>
-                          <input
-                            type="text"
-                            value={addInstitution}
-                            onChange={(e) => setAddInstitution(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                        <div className="space-y-2 lg:col-span-1 sm:col-span-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የመንግስት ኃላፊነት</label>
-                          <input
-                            type="text"
-                            value={addGovResponsibility}
-                            onChange={(e) => setAddGovResponsibility(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                        <div className="space-y-2 lg:col-span-2 sm:col-span-2">
-                          <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የፓርቲ ኃላፊነት</label>
-                          <input
-                            type="text"
-                            value={addPartyResponsibility}
-                            onChange={(e) => setAddPartyResponsibility(e.target.value)}
-                            className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
-                            placeholder="N/A"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-                
-                {/* Fixed Footer */}
-                <div className="p-6 bg-surface-primary border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
-                  <p className="text-sm text-text-muted font-medium hidden sm:block">
-                    አባሉን ከጨመሩ በኋላ የይለፍ ቃል በSMS ይላካል።
+                            <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => toggleExistingUser(u)}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleExistingUser(u)}
+                                className="w-4 h-4 rounded text-brand-blue focus:ring-brand-blue/30 cursor-pointer"
+                              />
+                              <div>
+                                <p className="text-sm font-bold text-text-primary">{u.full_name}</p>
+                                <p className="text-xs text-text-muted font-mono">{u.phone_number}</p>
+                              </div>
+                            </div>
+
+                            {isSelected && (
+                              <div className="flex items-center gap-2 w-full sm:w-auto self-end sm:self-center" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-xs font-semibold text-text-secondary">ሚና:</span>
+                                <select
+                                  value={selectedItem?.role || 'regular'}
+                                  onChange={(e) => setExistingUserRole(u.user_id, e.target.value)}
+                                  className="px-3 py-1.5 bg-surface-secondary border border-border rounded-xl text-xs font-semibold text-text-primary focus:outline-none focus:ring-1 focus:ring-brand-blue/40 cursor-pointer"
+                                >
+                                  {ROLES.map(r => (
+                                    <option key={r.value} value={r.value}>{r.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Footer for Existing User Tab */}
+                <div className="pt-5 mt-4 border-t border-border flex items-center justify-between gap-3 shrink-0">
+                  <p className="text-xs text-text-muted font-medium hidden sm:block">
+                    {selectedExistingMap.size > 0 ? `${selectedExistingMap.size} አባላት ተመርጠዋል` : 'እባክዎ የሚጨምሩትን ነባር አባላት ይምረጡ'}
                   </p>
                   <div className="flex w-full sm:w-auto items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setShowAddModal(false)}
-                      className="flex-1 sm:flex-none px-6 py-3.5 rounded-2xl font-medium text-text-secondary bg-surface-secondary hover:bg-border/60 hover:text-text-primary transition-all"
+                      className="flex-1 sm:flex-none px-6 py-3 rounded-2xl font-medium text-text-secondary bg-surface-secondary hover:bg-border/60 hover:text-text-primary transition-all text-sm"
                     >
                       ሰርዝ (Cancel)
                     </button>
                     <button
-                      type="submit"
-                      form="add-member-form"
-                      disabled={addLoading || !addFullName || !addPhone}
-                      className="flex-1 sm:flex-none flex items-center justify-center bg-brand-blue text-white px-8 py-3.5 rounded-2xl font-semibold transition-all hover:bg-brand-blue/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                      type="button"
+                      onClick={handleAddExistingMembers}
+                      disabled={addLoading || selectedExistingMap.size === 0}
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-brand-blue text-white text-sm font-semibold hover:bg-brand-blue/90 transition-all shadow-md disabled:opacity-50"
                     >
-                      {addLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'መዝግብ እና SMS ላክ'}
+                      {addLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      <span>{addLoading ? 'በመጨመር ላይ...' : `የተመረጡትን (${selectedExistingMap.size}) ወደ ምዘናው ጨምር`}</span>
                     </button>
                   </div>
                 </div>
-              </>
+              </div>
+            ) : (
+              /* TAB 2: REGISTER NEW MEMBER FORM */
+              addSuccess ? (
+                <div className="p-8 text-center flex flex-col items-center justify-center space-y-4">
+                  <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center text-success mx-auto mb-2">
+                    <Check className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-2xl font-heading font-bold text-text-primary">አዲስ አባል በተሳካ ሁኔታ ተመዝግቧል!</h3>
+                  <p className="text-sm text-text-secondary max-w-md">
+                    የይለፍ ቃል በፅሁፍ መልዕክት (SMS) ወደ አባሉ ስልክ ተልኳል። አባሉ በዚህ መረጃ በመጠቀም መግባት ይችላል።
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setAddSuccess(false);
+                    }}
+                    className="w-full max-w-xs bg-brand-blue text-white px-6 py-3 rounded-2xl font-semibold hover:bg-brand-blue/90 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                  >
+                    ጨርስ (Done)
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-surface-primary/50">
+                    <form id="add-member-form" onSubmit={handleAddMember} className="space-y-10 max-w-3xl mx-auto">
+                      
+                      {/* Mandatory Fields Section */}
+                      <div className="relative">
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue shrink-0">
+                            <span className="font-bold text-sm">1</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-text-primary">አስፈላጊ መረጃዎች (Mandatory Fields)</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-primary p-6 rounded-3xl border border-border/80 shadow-sm">
+                          <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                              ሙሉ ስም (Name) <span className="text-danger text-lg leading-none">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={addFullName}
+                              onChange={(e) => setAddFullName(e.target.value)}
+                              className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
+                              placeholder="አበበ ከበደ"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                              ስልክ ቁጥር (Phone) <span className="text-danger text-lg leading-none">*</span>
+                            </label>
+                            <input
+                              type="tel"
+                              required
+                              value={addPhone}
+                              onChange={(e) => setAddPhone(e.target.value)}
+                              className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
+                              placeholder="0911223344"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                              ኢሜይል (Email) <span className="text-xs text-text-muted font-normal">(አማራጭ)</span>
+                            </label>
+                            <input
+                              type="email"
+                              value={addEmail}
+                              onChange={(e) => setAddEmail(e.target.value)}
+                              className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary placeholder:text-text-muted transition-all font-medium hover:border-border/80"
+                              placeholder="user@example.com"
+                            />
+                          </div>
+                          <div className="md:col-span-2 space-y-2">
+                            <label className="block text-sm font-semibold text-text-secondary flex items-center gap-1.5">
+                              የምዘና ሚና (Assessment Role) <span className="text-danger text-lg leading-none">*</span>
+                            </label>
+                            <select
+                              value={addRole}
+                              onChange={(e) => setAddRole(e.target.value)}
+                              className="w-full px-5 py-3.5 bg-surface-secondary/50 border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue/50 text-text-primary font-medium transition-all cursor-pointer hover:border-border/80"
+                            >
+                              {ROLES.map(role => (
+                                <option key={role.value} value={role.value}>{role.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="w-full h-px bg-border/40"></div>
+
+                      {/* Optional Profile Fields Section */}
+                      <div className="relative">
+                        <div className="flex items-center gap-3 mb-6 opacity-80">
+                          <div className="w-8 h-8 rounded-full bg-surface-secondary border border-border flex items-center justify-center text-text-muted shrink-0">
+                            <span className="font-bold text-sm">2</span>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-text-primary">ተጨማሪ መረጃዎች</h3>
+                            <p className="text-xs text-text-muted">(Optional Profile Fields)</p>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 bg-surface-primary p-6 rounded-3xl border border-border/60 shadow-sm">
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ፆታ (Gender)</label>
+                            <select
+                              value={addGender}
+                              onChange={(e) => setAddGender(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm transition-all"
+                            >
+                              <option value="">ያልተመረጠ (N/A)</option>
+                              <option value="Male">ወንድ (Male)</option>
+                              <option value="Female">ሴት (Female)</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ዕድሜ (Age)</label>
+                            <input
+                              type="number"
+                              value={addAge}
+                              onChange={(e) => setAddAge(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የትምህርት ደረጃ</label>
+                            <input
+                              type="text"
+                              value={addEducationLevel}
+                              onChange={(e) => setAddEducationLevel(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የትምህርት ዘርፍ</label>
+                            <input
+                              type="text"
+                              value={addProfessionalField}
+                              onChange={(e) => setAddProfessionalField(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የስራ ልምድ/አመት</label>
+                            <input
+                              type="number"
+                              value={addExpProfessional}
+                              onChange={(e) => setAddExpProfessional(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የአመራር ልምድ</label>
+                            <input
+                              type="number"
+                              value={addExpLeadership}
+                              onChange={(e) => setAddExpLeadership(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                          <div className="space-y-2 lg:col-span-3">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">ተቋም (Institution)</label>
+                            <input
+                              type="text"
+                              value={addInstitution}
+                              onChange={(e) => setAddInstitution(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                          <div className="space-y-2 lg:col-span-1 sm:col-span-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የመንግስት ኃላፊነት</label>
+                            <input
+                              type="text"
+                              value={addGovResponsibility}
+                              onChange={(e) => setAddGovResponsibility(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                          <div className="space-y-2 lg:col-span-2 sm:col-span-2">
+                            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider">የፓርቲ ኃላፊነት</label>
+                            <input
+                              type="text"
+                              value={addPartyResponsibility}
+                              onChange={(e) => setAddPartyResponsibility(e.target.value)}
+                              className="w-full px-4 py-3 bg-surface-secondary/30 border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 text-text-primary text-sm placeholder:text-text-muted/50 transition-all"
+                              placeholder="N/A"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                  
+                  {/* Fixed Footer */}
+                  <div className="p-6 bg-surface-primary border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+                    <p className="text-sm text-text-muted font-medium hidden sm:block">
+                      አባሉን ከጨመሩ በኋላ የይለፍ ቃል በSMS ይላካል።
+                    </p>
+                    <div className="flex w-full sm:w-auto items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddModal(false)}
+                        className="flex-1 sm:flex-none px-6 py-3.5 rounded-2xl font-medium text-text-secondary bg-surface-secondary hover:bg-border/60 hover:text-text-primary transition-all"
+                      >
+                        ሰርዝ (Cancel)
+                      </button>
+                      <button
+                        type="submit"
+                        form="add-member-form"
+                        disabled={addLoading || !addFullName || !addPhone}
+                        className="flex-1 sm:flex-none flex items-center justify-center bg-brand-blue text-white px-8 py-3.5 rounded-2xl font-semibold transition-all hover:bg-brand-blue/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                      >
+                        {addLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'መዝግብ እና SMS ላክ'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )
             )}
           </div>
         </div>

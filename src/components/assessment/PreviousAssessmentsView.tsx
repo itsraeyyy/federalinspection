@@ -59,9 +59,9 @@ export function PreviousAssessmentsView({ userId }: PreviousAssessmentsViewProps
             : 0;
 
           const s10 = s10Data?.score_10 || 0;
-          const s20 = Number(avgEvalScore.toFixed(2));
+          const s20 = Number(avgEvalScore.toFixed(1));
           const s70 = apprData?.score_70 || 0;
-          const total = f100Data?.final_score_100 || Number((s10 + s20 + s70).toFixed(2));
+          const total = f100Data?.final_score_100 || Number((s10 + s20 + s70).toFixed(1));
 
           return {
             periodId: pId,
@@ -301,19 +301,19 @@ export function PreviousAssessmentsView({ userId }: PreviousAssessmentsViewProps
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
                       <div className="bg-surface-secondary/60 rounded-xl p-2.5 border border-border/50 text-center">
                         <span className="block text-[10px] text-text-muted font-semibold uppercase">የራስ (Self 10%)</span>
-                        <span className="font-mono text-sm font-bold text-brand-blue">{Number(item.s10).toFixed(2)}</span>
+                        <span className="font-mono text-sm font-bold text-brand-blue">{Number(item.s10).toFixed(1)}</span>
                       </div>
                       <div className="bg-surface-secondary/60 rounded-xl p-2.5 border border-border/50 text-center">
-                        <span className="block text-[10px] text-text-muted font-semibold uppercase">ገምጋሚ (Eval 20%)</span>
-                        <span className="font-mono text-sm font-bold text-brand-blue">{Number(item.s20).toFixed(2)}</span>
+                        <span className="block text-[10px] text-text-muted font-semibold uppercase">መዛኝ (Eval 20%)</span>
+                        <span className="font-mono text-sm font-bold text-brand-blue">{Number(item.s20).toFixed(1)}</span>
                       </div>
                       <div className="bg-surface-secondary/60 rounded-xl p-2.5 border border-border/50 text-center">
                         <span className="block text-[10px] text-text-muted font-semibold uppercase">አጽዳቂ (Appr 70%)</span>
-                        <span className="font-mono text-sm font-bold text-brand-yellow">{Number(item.s70).toFixed(2)}</span>
+                        <span className="font-mono text-sm font-bold text-brand-yellow">{Number(item.s70).toFixed(1)}</span>
                       </div>
                       <div className="bg-brand-blue/10 rounded-xl p-2.5 border border-brand-blue/20 text-center">
                         <span className="block text-[10px] text-text-muted font-semibold uppercase">ድምር (Total 100%)</span>
-                        <span className="font-mono text-sm font-bold text-text-primary">{Number(item.total).toFixed(2)}</span>
+                        <span className="font-mono text-sm font-bold text-text-primary">{Number(item.total).toFixed(1)}</span>
                       </div>
                     </div>
                   </div>
