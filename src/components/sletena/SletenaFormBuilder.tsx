@@ -194,7 +194,7 @@ export const SletenaFormBuilder: React.FC<SletenaFormBuilderProps> = ({
       dateCreated: category?.dateCreated || new Date().toISOString().split('T')[0],
       submittersCount: category?.submittersCount || 0,
       isActive,
-      shareableLink: category?.shareableLink || `https://icodis.gov.et/sletena/submit?cat=${Date.now()}`,
+      shareableLink: category?.shareableLink || `https://icods.raey.work/dashboard/sletena/yesltena-flagot?cat=${Date.now()}`,
       selectedDirectiveIds,
       questions,
     };

@@ -20,7 +20,7 @@ export default function YesltenaFlagotPage() {
       ...newCategoryData,
       id: newId,
       submittersCount: 0,
-      shareableLink: `https://icodis.gov.et/sletena/submit?cat=${newId}`,
+      shareableLink: `https://icods.raey.work/dashboard/sletena/yesltena-flagot?cat=${newId}`,
     };
     setCategories((prev) => [newCategory, ...prev]);
   };

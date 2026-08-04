@@ -227,7 +227,7 @@ export const INITIAL_TRAINING_CATEGORIES: TrainingCategory[] = [
     dateCreated: '2026-07-15',
     submittersCount: 142,
     isActive: true,
-    shareableLink: 'http://localhost:3000/dashboard/sletena/yesltena-flagot?cat=cat-001',
+    shareableLink: 'https://icods.raey.work/dashboard/sletena/yesltena-flagot?cat=cat-001',
   },
   {
     id: 'cat-002',
@@ -236,7 +236,7 @@ export const INITIAL_TRAINING_CATEGORIES: TrainingCategory[] = [
     dateCreated: '2026-07-22',
     submittersCount: 88,
     isActive: true,
-    shareableLink: 'http://localhost:3000/dashboard/sletena/yesltena-flagot?cat=cat-002',
+    shareableLink: 'https://icods.raey.work/dashboard/sletena/yesltena-flagot?cat=cat-002',
   },
   {
     id: 'cat-003',
@@ -245,7 +245,7 @@ export const INITIAL_TRAINING_CATEGORIES: TrainingCategory[] = [
     dateCreated: '2026-08-01',
     submittersCount: 65,
     isActive: true,
-    shareableLink: 'http://localhost:3000/dashboard/sletena/yesltena-flagot?cat=cat-003',
+    shareableLink: 'https://icods.raey.work/dashboard/sletena/yesltena-flagot?cat=cat-003',
   },
 ];
 

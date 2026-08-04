@@ -46,20 +46,19 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
       c.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getLocalhostLink = (category: TrainingCategory) => {
-    // Generate localhost:3000 shareable link
-    return `http://localhost:3000/dashboard/sletena/yesltena-flagot?cat=${category.id}`;
+  const getShareableLink = (category: TrainingCategory) => {
+    return `https://icods.raey.work/dashboard/sletena/yesltena-flagot?cat=${category.id}`;
   };
 
   const handleCopyLink = (category: TrainingCategory) => {
-    const link = getLocalhostLink(category);
+    const link = getShareableLink(category);
     navigator.clipboard.writeText(link);
     setCopiedId(category.id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleShareLink = async (category: TrainingCategory) => {
-    const link = getLocalhostLink(category);
+    const link = getShareableLink(category);
     if (navigator.share) {
       try {
         await navigator.share({
@@ -94,7 +93,7 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
     if (activeEditingCategory && onUpdateCategory) {
       onUpdateCategory({
         ...savedCategory,
-        shareableLink: getLocalhostLink(savedCategory),
+        shareableLink: getShareableLink(savedCategory),
       });
     } else if (onCreateCategory) {
       onCreateCategory({
@@ -140,7 +139,7 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
             የስልጠና ዘርፎች እና መመሪያዎች ማስተዳደሪያ (Training Form Management)
           </h2>
           <p className="text-xs text-text-muted mt-1">
-            የስልጠና ቅጾችን በ Google Form መልኩ ይፍጠሩ፣ ጥያቄዎችን አክሉ/አስተካክሉ (CRUD Questions)፣ ሊንክ ሼር ያድርጉ (http://localhost:3000) ወይም ይሰርዙ::
+            የስልጠና ቅጾችን በ Google Form መልኩ ይፍጠሩ፣ ጥያቄዎችን አክሉ/አስተካክሉ (CRUD Questions)፣ ሊንክ ሼር ያድርጉ (https://icods.raey.work) ወይም ይሰርዙ::
           </p>
         </div>
 
@@ -206,7 +205,7 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
                         {cat.description}
                       </div>
                       <div className="text-[10px] text-brand-blue/80 font-mono mt-0.5">
-                        {getLocalhostLink(cat)}
+                        {getShareableLink(cat)}
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-text-secondary whitespace-nowrap">{cat.dateCreated}</td>
@@ -231,7 +230,7 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
                         <button
                           onClick={() => handleCopyLink(cat)}
                           className="flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-secondary text-text-secondary hover:text-brand-blue text-xs font-semibold transition-all border border-border/40 cursor-pointer"
-                          title="የቅጹን ሊንክ ኮፒ ያድርጉ (Copy Localhost Link)"
+                          title="የቅጹን ሊንክ ኮፒ ያድርጉ (Copy Share Link)"
                         >
                           {copiedId === cat.id ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
                           <span>{copiedId === cat.id ? 'ኮፒ ተደርጓል' : 'ኮፒ'}</span>
