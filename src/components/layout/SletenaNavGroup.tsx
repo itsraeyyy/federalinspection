@@ -28,9 +28,14 @@ export const SletenaNavGroup: React.FC<SletenaNavGroupProps> = ({ isCollapsed = 
       icon: IconForms,
     },
     {
+      label: 'የስልጠና ዕርካታ',
+      href: '/dashboard/sletena/yesltena-erkata',
+      icon: IconFileAnalytics,
+    },
+    {
       label: 'ሙሉ ሪፖርት',
       href: '/dashboard/sletena/full-report',
-      icon: IconFileAnalytics,
+      icon: IconBooks,
     },
   ];
 

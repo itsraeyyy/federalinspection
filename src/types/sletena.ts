@@ -17,6 +17,8 @@ export type PriorityLevel = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export type SentimentCategory = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
 
+export type TrainingModuleType = 'NEED' | 'SATISFACTION';
+
 /**
  * Inspection Directive (INS-01 through INS-27)
  */
@@ -54,6 +56,7 @@ export interface TrainingCategory {
   submittersCount: number;
   isActive: boolean;
   shareableLink: string;
+  categoryType?: TrainingModuleType; // 'NEED' (ፍላጎት) or 'SATISFACTION' (ዕርካታ)
   selectedDirectiveIds?: string[]; // Checked directive IDs from the 27 directives
   questions?: FormQuestion[];     // Full list of CRUD questions for this training form
 }
@@ -141,4 +144,43 @@ export interface SentimentAnalysisResult {
     score: number; // Confidence 0.0 - 1.0
     date: string;
   }>;
+}
+
+/**
+ * Post-Training Satisfaction Submission Entity
+ */
+export interface SatisfactionSubmission {
+  id: string;
+  categoryId: string;
+  categoryTitle: string;
+  participantName: string;
+  participantEmail?: string;
+  organizationUnit?: string;
+  region: string;
+  trainerRating: number;        // 1 to 5 scale
+  contentRating: number;        // 1 to 5 scale
+  venueLogisticsRating: number; // 1 to 5 scale
+  relevanceRating: number;      // 1 to 5 scale
+  overallRating: number;        // 1 to 5 scale
+  recommendScore: number;       // 1 to 10 scale (NPS)
+  positiveAspects?: string;
+  improvementSuggestions?: string;
+  submittedAt: string;
+}
+
+/**
+ * Satisfaction Engine Metrics Summary
+ */
+export interface SatisfactionMetrics {
+  totalEvaluations: number;
+  overallCsatPct: number;          // e.g. 92%
+  avgTrainerScore: number;         // e.g. 4.7 / 5
+  avgContentScore: number;         // e.g. 4.6 / 5
+  avgVenueScore: number;           // e.g. 4.3 / 5
+  avgRelevanceScore: number;       // e.g. 4.8 / 5
+  avgOverallScore: number;         // e.g. 4.7 / 5
+  npsScore: number;                // Net Promoter Score (-100 to +100)
+  promotersPct: number;
+  passivesPct: number;
+  detractorsPct: number;
 }

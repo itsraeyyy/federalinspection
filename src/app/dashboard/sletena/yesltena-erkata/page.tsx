@@ -2,39 +2,31 @@
 
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { DataManagementTable } from '@/components/sletena/DataManagementTable';
-import { SingleFormDetailView } from '@/components/sletena/SingleFormDetailView';
-import { NeedReportView } from '@/components/sletena/NeedReportView';
-import { TrainingCategory, SletenaSubmission } from '@/types/sletena';
-import { INITIAL_TRAINING_CATEGORIES, MOCK_SUBMISSIONS } from '@/data/sletenaDirectives';
-import { IconForms, IconFileAnalytics, IconTarget } from '@tabler/icons-react';
+import { SatisfactionManagementTable } from '@/components/sletena/SatisfactionManagementTable';
+import { SatisfactionSubmissionForm } from '@/components/sletena/SatisfactionSubmissionForm';
+import { SatisfactionReportView } from '@/components/sletena/SatisfactionReportView';
+import { TrainingCategory, SatisfactionSubmission } from '@/types/sletena';
+import { INITIAL_SATISFACTION_CATEGORIES, MOCK_SATISFACTION_SUBMISSIONS } from '@/data/sletenaDirectives';
+import { IconStar, IconFileAnalytics, IconForms } from '@tabler/icons-react';
 
-export default function YesltenaFlagotPage() {
-  const [categories, setCategories] = useState<TrainingCategory[]>(INITIAL_TRAINING_CATEGORIES);
+export default function YesltenaErkataPage() {
+  const [categories, setCategories] = useState<TrainingCategory[]>(INITIAL_SATISFACTION_CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState<TrainingCategory | null>(null);
   const [activeTab, setActiveTab] = useState<'forms' | 'report'>('forms');
-  const [submissions, setSubmissions] = useState<SletenaSubmission[]>(MOCK_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<SatisfactionSubmission[]>(MOCK_SATISFACTION_SUBMISSIONS);
 
   const handleCreateCategory = (
     newCategoryData: Omit<TrainingCategory, 'id' | 'submittersCount' | 'shareableLink'>
   ) => {
-    const newId = `cat-${Date.now()}`;
+    const newId = `sat-cat-${Date.now()}`;
     const newCategory: TrainingCategory = {
       ...newCategoryData,
       id: newId,
       submittersCount: 0,
-      shareableLink: `https://icods.raey.work/sletena/submit?cat=${newId}`,
+      categoryType: 'SATISFACTION',
+      shareableLink: `https://icods.raey.work/sletena/erkata?cat=${newId}`,
     };
     setCategories((prev) => [newCategory, ...prev]);
-  };
-
-  const handleUpdateCategory = (updatedCategory: TrainingCategory) => {
-    setCategories((prev) =>
-      prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c))
-    );
-    if (selectedCategory?.id === updatedCategory.id) {
-      setSelectedCategory(updatedCategory);
-    }
   };
 
   const handleDeleteCategory = (categoryId: string) => {
@@ -44,11 +36,11 @@ export default function YesltenaFlagotPage() {
     }
   };
 
-  const handleFormSubmissionSuccess = (submission: SletenaSubmission) => {
-    setSubmissions((prev) => [submission, ...prev]);
+  const handleSubmissionSuccess = (newSubmission: SatisfactionSubmission) => {
+    setSubmissions((prev) => [newSubmission, ...prev]);
     setCategories((prev) =>
       prev.map((c) =>
-        c.id === submission.categoryId ? { ...c, submittersCount: c.submittersCount + 1 } : c
+        c.id === newSubmission.categoryId ? { ...c, submittersCount: c.submittersCount + 1 } : c
       )
     );
   };
@@ -60,11 +52,13 @@ export default function YesltenaFlagotPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
-              <h1 className="text-xl font-extrabold text-text-primary">የስልጠና ፍላጎት ማስተዳደሪያ</h1>
+              <span className="text-2xl">⭐</span>
+              <h1 className="text-xl font-extrabold text-text-primary">
+                የስልጠና ዕርካታ ማስተዳደሪያ
+              </h1>
             </div>
             <p className="text-xs text-text-muted mt-1">
-              የአመራር እና አባላት የስልጠና ፍላጎት መሙያ፣ የቅጾች ማስተዳደሪያ እና የከፍተኛ ፍላጎቶች ትንተና ሪፖርት::
+              ስልጠና ከተሰጠ በኋላ የአሰልጣኞች፣ የይዘት እና የአደረጃጀት ዕርካታ መሙያ ቅጾች እና የድህረ-ስልጠና ትንተና ሪፖርት::
             </p>
           </div>
 
@@ -77,12 +71,12 @@ export default function YesltenaFlagotPage() {
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'forms' && !selectedCategory
-                  ? 'bg-brand-blue text-white shadow-sm'
+                  ? 'bg-purple-600 text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               <IconForms size={16} />
-              <span>የስልጠና ፍላጎት ቅጾች</span>
+              <span>የዕርካታ ቅጾች</span>
             </button>
 
             <button
@@ -97,26 +91,25 @@ export default function YesltenaFlagotPage() {
               }`}
             >
               <IconFileAnalytics size={16} />
-              <span>የከፍተኛ ፍላጎት ሪፖርት</span>
+              <span>የዕርካታ ሪፖርት</span>
             </button>
           </div>
         </div>
 
         {/* View Switcher */}
         {selectedCategory ? (
-          <SingleFormDetailView
+          <SatisfactionSubmissionForm
             category={selectedCategory}
-            submissions={submissions}
             onBack={() => setSelectedCategory(null)}
+            onSubmitSuccess={handleSubmissionSuccess}
           />
         ) : activeTab === 'report' ? (
-          <NeedReportView submissions={submissions} />
+          <SatisfactionReportView submissions={submissions} />
         ) : (
-          <DataManagementTable
+          <SatisfactionManagementTable
             categories={categories}
             onSelectCategory={(cat) => setSelectedCategory(cat)}
             onCreateCategory={handleCreateCategory}
-            onUpdateCategory={handleUpdateCategory}
             onDeleteCategory={handleDeleteCategory}
           />
         )}

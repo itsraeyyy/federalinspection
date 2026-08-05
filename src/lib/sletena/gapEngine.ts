@@ -57,3 +57,24 @@ export function calculateKnowledgeGaps(
     };
   });
 }
+
+/**
+ * Automatically calculates high training needs (top 3 lowest-rated directives)
+ * from a submission's ratings payload without requiring manual user selection.
+ */
+export function extractAutoHighNeeds(ratings: Record<string, number>): [string, string, string] {
+  const entries = Object.entries(ratings);
+  if (entries.length === 0) {
+    return ['INS-01', 'INS-02', 'INS-03'];
+  }
+
+  // Sort ratings ascending (lowest score = highest need)
+  entries.sort(([, scoreA], [, scoreB]) => scoreA - scoreB);
+
+  const top3 = entries.slice(0, 3).map(([id]) => id);
+  return [
+    top3[0] || 'INS-01',
+    top3[1] || 'INS-02',
+    top3[2] || 'INS-03',
+  ];
+}

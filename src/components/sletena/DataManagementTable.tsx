@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { TrainingCategory } from '@/types/sletena';
 import { INSPECTION_DIRECTIVES } from '@/data/sletenaDirectives';
+import { formatECDate } from '@/lib/date-formatter';
 import { SletenaFormBuilder } from './SletenaFormBuilder';
 import {
   IconCopy,
@@ -14,6 +15,7 @@ import {
   IconSearch,
   IconFileSpreadsheet,
   IconShare,
+  IconFileAnalytics,
 } from '@tabler/icons-react';
 
 interface DataManagementTableProps {
@@ -47,7 +49,8 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
   );
 
   const getShareableLink = (category: TrainingCategory) => {
-    return `https://icods.raey.work/dashboard/sletena/yesltena-flagot?cat=${category.id}`;
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://icods.raey.work';
+    return `${origin}/sletena/submit?cat=${category.id}`;
   };
 
   const handleCopyLink = (category: TrainingCategory) => {
@@ -136,10 +139,10 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
         <div>
           <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
             <IconFileSpreadsheet className="text-brand-blue" size={24} />
-            የስልጠና ዘርፎች እና መመሪያዎች ማስተዳደሪያ (Training Form Management)
+            የስልጠና ቅጾች ማስተዳደሪያ
           </h2>
           <p className="text-xs text-text-muted mt-1">
-            የስልጠና ቅጾችን በ Google Form መልኩ ይፍጠሩ፣ ጥያቄዎችን አክሉ/አስተካክሉ (CRUD Questions)፣ ሊንክ ሼር ያድርጉ (https://icods.raey.work) ወይም ይሰርዙ::
+            የስልጠና ቅጾችን መፍጠር፣ መለወጥ፣ የሕዝብ ሊንክ ኮፒ/ሼር ማድረግ እና የየቅጹን ዝርዝር ሪፖርት መመልከቻ::
           </p>
         </div>
 
@@ -160,7 +163,7 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
             className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <IconPlus size={16} />
-            <span>አዲስ የስልጠና ቅጽ (Google Form Builder)</span>
+            <span>አዲስ የስልጠና ቅጽ</span>
           </button>
         </div>
       </div>
@@ -170,7 +173,7 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-surface-secondary/50 text-[11px] font-semibold text-text-muted uppercase tracking-wider border-b border-border/40">
-              <th className="py-3.5 px-4">የስልጠናው ርዕስ እና የተካተቱ ጥያቄዎች</th>
+              <th className="py-3.5 px-4">የስልጠናው ርዕስ እና መግለጫ</th>
               <th className="py-3.5 px-4">የተፈጠረበት ቀን</th>
               <th className="py-3.5 px-4 text-center">የተሳታፊዎች ብዛት</th>
               <th className="py-3.5 px-4 text-center">ሁኔታ</th>
@@ -204,11 +207,8 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
                       <div className="text-[11px] text-text-muted line-clamp-1 mt-0.5">
                         {cat.description}
                       </div>
-                      <div className="text-[10px] text-brand-blue/80 font-mono mt-0.5">
-                        {getShareableLink(cat)}
-                      </div>
                     </td>
-                    <td className="py-3.5 px-4 text-text-secondary whitespace-nowrap">{cat.dateCreated}</td>
+                    <td className="py-3.5 px-4 text-text-secondary whitespace-nowrap">{formatECDate(cat.dateCreated)}</td>
                     <td className="py-3.5 px-4 text-center">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
                         {cat.submittersCount} ተሳታፊዎች
@@ -225,45 +225,42 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* Copy Link Button */}
-                        <button
-                          onClick={() => handleCopyLink(cat)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-secondary text-text-secondary hover:text-brand-blue text-xs font-semibold transition-all border border-border/40 cursor-pointer"
-                          title="የቅጹን ሊንክ ኮፒ ያድርጉ (Copy Share Link)"
-                        >
-                          {copiedId === cat.id ? <IconCheck size={14} className="text-emerald-500" /> : <IconCopy size={14} />}
-                          <span>{copiedId === cat.id ? 'ኮፒ ተደርጓል' : 'ኮፒ'}</span>
-                        </button>
-
-                        {/* Share Button */}
-                        <button
-                          onClick={() => handleShareLink(cat)}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 text-xs font-semibold transition-all border border-purple-500/20 cursor-pointer"
-                          title="የቅጹን ሊንክ ሼር ያድርጉ (Share Link)"
-                        >
-                          {sharedId === cat.id ? <IconCheck size={14} className="text-emerald-500" /> : <IconShare size={14} />}
-                          <span>{sharedId === cat.id ? 'ሼር ተደርጓል' : 'ሼር'}</span>
-                        </button>
-
-                        {/* View / Submit Form */}
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Primary Action: Detailed Report */}
                         <button
                           onClick={() => onSelectCategory(cat)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20 text-xs font-semibold transition-all border border-brand-blue/20 cursor-pointer"
-                          title="ቅጹን ሙላ / ጥያቄዎችን ተመልከት (View Questionnaire)"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-blue text-white hover:bg-brand-blue/90 text-xs font-bold shadow-xs transition-all cursor-pointer"
+                          title="የዚህን ቅጽ ዝርዝር ሪፖርት እና ተሳታፊዎች ተመልከት"
                         >
-                          <IconEye size={15} />
-                          <span>ምልከታ / ሙላ</span>
+                          <IconFileAnalytics size={15} />
+                          <span>ዝርዝር ሪፖርት</span>
                         </button>
 
-                        {/* Edit Form (Google Form Builder) */}
+                        {/* Copy Share Link */}
+                        <button
+                          onClick={() => handleCopyLink(cat)}
+                          className="p-1.5 rounded-lg bg-surface-secondary text-text-secondary hover:text-brand-blue border border-border/40 transition-all cursor-pointer"
+                          title="የሕዝብ ሊንክ ኮፒ ያድርጉ"
+                        >
+                          {copiedId === cat.id ? <IconCheck size={16} className="text-emerald-500" /> : <IconCopy size={16} />}
+                        </button>
+
+                        {/* Share Link */}
+                        <button
+                          onClick={() => handleShareLink(cat)}
+                          className="p-1.5 rounded-lg bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border border-purple-500/20 transition-all cursor-pointer"
+                          title="ሊንክ ሼር ያድርጉ"
+                        >
+                          {sharedId === cat.id ? <IconCheck size={16} className="text-emerald-500" /> : <IconShare size={16} />}
+                        </button>
+
+                        {/* Edit Form */}
                         <button
                           onClick={() => handleOpenEdit(cat)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 text-xs font-semibold transition-all border border-amber-500/20 cursor-pointer"
-                          title="ቅጹን አስተካክል (Edit Google Form)"
+                          className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer"
+                          title="ቅጹን አስተካክል"
                         >
-                          <IconEdit size={15} />
-                          <span>ቅጹን አስተካክል</span>
+                          <IconEdit size={16} />
                         </button>
 
                         {/* Delete Form */}
@@ -271,7 +268,7 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
                           <button
                             onClick={() => setDeletingCategory(cat)}
                             className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-surface-secondary transition-all cursor-pointer"
-                            title="ቅጹን ሰርዝ (Delete Form)"
+                            title="ቅጹን ሰርዝ"
                           >
                             <IconTrash size={16} />
                           </button>

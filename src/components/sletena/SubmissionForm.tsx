@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { InspectionDirective, MembershipLevel, SletenaSubmission, TrainingCategory } from '@/types/sletena';
 import { INSPECTION_DIRECTIVES } from '@/data/sletenaDirectives';
+import { extractAutoHighNeeds } from '@/lib/sletena/gapEngine';
 import { MemberInfoSection } from './MemberInfoSection';
 import { LikertMatrix } from './LikertMatrix';
-import { TopPrioritySelector } from './TopPrioritySelector';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { useAutoSave } from '@/lib/sletena/autoSave';
 import { IconSend, IconMessage2, IconCheck, IconAlertCircle, IconArrowLeft } from '@tabler/icons-react';
@@ -53,9 +53,6 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
   const [region, setRegion] = useState(initialSubmission?.region || 'አዲስ አበባ');
   const [zone, setZone] = useState(initialSubmission?.zone || 'ዞን 01');
   const [ratings, setRatings] = useState<Record<string, number>>(initialSubmission?.ratings || {});
-  const [topPriorityDirectives, setTopPriorityDirectives] = useState<string[]>(
-    initialSubmission?.topPriorityDirectives || []
-  );
   const [qualitativeFeedback, setQualitativeFeedback] = useState(
     initialSubmission?.qualitativeFeedback || ''
   );
@@ -73,7 +70,6 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
     region,
     zone,
     ratings,
-    topPriorityDirectives,
     qualitativeFeedback,
   };
 
@@ -116,14 +112,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
       return;
     }
 
-    // Validation Check 3: Exactly 3 Top Priorities (if at least 3 active directives exist)
-    const requiredPriorityCount = Math.min(3, activeDirectives.length);
-    if (topPriorityDirectives.length !== requiredPriorityCount) {
-      setValidationError(
-        `እባክዎን ቅጹን ከማስገባትዎ በፊት ልክ ${requiredPriorityCount} ከፍተኛ ቅድሚያ የሚሰጣቸውን መስኮች ይምረጡ::`
-      );
-      return;
-    }
+    // System automatically calculates top 3 high training needs based on lowest rating scores
+    const autoCalculatedPriorities = extractAutoHighNeeds(ratings);
 
     const finalSubmission: SletenaSubmission = {
       id: initialSubmission?.id || `sub-${Date.now()}`,
@@ -135,65 +125,59 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
       region,
       zone,
       ratings,
-      topPriorityDirectives: [
-        topPriorityDirectives[0] || activeDirectives[0]?.id,
-        topPriorityDirectives[1] || activeDirectives[1]?.id || activeDirectives[0]?.id,
-        topPriorityDirectives[2] || activeDirectives[2]?.id || activeDirectives[0]?.id,
-      ],
+      topPriorityDirectives: autoCalculatedPriorities,
       qualitativeFeedback: qualitativeFeedback.trim(),
-      createdAt: initialSubmission?.createdAt || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    setIsSubmitted(true);
     if (onSubmitSuccess) {
       onSubmitSuccess(finalSubmission);
     }
+    setIsSubmitted(true);
   };
 
   if (isSubmitted) {
     return (
-      <div className="bg-surface-primary border border-border/50 rounded-2xl p-8 max-w-xl mx-auto text-center space-y-4 shadow-lg my-12">
-        <div className="w-16 h-16 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
+      <div className="bg-surface-primary border border-border/50 rounded-2xl p-8 max-w-xl mx-auto text-center space-y-4 shadow-xl">
+        <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-500/20">
           <IconCheck size={36} />
         </div>
-        <h2 className="text-2xl font-bold text-text-primary">ቅጹ በተሳካ ሁኔታ ተልኳል!</h2>
-        <p className="text-xs text-text-muted leading-relaxed">
-          እናመሰግናለን <span className="font-semibold text-text-primary">{memberName}</span>:: ለስልጠና ዘርፍ{' '}
-          <span className="font-semibold text-text-primary">"{category.title}"</span> የሞሉት የስልጠና ፍላጎት መረጃ በስልጠና ትንተና ቋት ውስጥ ተመዝግቧል።
+        <h2 className="text-xl font-extrabold text-text-primary">የስልጠና ፍላጎት ቅጽዎ በስኬት ተመዝግቧል!</h2>
+        <p className="text-xs text-text-muted">
+          የሰጡት የምዘና ነጥብ ሲስተሙ በራስ-ሰር ከፍተኛ የስልጠና ክፍተቶችን ለመለየት (Knowledge Gap Analysis) ጥቅም ላይ ይውላል። እናመሰግናለን!
         </p>
-        <div className="pt-4">
+        {onBack && (
           <button
-            onClick={onBack || (() => setIsSubmitted(false))}
-            className="px-6 py-2.5 bg-brand-blue text-white rounded-xl text-xs font-semibold shadow-sm hover:bg-brand-blue/90 cursor-pointer"
+            onClick={onBack}
+            className="mt-4 px-6 py-2.5 rounded-xl bg-brand-blue text-white font-bold text-xs shadow-md hover:bg-brand-blue/90 transition-all cursor-pointer"
           >
-            ወደ ዘርፎች ዝርዝር ተመለስ
+            ተመለስ
           </button>
-        </div>
+        )}
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Top Banner Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-primary border border-border/50 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="p-2 rounded-xl border border-border/50 text-text-muted hover:text-text-primary hover:bg-surface-secondary transition-all cursor-pointer"
-              title="ተመለስ"
-            >
-              <IconArrowLeft size={18} />
-            </button>
-          )}
-          <div>
-            <h2 className="text-base font-bold text-text-primary">{category.title}</h2>
-            <p className="text-xs text-text-muted">
-              የስልጠና ፍላጎት መሙያ ቅጽ ({activeDirectives.length} የተመረጡ ጥያቄዎች/መመሪያዎች)
-            </p>
+      {/* Top Header Card */}
+      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="p-2 rounded-xl bg-surface-secondary text-text-secondary hover:text-text-primary border border-border/50 transition-all cursor-pointer"
+              >
+                <IconArrowLeft size={18} />
+              </button>
+            )}
+            <div>
+              <h2 className="text-xl font-extrabold text-text-primary">{category.title}</h2>
+              <p className="text-xs text-text-muted mt-1">{category.description}</p>
+            </div>
           </div>
         </div>
 
@@ -238,14 +222,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
         onRatingChange={handleRatingChange}
       />
 
-      {/* Section 3: Top Priority Selector */}
-      <TopPrioritySelector
-        directives={activeDirectives}
-        selectedIds={topPriorityDirectives}
-        onChange={(newSelected) => setTopPriorityDirectives(newSelected)}
-      />
-
-      {/* Section 4: Qualitative Open-Ended Feedback */}
+      {/* Section 3: Qualitative Open-Ended Feedback */}
       <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-3">
         <div className="flex items-center gap-2 pb-2 border-b border-border/40">
           <IconMessage2 className="text-brand-blue" size={20} />
