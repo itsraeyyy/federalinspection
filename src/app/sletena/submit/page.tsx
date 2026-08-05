@@ -5,13 +5,30 @@ import { useSearchParams } from 'next/navigation';
 import { SubmissionForm } from '@/components/sletena/SubmissionForm';
 import { INITIAL_TRAINING_CATEGORIES } from '@/data/sletenaDirectives';
 import { TrainingCategory, SletenaSubmission } from '@/types/sletena';
+import { IconForms } from '@tabler/icons-react';
 import Image from 'next/image';
 
 function PublicNeedFormContent() {
   const searchParams = useSearchParams();
   const catId = searchParams.get('cat');
 
-  const [categories] = useState<TrainingCategory[]>(INITIAL_TRAINING_CATEGORIES);
+  const [categories, setCategories] = useState<TrainingCategory[]>(INITIAL_TRAINING_CATEGORIES);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sletena_categories_flagot');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCategories(parsed);
+          }
+        } catch (e) {
+          console.error('Failed to parse sletena_categories_flagot:', e);
+        }
+      }
+    }
+  }, []);
 
   // Find requested category or default to first
   const activeCategory = categories.find((c) => c.id === catId) || categories[0];
@@ -29,7 +46,7 @@ function PublicNeedFormContent() {
             ICODS
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-3xl">📝</span>
+            <IconForms size={32} className="text-white" />
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
                 ብሔራዊ የፌደራል ፍተሻ ፖርታል (Public Form)

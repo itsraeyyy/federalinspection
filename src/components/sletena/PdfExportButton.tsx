@@ -17,27 +17,63 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
   const handleExportPdf = async () => {
     setIsGenerating(true);
     try {
-      if (typeof window !== 'undefined' && (window as any).html2pdf) {
-        const element = document.getElementById(elementId);
-        if (element) {
-          const opt = {
-            margin: [0.5, 0.5, 0.5, 0.5],
-            filename: `${reportTitle.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' },
-          };
-          await (window as any).html2pdf().set(opt).from(element).save();
-        }
-      } else {
-        const originalTitle = document.title;
-        document.title = reportTitle;
-        window.print();
-        document.title = originalTitle;
+      const printableTemplate = document.getElementById('pdf-printable-document-template');
+      const element = printableTemplate || document.getElementById(elementId);
+      if (!element) {
+        console.error(`[PDF Export Error]: Element with ID "${elementId}" not found.`);
+        return;
       }
+
+      // Dynamically import html-to-image and jsPDF
+      const { toPng } = await import('html-to-image');
+      const jsPDFModule = await import('jspdf');
+      const jsPDF = jsPDFModule.jsPDF;
+
+      const safeTitle = reportTitle
+        ? reportTitle.toLowerCase().replace(/[^a-z0-9_á-źä-ወ]+/gi, '_').replace(/_+/g, '_')
+        : 'sletena_report';
+
+      const filename = `${safeTitle}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Convert DOM node to PNG data URL natively (handles Tailwind v4 oklab/oklch colors perfectly)
+      const dataUrl = await toPng(element, {
+        quality: 0.98,
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+      });
+
+      // Create PDF document (A4 Landscape)
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // First page
+      pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      // Multi-page handling if report is long
+      while (heightLeft > 5) {
+        pdf.addPage();
+        position = position - pdfHeight;
+        pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      // Save PDF file directly (no print dialog)
+      pdf.save(filename);
     } catch (err) {
       console.error('[PDF Export Error]:', err);
-      window.print();
     } finally {
       setIsGenerating(false);
     }

@@ -28,7 +28,7 @@ export const NpsWidget: React.FC<NpsWidgetProps> = ({ nps }) => {
             የአባላት እርካታ ደረጃ (Net Promoter Score - NPS)
           </h3>
           <p className="text-xs text-text-muted mt-1">
-            ስሌት: NPS = % ደጋፊዎች (ደረጃ 5) - % ተቃዋሚዎች/ቅሬታ አቅራቢዎች (ደረጃ 1-3)::
+            የተወሰዱ ስልጠናዎች በአባላት የተሰጡ የደስታ እና የመደገፍ ደረጃዎች ስሌት::
           </p>
         </div>
 

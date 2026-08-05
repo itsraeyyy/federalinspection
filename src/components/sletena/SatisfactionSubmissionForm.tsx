@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { TrainingCategory, SatisfactionSubmission } from '@/types/sletena';
+import { sletenaService } from '@/services/sletena';
 import { IconArrowLeft, IconCheck, IconStar, IconSend } from '@tabler/icons-react';
 
 interface SatisfactionSubmissionFormProps {
@@ -52,8 +53,11 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
       recommendScore,
       positiveAspects: positiveAspects.trim(),
       improvementSuggestions: improvementSuggestions.trim(),
-      submittedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
+
+    // Save to Supabase database
+    sletenaService.saveSatisfactionSubmission(newSubmission);
 
     onSubmitSuccess(newSubmission);
     setIsSubmitted(true);
@@ -79,6 +83,14 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
     );
   }
 
+  const ratingTextMap: Record<number, string> = {
+    1: '🔴 አልረካሁም (በጣም ዝቅተኛ)',
+    2: '🟠 አነስተኛ ዕርካታ',
+    3: '🟡 መካከለኛ ዕርካታ',
+    4: '🟢 ጥሩ (ከፍተኛ)',
+    5: '⭐️ እጅግ በጣም ከፍተኛ (የላቀ)',
+  };
+
   const renderStarRating = (
     label: string,
     value: number,
@@ -86,26 +98,30 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
     description?: string
   ) => (
     <div className="bg-surface-secondary/40 border border-border/40 rounded-xl p-4 space-y-2">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <label className="text-xs font-bold text-text-primary">{label}</label>
           {description && <p className="text-[11px] text-text-muted">{description}</p>}
         </div>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              type="button"
-              key={star}
-              onClick={() => onChange(star)}
-              className="p-1 hover:scale-110 transition-all cursor-pointer"
-            >
-              <IconStar
-                size={22}
-                className={star <= value ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}
-              />
-            </button>
-          ))}
-          <span className="text-xs font-mono font-bold text-text-primary ml-2">{value}/5</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                type="button"
+                key={star}
+                onClick={() => onChange(star)}
+                className="p-1 hover:scale-110 transition-all cursor-pointer"
+              >
+                <IconStar
+                  size={22}
+                  className={star <= value ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}
+                />
+              </button>
+            ))}
+          </div>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-surface-primary border border-border/50 text-text-primary whitespace-nowrap">
+            {ratingTextMap[value] || `${value}/5`}
+          </span>
         </div>
       </div>
     </div>
@@ -122,8 +138,8 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
           <IconArrowLeft size={16} />
           <span>ተመለስ</span>
         </button>
-        <span className="px-3 py-1 bg-purple-500/10 text-purple-600 rounded-full text-[11px] font-bold border border-purple-500/20">
-          ⭐ ድህረ-ስልጠና የዕርካታ ምዘና
+        <span className="px-3 py-1 bg-brand-blue/10 text-brand-blue rounded-full text-[11px] font-bold border border-brand-blue/20">
+          የድህረ-ስልጠና የዕርካታ ምዘና
         </span>
       </div>
 
@@ -262,7 +278,7 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
           </button>
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
           >
             <IconSend size={16} />
             <span>የዕርካታ ምዘናውን ላክ</span>

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { SatisfactionSubmissionForm } from '@/components/sletena/SatisfactionSubmissionForm';
 import { INITIAL_SATISFACTION_CATEGORIES } from '@/data/sletenaDirectives';
 import { TrainingCategory, SatisfactionSubmission } from '@/types/sletena';
+import { IconStar } from '@tabler/icons-react';
 
 function PublicSatisfactionFormContent() {
   const searchParams = useSearchParams();
@@ -23,12 +24,12 @@ function PublicSatisfactionFormContent() {
     <div className="min-h-screen bg-surface-secondary/30 py-8 px-4 font-sans text-text-primary">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Google Form-style Public Header Banner */}
-        <div className="bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-800 rounded-2xl p-6 sm:p-8 text-white shadow-lg space-y-3 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-brand-blue via-blue-600 to-indigo-700 rounded-2xl p-6 sm:p-8 text-white shadow-lg space-y-3 relative overflow-hidden">
           <div className="absolute right-[-20px] top-[-20px] opacity-10 text-9xl font-black select-none">
             ⭐
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-3xl">⭐</span>
+            <IconStar size={32} className="text-amber-300 fill-amber-300" />
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
                 ድህረ-ስልጠና የዕርካታ ምዘና (Public Evaluation Form)

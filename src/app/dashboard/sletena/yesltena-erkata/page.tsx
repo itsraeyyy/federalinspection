@@ -9,40 +9,48 @@ import { TrainingCategory, SatisfactionSubmission } from '@/types/sletena';
 import { INITIAL_SATISFACTION_CATEGORIES, MOCK_SATISFACTION_SUBMISSIONS } from '@/data/sletenaDirectives';
 import { IconStar, IconFileAnalytics, IconForms } from '@tabler/icons-react';
 
+import { sletenaService } from '@/services/sletena';
+
 export default function YesltenaErkataPage() {
-  const [categories, setCategories] = useState<TrainingCategory[]>(INITIAL_SATISFACTION_CATEGORIES);
+  const [categories, setCategories] = useState<TrainingCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<TrainingCategory | null>(null);
   const [activeTab, setActiveTab] = useState<'forms' | 'report'>('forms');
-  const [submissions, setSubmissions] = useState<SatisfactionSubmission[]>(MOCK_SATISFACTION_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<SatisfactionSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleCreateCategory = (
+  // Load real data from Supabase / Service on mount
+  React.useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [cats, subs] = await Promise.all([
+          sletenaService.getSatisfactionCategories(),
+          sletenaService.getSatisfactionSubmissions(),
+        ]);
+        setCategories(cats);
+        setSubmissions(subs);
+      } catch (err) {
+        console.error('Error loading satisfaction data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const handleCreateCategory = async (
     newCategoryData: Omit<TrainingCategory, 'id' | 'submittersCount' | 'shareableLink'>
   ) => {
-    const newId = `sat-cat-${Date.now()}`;
-    const newCategory: TrainingCategory = {
-      ...newCategoryData,
-      id: newId,
-      submittersCount: 0,
-      categoryType: 'SATISFACTION',
-      shareableLink: `https://icods.raey.work/sletena/erkata?cat=${newId}`,
-    };
-    setCategories((prev) => [newCategory, ...prev]);
+    const created = await sletenaService.createCategory(newCategoryData);
+    setCategories((prev) => [created, ...prev]);
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
+  const handleDeleteCategory = async (categoryId: string) => {
+    await sletenaService.deleteCategory(categoryId, 'SATISFACTION');
     setCategories((prev) => prev.filter((c) => c.id !== categoryId));
     if (selectedCategory?.id === categoryId) {
       setSelectedCategory(null);
     }
-  };
-
-  const handleSubmissionSuccess = (newSubmission: SatisfactionSubmission) => {
-    setSubmissions((prev) => [newSubmission, ...prev]);
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === newSubmission.categoryId ? { ...c, submittersCount: c.submittersCount + 1 } : c
-      )
-    );
   };
 
   return (
@@ -52,7 +60,7 @@ export default function YesltenaErkataPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">⭐</span>
+              <IconStar size={24} className="text-purple-600 fill-purple-500" />
               <h1 className="text-xl font-extrabold text-text-primary">
                 የስልጠና ዕርካታ ማስተዳደሪያ
               </h1>
@@ -98,10 +106,10 @@ export default function YesltenaErkataPage() {
 
         {/* View Switcher */}
         {selectedCategory ? (
-          <SatisfactionSubmissionForm
+          <SatisfactionReportView
+            submissions={submissions}
             category={selectedCategory}
             onBack={() => setSelectedCategory(null)}
-            onSubmitSuccess={handleSubmissionSuccess}
           />
         ) : activeTab === 'report' ? (
           <SatisfactionReportView submissions={submissions} />

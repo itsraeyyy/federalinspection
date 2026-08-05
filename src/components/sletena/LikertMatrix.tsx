@@ -35,7 +35,7 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
             </h3>
           </div>
           <p className="text-xs text-text-muted mt-1">
-            እያንዳንዱን የፌደራል ፍተሻ መመሪያ ከ 1 (በጣም ዝቅተኛ) እስከ 5 (እጅግ በጣም ከፍተኛ) የብቃት ደረጃ ይመዝኑ።
+            እያንዳንዱን የፌደራል ፍተሻ መመሪያ አሁን ያዎትን የብቃት ደረጃ የሚገልጸውን ቃል ከተቆልቋዩ ዝርዝር (Dropdown) በመምረጥ ይመዝኑ።
           </p>
         </div>
 
@@ -74,11 +74,10 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
           return (
             <div
               key={directive.id}
-              className={`p-4 rounded-xl border transition-all ${
-                currentRating > 0
+              className={`p-4 rounded-xl border transition-all ${currentRating > 0
                   ? 'bg-surface-primary border-border/60 shadow-xs'
                   : 'bg-surface-secondary/20 border-border/40'
-              }`}
+                }`}
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1 max-w-xl">
@@ -97,26 +96,33 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
                   <p className="text-[11px] text-text-muted leading-relaxed">{directive.description}</p>
                 </div>
 
-                {/* Likert 1-5 Buttons */}
-                <div className="flex items-center gap-1.5 shrink-0 self-start md:self-center">
-                  {[1, 2, 3, 4, 5].map((score) => {
-                    const isSelected = currentRating === score;
-                    return (
-                      <button
-                        key={score}
-                        type="button"
-                        onClick={() => onRatingChange(directive.id, score)}
-                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-brand-blue text-white shadow-md ring-2 ring-brand-blue/30 scale-105'
-                            : 'bg-surface-secondary/70 text-text-secondary hover:bg-surface-secondary border border-border/50'
-                        }`}
-                        title={LIKERT_LABELS[score].desc}
-                      >
-                        {score}
-                      </button>
-                    );
-                  })}
+                {/* Descriptive Word Dropdown / Selection */}
+                <div className="w-full md:w-auto shrink-0">
+                  <select
+                    value={currentRating || ''}
+                    onChange={(e) => onRatingChange(directive.id, Number(e.target.value))}
+                    className={`w-full md:w-72 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${currentRating === 1
+                        ? 'bg-rose-500/10 text-rose-700 border-rose-500/40 ring-1 ring-rose-500/30'
+                        : currentRating === 2
+                          ? 'bg-amber-500/10 text-amber-700 border-amber-500/40 ring-1 ring-amber-500/30'
+                          : currentRating === 3
+                            ? 'bg-blue-500/10 text-blue-700 border-blue-500/40 ring-1 ring-blue-500/30'
+                            : currentRating === 4
+                              ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/40 ring-1 ring-emerald-500/30'
+                              : currentRating === 5
+                                ? 'bg-purple-500/10 text-purple-700 border-purple-500/40 ring-1 ring-purple-500/30'
+                                : 'bg-surface-primary text-text-muted border-border/60 hover:border-brand-blue'
+                      }`}
+                  >
+                    <option value="" disabled className="text-text-muted">
+                      -- የብቃት ደረጃዎን ይምረጡ --
+                    </option>
+                    <option value="1">🔴 1. ምንም እውቀት የለኝም (አስቸኳይ ስልጠና እፈልጋለሁ)</option>
+                    <option value="2">🟠 2. አነስተኛ እውቀት አለኝ (ተጨማሪ ስልጠና እፈልጋለሁ)</option>
+                    <option value="3">🟡 3. መካከለኛ እውቀት አለኝ (ማሻሻያ እፈልጋለሁ)</option>
+                    <option value="4">🟢 4. ጥሩ እውቀት አለኝ (ስልጠና አያስፈልገኝም)</option>
+                    <option value="5">⭐️ 5. የላቀ እውቀት አለኝ  </option>
+                  </select>
                 </div>
               </div>
             </div>

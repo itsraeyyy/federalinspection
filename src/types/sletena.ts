@@ -69,15 +69,15 @@ export interface SletenaSubmission {
   categoryId: string;
   memberId: string;
   memberName: string;
-  contact: string;
+  contact?: string;
   membershipLevel: MembershipLevel;
   ratings: Record<string, number>; // Map of directiveId/questionId -> score (1 to 5)
-  topPriorityDirectives: [string, string, string]; // EXACTLY 3 selections
+  topPriorityDirectives: [string, string, string] | string[]; // Top selections
   qualitativeFeedback?: string;
   region: string;
   zone: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   isDraft?: boolean;
 }
 
@@ -152,7 +152,7 @@ export interface SentimentAnalysisResult {
 export interface SatisfactionSubmission {
   id: string;
   categoryId: string;
-  categoryTitle: string;
+  categoryTitle?: string;
   participantName: string;
   participantEmail?: string;
   organizationUnit?: string;
@@ -165,7 +165,8 @@ export interface SatisfactionSubmission {
   recommendScore: number;       // 1 to 10 scale (NPS)
   positiveAspects?: string;
   improvementSuggestions?: string;
-  submittedAt: string;
+  submittedAt?: string;
+  createdAt?: string;
 }
 
 /**

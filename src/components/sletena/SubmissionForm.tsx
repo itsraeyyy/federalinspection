@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { InspectionDirective, MembershipLevel, SletenaSubmission, TrainingCategory } from '@/types/sletena';
+import { sletenaService } from '@/services/sletena';
 import { INSPECTION_DIRECTIVES } from '@/data/sletenaDirectives';
 import { extractAutoHighNeeds } from '@/lib/sletena/gapEngine';
 import { MemberInfoSection } from './MemberInfoSection';
@@ -28,7 +29,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
     if (category.questions && category.questions.length > 0) {
       return category.questions.map((q) => ({
         id: q.id,
-        code: q.code,
+        code: q.code || q.id,
         title: q.title,
         description: q.description,
         category: q.category,
@@ -36,10 +37,12 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
       }));
     }
     if (category.selectedDirectiveIds && category.selectedDirectiveIds.length > 0) {
-      const selected = INSPECTION_DIRECTIVES.filter((d) =>
-        category.selectedDirectiveIds?.includes(d.id)
+      const selected = INSPECTION_DIRECTIVES.filter(
+        (d) =>
+          category.selectedDirectiveIds?.includes(d.id) ||
+          category.selectedDirectiveIds?.includes(d.code)
       );
-      return selected.length > 0 ? selected : INSPECTION_DIRECTIVES;
+      if (selected.length > 0) return selected;
     }
     return INSPECTION_DIRECTIVES;
   }, [category.questions, category.selectedDirectiveIds]);
@@ -130,6 +133,9 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // Save to Supabase database
+    sletenaService.saveNeedSubmission(finalSubmission);
 
     if (onSubmitSuccess) {
       onSubmitSuccess(finalSubmission);

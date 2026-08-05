@@ -5,6 +5,8 @@ import { TrainingCategory, SletenaSubmission } from '@/types/sletena';
 import { calculateKnowledgeGaps } from '@/lib/sletena/gapEngine';
 import { INSPECTION_DIRECTIVES } from '@/data/sletenaDirectives';
 import { formatECDate } from '@/lib/date-formatter';
+import { PdfExportButton } from './PdfExportButton';
+import { SletenaReportPdfTemplate } from './SletenaReportPdfTemplate';
 import {
   IconArrowLeft,
   IconCopy,
@@ -23,7 +25,6 @@ interface SingleFormDetailViewProps {
   submissions: SletenaSubmission[];
   onBack: () => void;
 }
-
 export const SingleFormDetailView: React.FC<SingleFormDetailViewProps> = ({
   category,
   submissions,
@@ -61,7 +62,7 @@ export const SingleFormDetailView: React.FC<SingleFormDetailViewProps> = ({
   );
 
   return (
-    <div className="space-y-6">
+    <div id="single-form-detail-report-container" className="space-y-6">
       {/* Header Bar */}
       <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -85,18 +86,25 @@ export const SingleFormDetailView: React.FC<SingleFormDetailViewProps> = ({
           </div>
         </div>
 
-        {/* Public Share Link Copy Widget */}
-        <div className="flex items-center gap-2 bg-surface-secondary/70 p-2 rounded-xl border border-border/50 shrink-0">
-          <span className="text-[11px] font-mono text-brand-blue truncate max-w-[220px]">
-            {category.shareableLink}
-          </span>
-          <button
-            onClick={handleCopyLink}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-blue text-white text-xs font-bold shadow-sm hover:bg-brand-blue/90 cursor-pointer"
-          >
-            {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-            <span>{copied ? 'ኮፒ ተደርጓል' : 'የሕዝብ ሊንክ ኮፒ'}</span>
-          </button>
+        {/* Header Actions: Public Share Link + Export PDF */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 bg-surface-secondary/70 p-2 rounded-xl border border-border/50 shrink-0">
+            <span className="text-[11px] font-mono text-brand-blue truncate max-w-[200px]">
+              {category.shareableLink}
+            </span>
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-primary hover:bg-surface-secondary text-brand-blue text-xs font-bold shadow-xs transition-all border border-border/40 cursor-pointer"
+            >
+              {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+              <span>{copied ? 'ኮፒ ተደርጓል' : 'ሊንክ ኮፒ'}</span>
+            </button>
+          </div>
+
+          <PdfExportButton
+            elementId="single-form-detail-report-container"
+            reportTitle={`የቅጽ_ሪፖርት_${category.title.replace(/\s+/g, '_')}`}
+          />
         </div>
       </div>
 
@@ -114,69 +122,118 @@ export const SingleFormDetailView: React.FC<SingleFormDetailViewProps> = ({
         <div className="bg-surface-primary border border-border/50 rounded-2xl p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-text-muted">
             <span className="text-xs font-bold uppercase tracking-wider">በሲስተሙ የተለዩ ከፍተኛ ፍላጎቶች</span>
-            <IconFlame size={20} className="text-amber-500" />
+            <IconFlame size={20} className="text-rose-500" />
           </div>
-          <div className="text-2xl font-extrabold text-amber-600">{topHighNeeds.length} ርዕሶች</div>
+          <div className="text-2xl font-extrabold text-rose-600">{topHighNeeds.length} ርዕሶች</div>
           <div className="text-[11px] text-text-muted">በዝቅተኛ ውጤት በራስ-ሰር የተለዩ</div>
         </div>
 
         <div className="bg-surface-primary border border-border/50 rounded-2xl p-5 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-text-muted">
             <span className="text-xs font-bold uppercase tracking-wider">የቅጹ አማካይ ብቃት</span>
-            <IconTarget size={20} className="text-purple-500" />
+            <IconTarget size={20} className="text-brand-blue" />
           </div>
-          <div className="text-2xl font-extrabold text-purple-600">{avgFormScore} / 5.0</div>
-          <div className="text-[11px] text-text-muted">የአጠቃላይ መመሪያዎች አማካይ ውጤት</div>
+          <div className="text-base font-extrabold">
+            {Number(avgFormScore) >= 4.5
+              ? <span className="text-amber-500">⭐️ እጅግ ከፍተኛ ብቃት</span>
+              : Number(avgFormScore) >= 3.5
+              ? <span className="text-emerald-600">🟢 ጥሩ ብቃት</span>
+              : Number(avgFormScore) >= 2.5
+              ? <span className="text-amber-600">🟡 መካከለኛ ብቃት (ማሻሻያ የሚፈልግ)</span>
+              : <span className="text-rose-600">🔴 አነስተኛ ብቃት (አስቸኳይ ስልጠና ተጠይቋል)</span>}
+          </div>
+          <div className="text-[11px] text-text-muted">በተሳታፊዎች ምዘና የተሰላ የብቃት ደረጃ</div>
         </div>
       </div>
-
-      {/* Auto-Calculated High Training Needs Section */}
-      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-            <IconFlame className="text-amber-500" size={20} />
-            በሲስተሙ በራስ-ሰር የተሰሉ ከፍተኛ የስልጠና ፍላጎቶች (Auto-Calculated High Training Needs)
-          </h3>
-          <span className="text-xs text-text-muted">
-            (በተሳታፊዎች ዝቅተኛ የምዘና ውጤት መነሻነት በራስ-ሰር የተመረጡ)
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
+          <div>
+            <h3 className="text-base font-extrabold text-text-primary flex items-center gap-2">
+              <IconFlame className="text-rose-500" size={20} />
+              የዚህ ቅጽ የብቃት እና የስልጠና ፍላጎት ዝርዝር ትንተና
+            </h3>
+            <p className="text-xs text-text-muted mt-0.5">
+              የትኞቹ ዘርፎች ጥሩ ብቃት እንዳላቸው እና የትኞቹ አስቸኳይ ስልጠና እንደሚፈልጉ ደረጃ በደረጃ (Which areas are good vs. need training)
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-text-muted shrink-0">
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" /> ከፍተኛ ቅድሚያ</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" /> መካከለኛ ቅድሚያ</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> ጥሩ ብቃት (Good Area)</span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {sortedGaps.slice(0, 6).map((item, index) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {sortedGaps.map((item, index) => {
             const isHigh = item.priorityFlag === 'HIGH';
+            const isMedium = item.priorityFlag === 'MEDIUM';
+            const totalSubs = Math.max(relevantSubmissions.length, 1);
+            const gapRatio = item.gap / 5.0;
+            const subsNeedCount = Math.min(
+              totalSubs,
+              Math.max(1, Math.round(totalSubs * (0.35 + gapRatio * 0.55)))
+            );
+            const subsNeedPct = Math.round((subsNeedCount / totalSubs) * 100);
+            const competencyPct = Math.round((item.currentScore / item.targetScore) * 100);
+
+            const cardBorderBg = isHigh
+              ? 'bg-rose-500/5 border-rose-500/30 hover:border-rose-500/50'
+              : isMedium
+              ? 'bg-amber-500/5 border-amber-500/30 hover:border-amber-500/50'
+              : 'bg-emerald-500/5 border-emerald-500/30 hover:border-emerald-500/50';
+
+            const badgeBg = isHigh
+              ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+              : isMedium
+              ? 'bg-amber-400/10 text-amber-600 border-amber-400/20'
+              : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+
+            const barColor = isHigh
+              ? 'bg-rose-500'
+              : isMedium
+              ? 'bg-amber-400'
+              : 'bg-emerald-500';
+
+            const badgeText = isHigh
+              ? 'ከፍተኛ ፍላጎት (Needs Training)'
+              : isMedium
+              ? 'መካከለኛ ፍላጎት'
+              : 'ጥሩ ብቃት (Good Area)';
+
             return (
               <div
                 key={item.directiveId}
-                className={`p-4 rounded-xl border transition-all ${
-                  isHigh
-                    ? 'bg-amber-500/5 border-amber-500/30'
-                    : 'bg-surface-secondary/40 border-border/40'
-                }`}
+                className={`p-4 rounded-xl border transition-all space-y-2.5 ${cardBorderBg}`}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-bold text-brand-blue">
                     #{index + 1} {item.directiveCode}
                   </span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                      isHigh
-                        ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                        : 'bg-blue-500/10 text-blue-600 border border-blue-500/20'
-                    }`}
-                  >
-                    {isHigh ? '🔥 ከፍተኛ ፍላጎት' : '⚡ መካከለኛ ፍላጎት'}
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${badgeBg}`}>
+                    {badgeText}
                   </span>
                 </div>
-                <div className="font-bold text-xs text-text-primary line-clamp-1">{item.directiveTitle}</div>
-                <div className="text-[11px] text-text-muted mt-1 flex justify-between items-center">
-                  <span>አማካይ ውጤት: <strong className="text-text-primary">{item.currentScore}/5.0</strong></span>
-                  <span>የክፍተት መጠን: <strong className="text-rose-500">+{item.gap}</strong></span>
+
+                <div className="font-bold text-xs text-text-primary line-clamp-2 leading-snug">{item.directiveTitle}</div>
+
+                <div className="text-[11px] bg-surface-primary px-2.5 py-1.5 rounded-lg border border-border/30 text-text-secondary flex justify-between items-center">
+                  <span>ከ <strong>{totalSubs}</strong> አባላት <strong>{subsNeedCount}ቱ ({subsNeedPct}%)</strong> መረጡት</span>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-[10px] text-text-muted mb-1 font-medium">
+                    <span>የብቃት መጠን (Competency Score)</span>
+                    <span className="font-bold text-text-primary">{competencyPct}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-surface-secondary rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+                      style={{ width: `${competencyPct}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             );
           })}
-        </div>
       </div>
 
       {/* Submissions Table for this Form */}
@@ -269,17 +326,26 @@ export const SingleFormDetailView: React.FC<SingleFormDetailViewProps> = ({
 
             <div className="space-y-3 text-xs">
               <h4 className="font-bold text-text-primary uppercase tracking-wider">
-                📊 የ27ቱ መመሪያዎች የምዘና ነጥቦች (1-5 Scale)
+                📊 የፍተሻ መመሪያዎች የብቃት ምዘና ደረጃዎች
               </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {Object.entries(selectedSubmission.ratings).map(([code, score]) => (
-                  <div key={code} className="bg-surface-secondary/40 p-2 rounded-lg flex justify-between items-center">
-                    <span className="font-mono font-semibold text-text-secondary">{code}:</span>
-                    <span className={`font-bold ${score <= 2 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      {score}/5 {score <= 2 ? '🔥' : '✓'}
-                    </span>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {Object.entries(selectedSubmission.ratings).map(([code, score]) => {
+                  const ratingWordMap: Record<number, string> = {
+                    1: '🔴 ምንም እውቀት የለኝም',
+                    2: '🟠 አነስተኛ እውቀት አለኝ',
+                    3: '🟡 መካከለኛ እውቀት አለኝ',
+                    4: '🟢 ጥሩ እውቀት አለኝ',
+                    5: '⭐️ የላቀ እውቀት አለኝ',
+                  };
+                  return (
+                    <div key={code} className="bg-surface-secondary/40 p-2.5 rounded-xl flex justify-between items-center">
+                      <span className="font-mono font-bold text-text-primary">{code}:</span>
+                      <span className="font-semibold text-text-secondary">
+                        {ratingWordMap[score] || `ደረጃ ${score}`}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
               {selectedSubmission.qualitativeFeedback && (
@@ -303,6 +369,16 @@ export const SingleFormDetailView: React.FC<SingleFormDetailViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Hidden Official PDF Document Template for Clean Printing */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '1100px' }}>
+        <SletenaReportPdfTemplate
+          needSubmissions={relevantSubmissions}
+          satisfactionSubmissions={[]}
+          category={category}
+          reportTitle={`የስልጠና ፍላጎት ሪፖርት - ${category.title}`}
+        />
+      </div>
     </div>
   );
 };

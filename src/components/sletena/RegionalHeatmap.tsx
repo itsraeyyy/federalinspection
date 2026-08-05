@@ -82,19 +82,19 @@ export const RegionalHeatmap: React.FC<RegionalHeatmapProps> = ({ heatmapData = 
   const getHeatmapColor = (gap: number) => {
     if (gap > 2.0) {
       return {
-        bg: 'bg-red-500/20 text-red-600 border-red-500/40 font-bold',
-        badge: 'ከፍተኛ ክፍተት',
+        bg: 'bg-rose-500/15 text-rose-600 border-rose-500/30 font-bold',
+        badge: 'አስቸኳይ ስልጠና የሚፈልግ',
       };
     }
     if (gap > 1.0) {
       return {
-        bg: 'bg-amber-500/20 text-amber-600 border-amber-500/40 font-semibold',
-        badge: 'መካከለኛ ክፍተት',
+        bg: 'bg-amber-500/15 text-amber-600 border-amber-500/30 font-semibold',
+        badge: 'መካከለኛ ስልጠና የሚፈልግ',
       };
     }
     return {
-      bg: 'bg-emerald-500/20 text-emerald-600 border-emerald-500/40 font-semibold',
-      badge: 'ዝቅተኛ ክፍተት',
+      bg: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30 font-semibold',
+      badge: 'ጥሩ ብቃት ያለው',
     };
   };
 
@@ -105,26 +105,26 @@ export const RegionalHeatmap: React.FC<RegionalHeatmapProps> = ({ heatmapData = 
         <div>
           <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
             <IconMapPins className="text-brand-blue" size={22} />
-            የክልሎች እና ዞኖች የስልጠና ክፍተት ካርታ (Heatmap)
+            የክልሎች እና ዞኖች የስልጠና ፍላጎት ንጽጽር (Regional Training Needs Distribution)
           </h3>
           <p className="text-xs text-text-muted mt-1">
-            በቀይ/ቢጫ/አረንጓዴ ቀለም ደረጃ የተለዩ በየክልሉ ያሉ የዕውቀት እና የስልጠና ክፍተቶች::
+            በየክልሉ እና ዞኑ ያሉ የአባላት የስልጠና ፍላጎት ደረጃዎች በየዘርፉ የተለዩበት ንጽጽር::
           </p>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-red-600">
-            <span className="w-3 h-3 rounded-full bg-red-500" />
-            <span>ከፍተኛ ክፍተት (&gt; 2.0)</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600">
+            <span className="w-3 h-3 rounded-full bg-rose-500" />
+            <span>አስቸኳይ ስልጠና የሚፈልግ</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600">
             <span className="w-3 h-3 rounded-full bg-amber-500" />
-            <span>መካከለኛ (1.0 - 2.0)</span>
+            <span>መካከለኛ ስልጠና የሚፈልግ</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
             <span className="w-3 h-3 rounded-full bg-emerald-500" />
-            <span>ዝቅተኛ ክፍተት (&le; 1.0)</span>
+            <span>ጥሩ ብቃት ያለው</span>
           </div>
         </div>
       </div>
@@ -140,7 +140,7 @@ export const RegionalHeatmap: React.FC<RegionalHeatmapProps> = ({ heatmapData = 
                   {cat}
                 </th>
               ))}
-              <th className="py-3.5 px-4 text-center min-w-[120px]">ጠቅላላ አማካይ ክፍተት</th>
+              <th className="py-3.5 px-4 text-center min-w-[140px]">ጠቅላላ የብቃት ደረጃ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30 text-xs">
@@ -161,8 +161,7 @@ export const RegionalHeatmap: React.FC<RegionalHeatmapProps> = ({ heatmapData = 
                         <div
                           className={`py-2 px-2.5 rounded-xl border text-xs flex flex-col items-center justify-center transition-transform hover:scale-105 ${style.bg}`}
                         >
-                          <span className="font-bold">{gapVal.toFixed(2)}</span>
-                          <span className="text-[9px] uppercase tracking-wider opacity-80">{style.badge}</span>
+                          <span className="font-bold text-[11px]">{style.badge}</span>
                         </div>
                       </td>
                     );
@@ -172,7 +171,7 @@ export const RegionalHeatmap: React.FC<RegionalHeatmapProps> = ({ heatmapData = 
                     <div
                       className={`py-2 px-3 rounded-xl border text-xs font-bold ${overallStyle.bg}`}
                     >
-                      {row.overallAvgGap.toFixed(2)}
+                      {overallStyle.badge}
                     </div>
                   </td>
                 </tr>

@@ -16,6 +16,8 @@ import {
   IconFileSpreadsheet,
   IconShare,
   IconFileAnalytics,
+  IconCalendar,
+  IconUsers,
 } from '@tabler/icons-react';
 
 interface DataManagementTableProps {
@@ -168,119 +170,123 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto border border-border/40 rounded-xl">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-surface-secondary/50 text-[11px] font-semibold text-text-muted uppercase tracking-wider border-b border-border/40">
-              <th className="py-3.5 px-4">የስልጠናው ርዕስ እና መግለጫ</th>
-              <th className="py-3.5 px-4">የተፈጠረበት ቀን</th>
-              <th className="py-3.5 px-4 text-center">የተሳታፊዎች ብዛት</th>
-              <th className="py-3.5 px-4 text-center">ሁኔታ</th>
-              <th className="py-3.5 px-4 text-right">ተግባራት (Actions)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/30 text-xs">
-            {filteredCategories.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-8 text-center text-text-muted">
-                  ምንም የስልጠና ዘርፍ አልተገኘም።
-                </td>
-              </tr>
-            ) : (
-              filteredCategories.map((cat) => {
-                const questionCount = cat.questions
-                  ? cat.questions.length
-                  : cat.selectedDirectiveIds
-                  ? cat.selectedDirectiveIds.length
-                  : INSPECTION_DIRECTIVES.length;
+      {/* Form Cards List */}
+      <div className="space-y-4">
+        {filteredCategories.length === 0 ? (
+          <div className="py-12 text-center text-text-muted bg-surface-secondary/20 rounded-2xl border border-dashed border-border/50">
+            ምንም የስልጠና ቅጽ አልተገኘም።
+          </div>
+        ) : (
+          filteredCategories.map((cat) => {
+            const questionCount = cat.questions
+              ? cat.questions.length
+              : cat.selectedDirectiveIds
+              ? cat.selectedDirectiveIds.length
+              : INSPECTION_DIRECTIVES.length;
 
-                return (
-                  <tr key={cat.id} className="hover:bg-surface-secondary/30 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-text-primary flex items-center gap-2">
-                        <span>{cat.title}</span>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
-                          {questionCount} ጥያቄዎች/መመሪያዎች
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-text-muted line-clamp-1 mt-0.5">
-                        {cat.description}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-text-secondary whitespace-nowrap">{formatECDate(cat.dateCreated)}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
-                        {cat.submittersCount} ተሳታፊዎች
+            return (
+              <div
+                key={cat.id}
+                className="bg-surface-primary border border-border/60 hover:border-brand-blue/40 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all space-y-4 group"
+              >
+                {/* Card Header */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-border/30 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-text-primary group-hover:text-brand-blue transition-colors">
+                        {cat.title}
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
+                        {questionCount} ጥያቄዎች/መመሪያዎች
                       </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          cat.isActive ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-500/10 text-gray-500'
-                        }`}
+                    </div>
+                    <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">
+                      {cat.description}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
+                      cat.isActive
+                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                        : 'bg-gray-500/10 text-gray-500 border border-gray-500/20'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${cat.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                    {cat.isActive ? 'ንቁ' : 'ቦዝ'}
+                  </span>
+                </div>
+
+                {/* Card Info & Action Footer */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+                  {/* Badges */}
+                  <div className="flex items-center gap-4 text-xs text-text-secondary flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <IconCalendar size={15} className="text-text-muted" />
+                      <span>የተፈጠረበት ቀን፡ <strong>{formatECDate(cat.dateCreated)}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <IconUsers size={15} className="text-brand-blue" />
+                      <span>ተሳታፊዎች፡ <strong className="text-brand-blue">{cat.submittersCount} አባላት</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    {/* Primary Action: Detailed Report */}
+                    <button
+                      onClick={() => onSelectCategory(cat)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                      title="የዚህን ቅጽ ዝርዝር ሪፖርት እና ተሳታፊዎች ተመልከት"
+                    >
+                      <IconFileAnalytics size={16} />
+                      <span>ዝርዝር ሪፖርት</span>
+                    </button>
+
+                    {/* Copy Link */}
+                    <button
+                      onClick={() => handleCopyLink(cat)}
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface-secondary text-text-secondary hover:text-brand-blue border border-border/40 text-xs font-semibold transition-all cursor-pointer"
+                      title="የሕዝብ ሊንክ ኮፒ ያድርጉ"
+                    >
+                      {copiedId === cat.id ? <IconCheck size={16} className="text-emerald-500" /> : <IconCopy size={16} />}
+                      <span>{copiedId === cat.id ? 'ኮፒ ተደርጓል' : 'ሊንክ ኮፒ'}</span>
+                    </button>
+
+                    {/* Share Link */}
+                    <button
+                      onClick={() => handleShareLink(cat)}
+                      className="p-2 rounded-xl bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20 border border-brand-blue/20 transition-all cursor-pointer"
+                      title="ሊንክ ሼር ያድርጉ"
+                    >
+                      {sharedId === cat.id ? <IconCheck size={16} className="text-emerald-500" /> : <IconShare size={16} />}
+                    </button>
+
+                    {/* Edit Form */}
+                    <button
+                      onClick={() => handleOpenEdit(cat)}
+                      className="p-2 rounded-xl bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer"
+                      title="ቅጹን አስተካክል"
+                    >
+                      <IconEdit size={16} />
+                    </button>
+
+                    {/* Delete Form */}
+                    {onDeleteCategory && (
+                      <button
+                        onClick={() => setDeletingCategory(cat)}
+                        className="p-2 rounded-xl text-text-muted hover:text-red-500 hover:bg-surface-secondary transition-all cursor-pointer"
+                        title="ቅጹን ሰርዝ"
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${cat.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                        {cat.isActive ? 'ንቁ' : 'ቦዝ'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        {/* Primary Action: Detailed Report */}
-                        <button
-                          onClick={() => onSelectCategory(cat)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-blue text-white hover:bg-brand-blue/90 text-xs font-bold shadow-xs transition-all cursor-pointer"
-                          title="የዚህን ቅጽ ዝርዝር ሪፖርት እና ተሳታፊዎች ተመልከት"
-                        >
-                          <IconFileAnalytics size={15} />
-                          <span>ዝርዝር ሪፖርት</span>
-                        </button>
-
-                        {/* Copy Share Link */}
-                        <button
-                          onClick={() => handleCopyLink(cat)}
-                          className="p-1.5 rounded-lg bg-surface-secondary text-text-secondary hover:text-brand-blue border border-border/40 transition-all cursor-pointer"
-                          title="የሕዝብ ሊንክ ኮፒ ያድርጉ"
-                        >
-                          {copiedId === cat.id ? <IconCheck size={16} className="text-emerald-500" /> : <IconCopy size={16} />}
-                        </button>
-
-                        {/* Share Link */}
-                        <button
-                          onClick={() => handleShareLink(cat)}
-                          className="p-1.5 rounded-lg bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border border-purple-500/20 transition-all cursor-pointer"
-                          title="ሊንክ ሼር ያድርጉ"
-                        >
-                          {sharedId === cat.id ? <IconCheck size={16} className="text-emerald-500" /> : <IconShare size={16} />}
-                        </button>
-
-                        {/* Edit Form */}
-                        <button
-                          onClick={() => handleOpenEdit(cat)}
-                          className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/20 transition-all cursor-pointer"
-                          title="ቅጹን አስተካክል"
-                        >
-                          <IconEdit size={16} />
-                        </button>
-
-                        {/* Delete Form */}
-                        {onDeleteCategory && (
-                          <button
-                            onClick={() => setDeletingCategory(cat)}
-                            className="p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-surface-secondary transition-all cursor-pointer"
-                            title="ቅጹን ሰርዝ"
-                          >
-                            <IconTrash size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                        <IconTrash size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

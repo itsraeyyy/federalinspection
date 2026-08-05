@@ -9,48 +9,55 @@ import { TrainingCategory, SletenaSubmission } from '@/types/sletena';
 import { INITIAL_TRAINING_CATEGORIES, MOCK_SUBMISSIONS } from '@/data/sletenaDirectives';
 import { IconForms, IconFileAnalytics, IconTarget } from '@tabler/icons-react';
 
+import { sletenaService } from '@/services/sletena';
+
 export default function YesltenaFlagotPage() {
-  const [categories, setCategories] = useState<TrainingCategory[]>(INITIAL_TRAINING_CATEGORIES);
+  const [categories, setCategories] = useState<TrainingCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<TrainingCategory | null>(null);
   const [activeTab, setActiveTab] = useState<'forms' | 'report'>('forms');
-  const [submissions, setSubmissions] = useState<SletenaSubmission[]>(MOCK_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<SletenaSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleCreateCategory = (
+  // Load real data from Supabase / Service on mount
+  React.useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [cats, subs] = await Promise.all([
+          sletenaService.getNeedCategories(),
+          sletenaService.getNeedSubmissions(),
+        ]);
+        setCategories(cats);
+        setSubmissions(subs);
+      } catch (err) {
+        console.error('Error loading sletena data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const handleCreateCategory = async (
     newCategoryData: Omit<TrainingCategory, 'id' | 'submittersCount' | 'shareableLink'>
   ) => {
-    const newId = `cat-${Date.now()}`;
-    const newCategory: TrainingCategory = {
-      ...newCategoryData,
-      id: newId,
-      submittersCount: 0,
-      shareableLink: `https://icods.raey.work/sletena/submit?cat=${newId}`,
-    };
-    setCategories((prev) => [newCategory, ...prev]);
+    const created = await sletenaService.createCategory(newCategoryData);
+    setCategories((prev) => [created, ...prev]);
   };
 
   const handleUpdateCategory = (updatedCategory: TrainingCategory) => {
-    setCategories((prev) =>
-      prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c))
-    );
+    setCategories((prev) => prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c)));
     if (selectedCategory?.id === updatedCategory.id) {
       setSelectedCategory(updatedCategory);
     }
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
+  const handleDeleteCategory = async (categoryId: string) => {
+    await sletenaService.deleteCategory(categoryId, 'NEED');
     setCategories((prev) => prev.filter((c) => c.id !== categoryId));
     if (selectedCategory?.id === categoryId) {
       setSelectedCategory(null);
     }
-  };
-
-  const handleFormSubmissionSuccess = (submission: SletenaSubmission) => {
-    setSubmissions((prev) => [submission, ...prev]);
-    setCategories((prev) =>
-      prev.map((c) =>
-        c.id === submission.categoryId ? { ...c, submittersCount: c.submittersCount + 1 } : c
-      )
-    );
   };
 
   return (
@@ -60,7 +67,7 @@ export default function YesltenaFlagotPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
+              <IconTarget size={24} className="text-brand-blue" />
               <h1 className="text-xl font-extrabold text-text-primary">የስልጠና ፍላጎት ማስተዳደሪያ</h1>
             </div>
             <p className="text-xs text-text-muted mt-1">

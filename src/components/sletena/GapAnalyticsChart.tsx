@@ -21,6 +21,7 @@ interface GapAnalyticsChartProps {
 export const GapAnalyticsChart: React.FC<GapAnalyticsChartProps> = ({ gapItems }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchFilter, setSearchFilter] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
 
   const categories = Array.from(new Set(gapItems.map((item) => item.category)));
 
@@ -29,7 +30,8 @@ export const GapAnalyticsChart: React.FC<GapAnalyticsChartProps> = ({ gapItems }
     const matchesSearch =
       item.directiveTitle.toLowerCase().includes(searchFilter.toLowerCase()) ||
       item.directiveCode.toLowerCase().includes(searchFilter.toLowerCase());
-    return matchesCat && matchesSearch;
+    const matchesPriority = priorityFilter === 'ALL' || item.priorityFlag === priorityFilter;
+    return matchesCat && matchesSearch && matchesPriority;
   });
 
   const highPriorityCount = gapItems.filter((item) => item.priorityFlag === 'HIGH').length;
@@ -52,28 +54,49 @@ export const GapAnalyticsChart: React.FC<GapAnalyticsChartProps> = ({ gapItems }
         <div>
           <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
             <IconChartBar className="text-brand-blue" size={22} />
-            የስልጠና ክፍተት እና የቅድሚያ ትኩረት ትንተና
+            የስልጠና ፍላጎት እና የብቃት ደረጃዎች ትንተና
           </h3>
           <p className="text-xs text-text-muted mt-1">
-            ክፍተት = ዒላማ (5.0) - የላቀ አፈፃፀም:: ክፍተት &gt; 2.0 የሆኑ መመሪያዎች በራስ-ሰር ከፍተኛ ቅድሚያ ተብለው ይመደባሉ::
+            በተሳታፊዎች ምዘና መነሻነት በራስ-ሰር የተለዩ የስልጠና ፍላጎቶች እና የቅድሚያ ትኩረት ዘርፎች::
           </p>
         </div>
 
         {/* Priority Counters */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-xl text-xs font-bold text-red-600">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button 
+            onClick={() => setPriorityFilter(priorityFilter === 'HIGH' ? 'ALL' : 'HIGH')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              priorityFilter === 'ALL' || priorityFilter === 'HIGH' 
+                ? 'bg-rose-500/10 border border-rose-500/30 text-rose-600 hover:bg-rose-500/20' 
+                : 'bg-surface-secondary border border-border/40 text-text-muted hover:bg-border/20'
+            }`}
+          >
             <IconAlertTriangle size={15} />
-            <span>ከፍተኛ ቅድሚያ (ክፍተት &gt; 2.0): {highPriorityCount}</span>
-          </div>
+            <span>አስቸኳይ ስልጠና የሚፈልጉ: {highPriorityCount}</span>
+          </button>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-600">
-            <span>መካከለኛ ({mediumPriorityCount})</span>
-          </div>
+          <button 
+            onClick={() => setPriorityFilter(priorityFilter === 'MEDIUM' ? 'ALL' : 'MEDIUM')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              priorityFilter === 'ALL' || priorityFilter === 'MEDIUM' 
+                ? 'bg-amber-500/10 border border-amber-500/30 text-amber-600 hover:bg-amber-500/20' 
+                : 'bg-surface-secondary border border-border/40 text-text-muted hover:bg-border/20'
+            }`}
+          >
+            <span>መካከለኛ ቅድሚያ ({mediumPriorityCount})</span>
+          </button>
 
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs font-bold text-emerald-600">
+          <button 
+            onClick={() => setPriorityFilter(priorityFilter === 'LOW' ? 'ALL' : 'LOW')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              priorityFilter === 'ALL' || priorityFilter === 'LOW' 
+                ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/20' 
+                : 'bg-surface-secondary border border-border/40 text-text-muted hover:bg-border/20'
+            }`}
+          >
             <IconCheck size={15} />
-            <span>ጥሩ አፈፃፀም ({lowPriorityCount})</span>
-          </div>
+            <span>ጥሩ ብቃት ({lowPriorityCount})</span>
+          </button>
         </div>
       </div>
 
@@ -118,14 +141,15 @@ export const GapAnalyticsChart: React.FC<GapAnalyticsChartProps> = ({ gapItems }
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
+                  const currentLevelWord =
+                    data.priority === 'HIGH' ? 'ዝቅተኛ ብቃት' : data.priority === 'MEDIUM' ? 'መካከለኛ ብቃት' : 'ጥሩ ብቃት';
                   return (
                     <div className="bg-surface-primary border border-border/60 p-3 rounded-xl shadow-lg text-xs space-y-1">
                       <div className="font-bold text-text-primary">
                         [{data.code}] {data.Title}
                       </div>
-                      <div className="text-text-secondary">የዒላማ ደረጃ: {data.Target}</div>
-                      <div className="text-text-secondary">የአሁኑ አማካይ ውጤት: {data.Current}</div>
-                      <div className="font-bold text-red-600">የተሰላ ክፍተት: {data.Gap}</div>
+                      <div className="text-text-secondary">የዒላማ ደረጃ: ከፍተኛ</div>
+                      <div className="text-text-secondary">የአሁኑ ብቃት: {currentLevelWord}</div>
                       <div className="pt-1">
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
@@ -136,7 +160,7 @@ export const GapAnalyticsChart: React.FC<GapAnalyticsChartProps> = ({ gapItems }
                               : 'bg-emerald-500/20 text-emerald-600'
                           }`}
                         >
-                          {data.priority === 'HIGH' ? 'ከፍተኛ ቅድሚያ' : data.priority === 'MEDIUM' ? 'መካከለኛ ቅድሚያ' : 'ዝቅተኛ ክፍተት'}
+                          {data.priority === 'HIGH' ? 'ከፍተኛ ቅድሚያ' : data.priority === 'MEDIUM' ? 'መካከለኛ ቅድሚያ' : 'ጥሩ ብቃት'}
                         </span>
                       </div>
                     </div>
@@ -146,7 +170,6 @@ export const GapAnalyticsChart: React.FC<GapAnalyticsChartProps> = ({ gapItems }
               }}
             />
             <Legend wrapperStyle={{ fontSize: '12px' }} />
-            <Bar dataKey="Current" fill="#3b82f6" radius={[4, 4, 0, 0]} name="የአሁኑ ውጤት" />
             <Bar dataKey="Gap" fill="#ef4444" radius={[4, 4, 0, 0]} name="የስልጠና ክፍተት" />
           </BarChart>
         </ResponsiveContainer>
@@ -160,38 +183,40 @@ export const GapAnalyticsChart: React.FC<GapAnalyticsChartProps> = ({ gapItems }
               <th className="py-3 px-4">የመመሪያ ኮድ</th>
               <th className="py-3 px-4">ርዕስ እና ዘርፍ</th>
               <th className="py-3 px-4 text-center">ዒላማ</th>
-              <th className="py-3 px-4 text-center">የአሁኑ ውጤት</th>
-              <th className="py-3 px-4 text-center">የተሰላ ክፍተት</th>
+              <th className="py-3 px-4 text-center">የአሁኑ የብቃት ደረጃ</th>
               <th className="py-3 px-4 text-right">የቅድሚያ ደረጃ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30 text-xs">
-            {filteredItems.map((item) => (
-              <tr key={item.directiveId} className="hover:bg-surface-secondary/30 transition-colors">
-                <td className="py-3 px-4 font-bold text-brand-blue whitespace-nowrap">{item.directiveCode}</td>
-                <td className="py-3 px-4">
-                  <div className="font-semibold text-text-primary">{item.directiveTitle}</div>
-                  <div className="text-[11px] text-text-muted">{item.category}</div>
-                </td>
-                <td className="py-3 px-4 text-center font-medium text-text-secondary">{item.targetScore}</td>
-                <td className="py-3 px-4 text-center font-medium text-text-secondary">{item.currentScore}</td>
-                <td className="py-3 px-4 text-center font-bold text-text-primary">{item.gap}</td>
-                <td className="py-3 px-4 text-right">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${
-                      item.priorityFlag === 'HIGH'
-                        ? 'bg-red-500/10 text-red-600 border border-red-500/30'
-                        : item.priorityFlag === 'MEDIUM'
-                        ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30'
-                        : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
-                    }`}
-                  >
-                    {item.priorityFlag === 'HIGH' && <IconAlertTriangle size={14} />}
-                    {item.priorityFlag === 'HIGH' ? 'ከፍተኛ ቅድሚያ' : item.priorityFlag === 'MEDIUM' ? 'መካከለኛ ቅድሚያ' : 'ጥሩ አፈፃፀም'}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {filteredItems.map((item) => {
+              const currentLevelWord =
+                item.priorityFlag === 'HIGH' ? 'ዝቅተኛ ብቃት' : item.priorityFlag === 'MEDIUM' ? 'መካከለኛ ብቃት' : 'ጥሩ ብቃት';
+              return (
+                <tr key={item.directiveId} className="hover:bg-surface-secondary/30 transition-colors">
+                  <td className="py-3 px-4 font-bold text-brand-blue whitespace-nowrap">{item.directiveCode}</td>
+                  <td className="py-3 px-4">
+                    <div className="font-semibold text-text-primary">{item.directiveTitle}</div>
+                    <div className="text-[11px] text-text-muted">{item.category}</div>
+                  </td>
+                  <td className="py-3 px-4 text-center font-medium text-text-secondary">ከፍተኛ</td>
+                  <td className="py-3 px-4 text-center font-medium text-text-secondary">{currentLevelWord}</td>
+                  <td className="py-3 px-4 text-right">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                        item.priorityFlag === 'HIGH'
+                          ? 'bg-red-500/10 text-red-600 border border-red-500/30'
+                          : item.priorityFlag === 'MEDIUM'
+                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30'
+                          : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                      }`}
+                    >
+                      {item.priorityFlag === 'HIGH' && <IconAlertTriangle size={14} />}
+                      {item.priorityFlag === 'HIGH' ? 'ከፍተኛ ቅድሚያ' : item.priorityFlag === 'MEDIUM' ? 'መካከለኛ ቅድሚያ' : 'ጥሩ አፈፃፀም'}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

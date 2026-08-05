@@ -15,7 +15,7 @@ export const SentimentAnalysisWidget: React.FC<SentimentAnalysisWidgetProps> = (
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border/40">
         <div>
           <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-            <IconBrain className="text-purple-600" size={22} />
+            <IconBrain className="text-brand-blue" size={22} />
             የአስተያየቶች ስሜት ትንተና (Sentiment NLP)
           </h3>
           <p className="text-xs text-text-muted mt-1">
@@ -24,7 +24,7 @@ export const SentimentAnalysisWidget: React.FC<SentimentAnalysisWidgetProps> = (
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-3 py-1 bg-purple-500/10 text-purple-600 rounded-xl border border-purple-500/20">
+          <span className="text-xs font-semibold px-3 py-1 bg-brand-blue/10 text-brand-blue rounded-xl border border-brand-blue/20">
             {sentiment.totalAnalyzed} የተተነተኑ አስተያየቶች
           </span>
         </div>
