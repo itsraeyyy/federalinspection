@@ -25,6 +25,7 @@ import {
   IconSun,
   IconMoon,
   IconPlayerPlay,
+  IconPhone
 } from "@tabler/icons-react";
 import { useEffect, useState, useCallback } from "react";
 import { complaintService } from "@/services/complaints";
@@ -67,7 +68,21 @@ export default function CommitteeLeaderDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Initialize and persist theme (Light / Dark mode)
+  const [showDirectModal, setShowDirectModal] = useState(false);
+  const [directMessage, setDirectMessage] = useState('');
+  const [directFiles, setDirectFiles] = useState<File[]>([]);
+  const [revisionNotes, setRevisionNotes] = useState('');
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+
+  // Committee Modal State
+  const [showCommitteeModal, setShowCommitteeModal] = useState(false);
+  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string }[]>([{ name: '', phone: '' }]);
+
+  // Editable Decision State
+  const [editableDecision, setEditableDecision] = useState('');
+
+  const leaderName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'የኮሚቴ ሰብሳቢ (Leader)' : 'የኮሚቴ ሰብሳቢ';
+
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
@@ -90,18 +105,6 @@ export default function CommitteeLeaderDashboard() {
     }
   };
 
-  const [showDirectModal, setShowDirectModal] = useState(false);
-  const [directMessage, setDirectMessage] = useState('');
-  const [directFiles, setDirectFiles] = useState<File[]>([]);
-  const [revisionNotes, setRevisionNotes] = useState('');
-  const [showRevisionModal, setShowRevisionModal] = useState(false);
-
-  // Committee Modal State
-  const [showCommitteeModal, setShowCommitteeModal] = useState(false);
-  const [committeeMembers, setCommitteeMembers] = useState<string[]>(['']);
-
-  const leaderName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'የኮሚቴ ሰብሳቢ (Leader)' : 'የኮሚቴ ሰብሳቢ';
-
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     const data = await complaintService.getComplaints();
@@ -113,19 +116,26 @@ export default function CommitteeLeaderDashboard() {
     fetchTickets();
   }, [fetchTickets]);
 
+  const handleTicketSelect = (ticket: Complaint) => {
+    setSelectedTicket(ticket);
+    if (ticket.status === 'PendingApproval') {
+      setEditableDecision(ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚቴ ሰብሳቢ ተረጋግቶና ጸድቆ ተጠናቋል።');
+    }
+  };
+
   const handleCommitteeAssign = async () => {
-    const validMembers = committeeMembers.filter(m => m.trim());
+    const validMembers = committeeMembers.filter(m => m.name.trim());
     if (!selectedTicket || validMembers.length === 0) return;
     setActionLoading(true);
     
-    const assignedStr = validMembers.join('፣ ');
+    const assignedStr = validMembers.map(m => m.phone.trim() ? `${m.name.trim()} (${m.phone.trim()})` : m.name.trim()).join('፣ ');
     const assigned = await complaintService.startProcessingByLeader(selectedTicket.id, leaderName, assignedStr);
     if (assigned) {
       await fetchTickets();
       const updated = await complaintService.getComplaintById(selectedTicket.id);
       setSelectedTicket(updated);
       setShowCommitteeModal(false);
-      setCommitteeMembers(['']);
+      setCommitteeMembers([{ name: '', phone: '' }]);
       setFeedbackMsg({ type: 'success', text: 'ኮሚቴው በተሳካ ሁኔታ ተመድቧል፣ እና የ15 ቀናት ጊዜ ገደብ ጀምሯል።' });
       setTimeout(() => setFeedbackMsg(null), 5000);
     } else {
@@ -166,7 +176,7 @@ export default function CommitteeLeaderDashboard() {
     if (activeTab === 'PendingApproval') return t.status === 'PendingApproval';
     if (activeTab === 'Processing') return t.status === 'Processing' || t.status === 'RevisionRequested';
     if (activeTab === 'Resolved') return t.status === 'Resolved' || t.status === 'Rejected';
-    return t.status !== 'New'; // Default All tab shouldn't show 'New' tickets to Leaders
+    return t.status !== 'New';
   });
 
   const stats = {
@@ -182,7 +192,7 @@ export default function CommitteeLeaderDashboard() {
     setActionLoading(true);
     setFeedbackMsg(null);
     try {
-      const resolutionMsg = ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚቴ ሰብሳቢ ተረጋግቶና ጸድቆ ተጠናቋል።';
+      const resolutionMsg = editableDecision.trim() || ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚቴ ሰብሳቢ ተረጋግቶና ጸድቆ ተጠናቋል።';
       const success = await complaintService.updateComplaintStatus(
         ticket.id,
         'Resolved',
@@ -208,11 +218,10 @@ export default function CommitteeLeaderDashboard() {
     setActionLoading(true);
     setFeedbackMsg(null);
     try {
-      const success = await complaintService.updateComplaintStatus(
+      const success = await complaintService.requestRevisions(
         selectedTicket.id,
-        'RevisionRequested' as any,
-        leaderName,
-        { message: `የሰብሳቢው የማስተካከያ ትዕዛዝ፡ ${revisionNotes}` }
+        revisionNotes,
+        leaderName
       );
       if (success) {
         setFeedbackMsg({ type: 'success', text: 'የማስተካከያ ትዕዛዝ ለአጣሪ ኮሚቴው በተሳካ ሁኔታ ተላልፏል።' });
@@ -278,41 +287,35 @@ export default function CommitteeLeaderDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200 font-sans pb-16 selection:bg-brand-blue/20">
       {/* Executive Top Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-surface-primary/80 backdrop-blur-md border-b border-border/50 px-4 md:px-10 h-[72px] md:h-[88px] flex items-center justify-between shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all">
-        <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 min-w-[40px] rounded-full overflow-hidden border border-border/50 shadow-xs">
+      <header className="sticky top-0 z-40 bg-surface-primary/95 backdrop-blur-md border-b border-border/50 px-4 md:px-10 h-[72px] md:h-[88px] flex items-center justify-between shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all">
+        <div className="flex items-center gap-3 w-full sm:w-auto overflow-hidden">
+          <div className="relative w-10 h-10 min-w-[40px] rounded-full overflow-hidden border border-border/50 shadow-xs shrink-0">
             <Image src="/logo.jpg" alt="Commission Logo" fill className="object-cover" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm md:text-base font-extrabold tracking-tight text-text-primary">
-                የኮሚቴ ሰብሳቢ — የውሳኔ ማጽደቂያ ፖርታል
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm md:text-base font-extrabold tracking-tight text-text-primary truncate">
+                የኮሚቴ ሰብሳቢ
               </span>
-              <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-brand-blue/10 text-brand-blue border border-brand-blue/20 shrink-0">
                 Executive Portal
               </span>
             </div>
-            <p className="text-xs text-text-muted hidden sm:block font-medium mt-0.5">
+            <p className="text-xs text-text-muted hidden sm:block font-medium mt-0.5 truncate">
               የዜጎች ጥቆማና አቤቱታ የመጨረሻ ግምገማና ውሳኔ ማጽደቂያ ስርዓት
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/complaints"
-            className="hidden lg:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-secondary/80 hover:bg-surface-secondary text-xs font-bold text-text-secondary hover:text-text-primary transition-all border border-border/50 shadow-2xs"
-          >
-            <IconArrowLeft size={16} stroke={1.75} />
-            ወደ አጣሪ ኮሚቴ ገጽ
-          </Link>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
 
-          <div className="flex items-center gap-1 bg-surface-primary/60 backdrop-blur-md p-1 rounded-full border border-border/50 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+
+          <div className="flex items-center gap-1 bg-surface-primary/60 backdrop-blur-md p-1 rounded-full border border-border/50 shadow-sm">
             <button
               onClick={fetchTickets}
               disabled={loading}
               title="መረጃዎችን ያድሱ (Refresh)"
-              className="w-8 h-8 md:w-10 md:h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all disabled:opacity-50"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all disabled:opacity-50"
             >
               <IconRefresh size={18} stroke={1.75} className={loading ? 'animate-spin text-brand-blue' : ''} />
             </button>
@@ -321,17 +324,17 @@ export default function CommitteeLeaderDashboard() {
 
             <button
               onClick={toggleTheme}
-              className="w-8 h-8 md:w-10 md:h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all"
               title="ገጽታ ቀይር (Toggle Theme)"
             >
-              {isDark ? <IconSun size={18} stroke={2} className="text-[#D4A017] dark:text-brand-yellow" /> : <IconMoon size={18} stroke={2} className="text-text-secondary" />}
+              {isDark ? <IconSun size={18} stroke={2} className="text-brand-yellow" /> : <IconMoon size={18} stroke={2} className="text-text-secondary" />}
             </button>
 
             <div className="w-[1px] h-4 bg-border/50"></div>
 
             <button
               onClick={handleLogout}
-              className="w-8 h-8 md:w-10 md:h-10 flex justify-center items-center rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 text-text-secondary transition-all"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex justify-center items-center rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-danger text-text-secondary transition-all"
               title="ውጣ (Logout)"
             >
               <IconLogout size={18} stroke={2} />
@@ -340,184 +343,121 @@ export default function CommitteeLeaderDashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-10 mt-8">
+      <main className="w-full max-w-7xl mx-auto px-4 md:px-10 mt-6 sm:mt-8 space-y-6">
         {feedbackMsg && (
-          <div className={`mb-6 p-4 rounded-2xl border flex items-center justify-between text-sm font-medium shadow-sm transition-all ${
+          <div className={`p-4 rounded-2xl border flex items-center justify-between text-sm font-bold shadow-sm transition-all ${
             feedbackMsg.type === 'success' 
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-              : 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-300'
+              ? 'bg-success/10 border-success/20 text-success'
+              : 'bg-danger/10 border-danger/20 text-danger'
           }`}>
             <div className="flex items-center gap-3">
               <span>{feedbackMsg.type === 'success' ? '✓' : '⚠'}</span>
               <span>{feedbackMsg.text}</span>
             </div>
-            <button onClick={() => setFeedbackMsg(null)} className="p-1 hover:opacity-75">
+            <button onClick={() => setFeedbackMsg(null)} className="p-2 hover:opacity-75 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl">
               <IconX size={18} />
             </button>
           </div>
         )}
 
-        {/* Executive Overview Banner */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface-primary p-6 rounded-2xl border border-border shadow-xs">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand-blue/10 text-brand-blue text-xs font-extrabold rounded-md mb-2.5 border border-brand-blue/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-blue animate-pulse"></span>
-              ከፍተኛ አመራር እና የኮሚቴ ሰብሳቢ (Committee Leader)
-            </span>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-text-primary tracking-tight">
-              ሰላም፣ {leaderName}
-            </h2>
-            <p className="text-xs sm:text-sm text-text-muted mt-1 font-medium">
-              በአጣሪ ኮሚቴው ተጣርተው ለጽድቅ የቀረቡ የውሳኔ ሀሳቦችን ይመልከቱ፣ ይገምግሙ እንዲሁም የመጨረሻ ውሳኔ ይስጡ።
-            </p>
-          </div>
-          <div className="flex items-center gap-6 bg-surface-secondary p-4 rounded-xl border border-border/50 shadow-2xs">
-            <div className="text-right">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">የውሳኔ አፈጻጸም</span>
-              <span className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">{stats.resolutionRate}%</span>
-            </div>
-            <div className="h-10 w-[1px] bg-border/60"></div>
-            <div className="text-right">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted block">ለማጽደቅ የሚጠብቁ</span>
-              <span className={`text-xl sm:text-2xl font-extrabold tabular-nums ${stats.pendingApproval > 0 ? 'text-[#C68A00] dark:text-brand-yellow animate-pulse' : 'text-text-primary'}`}>
-                {stats.pendingApproval}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Executive KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div 
-            onClick={() => setActiveTab('All')}
-            className={`p-5 rounded-2xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
-              activeTab === 'All' 
-                ? 'bg-surface-primary border-brand-blue shadow-md ring-1 ring-brand-blue/20'
-                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-border/80 shadow-xs hover:shadow-sm'
-            }`}
-          >
-            {activeTab === 'All' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-blue"></div>}
-            <div>
-              <div className="flex items-center justify-between text-text-muted mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">አጠቃላይ የቀረቡ ጉዳዮች</span>
-                <IconFileText size={18} stroke={1.75} className="text-brand-blue" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-extrabold text-text-primary tabular-nums tracking-tight">
-                {stats.total}
-              </div>
-            </div>
-            <span className="text-xs text-text-muted block mt-2 font-medium">
-              የገቡ ቅሬታዎች እና ጥቆማዎች
-            </span>
-          </div>
-
+        {/* Executive KPI Cards Row - Horizontally scrollable on mobile */}
+        <div className="flex overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 snap-x snap-mandatory hide-scrollbar">
+          
           <div 
             onClick={() => setActiveTab('Accepted')}
-            className={`p-5 rounded-2xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
               activeTab === 'Accepted' 
                 ? 'bg-surface-primary border-brand-blue shadow-md ring-1 ring-brand-blue/20'
-                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-brand-blue/40 shadow-xs hover:shadow-sm'
+                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-brand-blue/40 shadow-sm'
             }`}
           >
-            {activeTab === 'Accepted' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-blue"></div>}
+            {activeTab === 'Accepted' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-brand-blue"></div>}
             <div>
-              <div className="flex items-center justify-between text-brand-blue dark:text-blue-400 mb-3">
+              <div className="flex items-center justify-between text-brand-blue mb-4">
                 <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
                   {stats.accepted > 0 && <span className="w-2 h-2 rounded-full bg-brand-blue animate-ping"></span>}
-                  ለኮሚቴ ምደባ
+                  ለኮሚቴ ምደባ (Accepted)
                 </span>
-                <IconUser size={18} stroke={1.75} className="text-brand-blue dark:text-blue-400" />
+                <IconUser size={20} stroke={2} className="text-brand-blue" />
               </div>
-              <div className="text-2xl sm:text-3xl font-extrabold text-brand-blue dark:text-blue-400 tabular-nums tracking-tight">
+              <div className="text-3xl font-extrabold text-brand-blue tabular-nums tracking-tight">
                 {stats.accepted}
               </div>
             </div>
-            <span className="text-xs text-text-muted block mt-2 font-medium">
-              በአስተዳዳሪ ተቀባይነት ያገኙ
-            </span>
-          </div>
-
-          <div 
-            onClick={() => setActiveTab('PendingApproval')}
-            className={`p-5 rounded-2xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
-              activeTab === 'PendingApproval' 
-                ? 'bg-surface-primary border-sky-500 shadow-md ring-1 ring-sky-500/20'
-                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-sky-500/40 shadow-xs hover:shadow-sm'
-            }`}
-          >
-            {activeTab === 'PendingApproval' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-sky-500"></div>}
-            <div>
-              <div className="flex items-center justify-between text-sky-600 dark:text-sky-400 mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-sky-600 dark:text-sky-400">
-                  {stats.pendingApproval > 0 && <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>}
-                  ለማጽደቅ የቀረቡ
-                </span>
-                <IconCheck size={18} stroke={1.75} className="text-sky-600 dark:text-sky-400" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400 tabular-nums tracking-tight">
-                {stats.pendingApproval}
-              </div>
-            </div>
-            <span className="text-xs text-sky-600/80 dark:text-sky-400/90 block mt-2 font-semibold">
-              የእርስዎን የመጨረሻ ውሳኔ የሚጠብቁ
-            </span>
           </div>
 
           <div 
             onClick={() => setActiveTab('Processing')}
-            className={`p-5 rounded-2xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
               activeTab === 'Processing' 
-                ? 'bg-surface-primary border-[#C68A00] dark:border-brand-yellow shadow-md ring-1 ring-[#C68A00]/20 dark:ring-brand-yellow/20'
-                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-[#C68A00]/50 dark:hover:border-brand-yellow/40 shadow-xs hover:shadow-sm'
+                ? 'bg-surface-primary border-warning shadow-md ring-1 ring-warning/20'
+                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-warning/40 shadow-sm'
             }`}
           >
-            {activeTab === 'Processing' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#C68A00] dark:bg-brand-yellow"></div>}
+            {activeTab === 'Processing' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-warning"></div>}
             <div>
-              <div className="flex items-center justify-between text-[#C68A00] dark:text-brand-yellow mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#C68A00] dark:text-brand-yellow">በኮሚቴ ማጣራት ላይ</span>
-                <IconClock size={18} stroke={1.75} className="text-[#C68A00] dark:text-brand-yellow" />
+              <div className="flex items-center justify-between text-warning mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-warning">በማጣራት ላይ (Processing)</span>
+                <IconClock size={20} stroke={2} className="text-warning" />
               </div>
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#C68A00] dark:text-brand-yellow tabular-nums tracking-tight">
+              <div className="text-3xl font-extrabold text-warning tabular-nums tracking-tight">
                 {stats.processing}
               </div>
             </div>
-            <span className="text-xs text-text-muted block mt-2 font-medium">
-              በማጣራት እና በሂደት ላይ የሚገኙ
-            </span>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('PendingApproval')}
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
+              activeTab === 'PendingApproval' 
+                ? 'bg-surface-primary border-sky-500 shadow-md ring-1 ring-sky-500/20'
+                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-sky-500/40 shadow-sm'
+            }`}
+          >
+            {activeTab === 'PendingApproval' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-sky-500"></div>}
+            <div>
+              <div className="flex items-center justify-between text-sky-600 dark:text-sky-400 mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-sky-600 dark:text-sky-400">
+                  {stats.pendingApproval > 0 && <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>}
+                  ለማጽደቅ የቀረቡ (Pending)
+                </span>
+                <IconShieldCheck size={20} stroke={2} className="text-sky-600 dark:text-sky-400" />
+              </div>
+              <div className="text-3xl font-extrabold text-sky-600 dark:text-sky-400 tabular-nums tracking-tight">
+                {stats.pendingApproval}
+              </div>
+            </div>
           </div>
 
           <div 
             onClick={() => setActiveTab('Resolved')}
-            className={`p-5 rounded-2xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
               activeTab === 'Resolved' 
-                ? 'bg-surface-primary border-emerald-600 shadow-md ring-1 ring-emerald-600/20'
-                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-emerald-500/50 shadow-xs hover:shadow-sm'
+                ? 'bg-surface-primary border-success shadow-md ring-1 ring-success/20'
+                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-success/50 shadow-sm'
             }`}
           >
-            {activeTab === 'Resolved' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-emerald-600"></div>}
+            {activeTab === 'Resolved' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-success"></div>}
             <div>
-              <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">ውሳኔ የጸደቀላቸው</span>
-                <IconShieldCheck size={18} stroke={1.75} className="text-emerald-600 dark:text-emerald-400" />
+              <div className="flex items-center justify-between text-success mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-success">የጸደቀ (Resolved)</span>
+                <IconCheck size={20} stroke={2} className="text-success" />
               </div>
-              <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
+              <div className="text-3xl font-extrabold text-success tabular-nums tracking-tight">
                 {stats.resolved}
               </div>
             </div>
-            <span className="text-xs text-text-muted block mt-2 font-medium">
-              ተጣርተው የመጨረሻ ውሳኔ የተሰጣቸው
-            </span>
           </div>
         </div>
 
         {/* Filter Bar & Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-surface-primary p-3.5 rounded-2xl border border-border shadow-xs">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-primary p-4 rounded-3xl border border-border shadow-sm">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
             {(['All', 'Accepted', 'PendingApproval', 'Processing', 'Resolved'] as StatusTab[]).map(tab => {
               const labels: Record<StatusTab, string> = {
-                All: 'ሁሉም (All)',
-                Accepted: 'ለኮሚቴ ምደባ',
-                PendingApproval: 'ለማጽደቅ የቀረቡ',
+                All: 'ሁሉም',
+                Accepted: 'አዲስ (ምደባ)',
+                PendingApproval: 'ለማጽደቅ',
                 Processing: 'በማጣራት ላይ',
                 Resolved: 'የተጠናቀቁ',
               };
@@ -526,7 +466,7 @@ export default function CommitteeLeaderDashboard() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                  className={`min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
                     isActive 
                       ? 'bg-brand-blue text-white shadow-sm'
                       : 'bg-surface-secondary/80 text-text-secondary hover:text-text-primary hover:bg-surface-secondary border border-border/30'
@@ -534,7 +474,7 @@ export default function CommitteeLeaderDashboard() {
                 >
                   {labels[tab]}
                   {tab === 'PendingApproval' && stats.pendingApproval > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isActive ? 'bg-white text-brand-blue' : 'bg-[#C68A00] dark:bg-brand-yellow text-white dark:text-zinc-900'}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isActive ? 'bg-white text-brand-blue' : 'bg-brand-yellow text-zinc-900'}`}>
                       {stats.pendingApproval}
                     </span>
                   )}
@@ -544,28 +484,30 @@ export default function CommitteeLeaderDashboard() {
           </div>
 
           <div className="relative w-full sm:w-80">
-            <IconSearch size={16} stroke={1.75} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <IconSearch size={18} stroke={2} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="በመከታተያ ኮድ፣ በስም ወይም በጉዳይ ይፈልጉ..."
-              className="w-full pl-10 pr-4 py-2 bg-surface-secondary border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue text-text-primary placeholder:text-text-muted transition-all shadow-2xs"
+              placeholder="ፈልግ (Search)..."
+              className="w-full min-h-[44px] pl-11 pr-4 py-2 bg-surface-secondary border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue text-text-primary placeholder:text-text-muted transition-all shadow-sm"
             />
           </div>
         </div>
 
         {/* Tickets Grid */}
         {filteredTickets.length === 0 ? (
-          <div className="bg-surface-primary p-16 rounded-3xl border border-border/20 text-center shadow-xs">
-            <IconFileText size={48} className="mx-auto text-text-muted/40 mb-3 stroke-[1.5]" />
-            <h3 className="text-base font-bold text-text-primary">ምንም የቀረበ ጉዳይ አልተገኘም</h3>
-            <p className="text-xs text-text-muted mt-1.5 max-w-md mx-auto">
+          <div className="bg-surface-primary p-12 sm:p-16 rounded-3xl border border-border/20 text-center shadow-sm flex flex-col items-center justify-center">
+            <div className="w-20 h-20 bg-surface-secondary rounded-full flex items-center justify-center mb-4">
+              <IconFileText size={40} className="text-text-muted/40 stroke-[1.5]" />
+            </div>
+            <h3 className="text-lg font-bold text-text-primary">ምንም ጉዳይ አልተገኘም</h3>
+            <p className="text-sm text-text-muted mt-2 max-w-md mx-auto">
               በአሁኑ ወቅት በመረጡት ምድብ ወይም ፍለጋ ውስጥ ምንም የተመዘገበ ወይም ለማጽደቅ የቀረበ ቅሬታና ጥቆማ የለም።
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
             {filteredTickets.map(ticket => {
               const badge = getStatusBadge(ticket.status);
               const timeline = getTimelineStatus(ticket.createdAt, ticket.status);
@@ -573,61 +515,59 @@ export default function CommitteeLeaderDashboard() {
               return (
                 <div 
                   key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket)}
-                  className={`p-5 rounded-3xl bg-surface-primary border transition-all duration-200 hover:shadow-md cursor-pointer flex flex-col justify-between ${
+                  onClick={() => handleTicketSelect(ticket)}
+                  className={`p-5 rounded-3xl bg-surface-primary border transition-all duration-200 hover:shadow-lg cursor-pointer flex flex-col justify-between active:scale-[0.98] ${
                     ticket.status === 'PendingApproval'
-                      ? 'border-sky-500/50 shadow-sm ring-1 ring-sky-500/20 bg-gradient-to-br from-sky-500/5 via-surface-primary to-surface-primary'
-                      : 'border-border/20 hover:border-border/50'
+                      ? 'border-sky-500/50 shadow-md ring-1 ring-sky-500/20 bg-gradient-to-br from-sky-500/5 via-surface-primary to-surface-primary'
+                      : 'border-border/40 hover:border-border/80 shadow-sm'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                       <div className="flex items-center gap-1.5">
-                        <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
                           ticket.type === 'Suggestion'
-                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20'
+                            ? 'bg-warning/10 text-warning border border-warning/20'
                             : 'bg-brand-blue/10 text-brand-blue border border-brand-blue/20'
                         }`}>
-                          {ticket.type === 'Suggestion' ? 'ጥቆማ (Suggestion)' : 'አቤቱታ (Complaint)'}
+                          {ticket.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ'}
                         </span>
-                        <span className={`px-2.5 py-1 rounded-xl text-[11px] border ${badge.bg} ${badge.text} ${badge.border}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] border ${badge.bg} ${badge.text} ${badge.border}`}>
                           {badge.label}
                         </span>
                       </div>
-
-                      <span className="font-mono text-xs font-bold text-text-secondary bg-surface-secondary px-2.5 py-1 rounded-lg border border-border/20">
+                      <span className="font-mono text-xs font-bold text-text-secondary bg-surface-secondary px-2.5 py-1 rounded-full border border-border/20">
                         #{ticket.trackingCode}
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-text-primary mb-1.5 line-clamp-1 flex items-center gap-1.5">
-                      <IconBuilding size={16} className="text-text-muted flex-shrink-0" />
+                    <h3 className="text-base font-bold text-text-primary mb-2 line-clamp-1">
                       {ticket.subject || 'አልተገለጸም'}
                     </h3>
                     
-                    <p className="text-xs sm:text-sm text-text-secondary line-clamp-2 mb-4 font-normal leading-relaxed">
+                    <p className="text-sm text-text-secondary line-clamp-2 mb-4 font-normal leading-relaxed">
                       {ticket.message}
                     </p>
                   </div>
 
                   <div>
-                    <div className="p-3.5 bg-surface-secondary/60 rounded-2xl text-xs space-y-2.5 mb-4 border border-border/20">
+                    <div className="p-3.5 bg-surface-secondary/50 rounded-2xl text-xs space-y-2.5 mb-4 border border-border/30">
                       <div className="flex items-center justify-between text-text-secondary">
                         <span className="flex items-center gap-1 font-medium text-text-muted">
                           <IconUser size={14} /> አጣሪ ኮሚቴ፡
                         </span>
-                        <span className="font-semibold text-text-primary truncate max-w-[200px]">
-                          {ticket.assignedCommittee || 'እስከ አሁን አልተመደበም'}
+                        <span className="font-semibold text-text-primary truncate max-w-[150px]">
+                          {ticket.assignedCommittee || 'አልተመደበም'}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between border-t border-border/20 pt-2.5">
+                      <div className="flex items-center justify-between border-t border-border/30 pt-2.5">
                         <span className="flex items-center gap-1 font-medium text-text-muted">
-                          <IconClock size={14} /> የ15 ቀናት የጊዜ ገደብ፡
+                          <IconClock size={14} /> ቀሪ ጊዜ፡
                         </span>
                         <span className={`font-bold text-[11px] ${
-                          timeline.isOverdue ? 'text-red-600 dark:text-red-400 flex items-center gap-1 animate-pulse' :
-                          timeline.isWarning ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-text-primary'
+                          timeline.isOverdue ? 'text-danger flex items-center gap-1 animate-pulse' :
+                          timeline.isWarning ? 'text-warning font-bold' : 'text-text-primary'
                         }`}>
                           {timeline.isOverdue && <IconAlertTriangle size={13} />}
                           {timeline.label}
@@ -639,20 +579,6 @@ export default function CommitteeLeaderDashboard() {
                       <span className="text-[11px] text-text-muted flex items-center gap-1 font-medium">
                         <IconCalendar size={13} /> {ticket.date}
                       </span>
-
-                      {ticket.status === 'PendingApproval' ? (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleRatify(ticket); }}
-                          disabled={actionLoading}
-                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
-                        >
-                          <IconCheck size={16} /> ውሳኔውን ያጽድቁ (Ratify)
-                        </button>
-                      ) : (
-                        <div className="text-xs font-bold text-brand-blue flex items-center gap-1 group-hover:underline">
-                          ዝርዝር መረጃ ይመልከቱ <IconChevronRight size={16} />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -662,232 +588,320 @@ export default function CommitteeLeaderDashboard() {
         )}
       </main>
 
-      {/* Detail Modal / Drawer */}
+      {/* Ticket Detail Slide-over (Mobile full, Desktop side) */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn" onClick={() => setSelectedTicket(null)}>
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface-primary w-full sm:max-w-2xl max-h-[92vh] sm:rounded-3xl rounded-t-3xl border border-border/30 shadow-2xl flex flex-col overflow-hidden"
-          >
+        <div className="fixed inset-0 z-50 flex justify-end animate-fadeIn">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedTicket(null)}></div>
+          <div className="relative w-full sm:w-[500px] lg:w-[600px] h-full mt-16 sm:mt-0 bg-surface-primary sm:border-l border-border flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.1)] animate-slideInRight sm:rounded-none rounded-t-3xl overflow-hidden">
             
-            <div className="px-6 py-5 border-b border-border/20 flex items-center justify-between bg-surface-secondary/40">
-              <div>
-                <span className="text-xs font-mono font-bold text-text-muted uppercase tracking-wider">
-                  መከታተያ ኮድ፡ #{selectedTicket.trackingCode}
-                </span>
-                <h2 className="text-lg font-extrabold text-text-primary flex items-center gap-2 mt-0.5">
-                  {selectedTicket.type === 'Suggestion' ? 'የጥቆማ ማጣሪያ ሪፖርትና ውሳኔ' : 'የቅሬታና አቤቱታ ማጣሪያ ሪፖርትና ውሳኔ'}
+            {/* Drawer Header */}
+            <div className="p-5 sm:p-7 border-b border-border/30 flex items-start justify-between bg-surface-secondary/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-brand-blue/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest border ${
+                    selectedTicket.type === 'Suggestion'
+                      ? 'bg-warning/10 text-warning border-warning/20'
+                      : 'bg-brand-blue/10 text-brand-blue border-brand-blue/20'
+                  }`}>
+                    {selectedTicket.type === 'Suggestion' ? 'ጥቆማ (Suggestion)' : 'አቤቱታ (Complaint)'}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-text-muted bg-surface-primary px-2.5 py-1 rounded-md border border-border/40 shadow-sm">
+                    #{selectedTicket.trackingCode}
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-text-primary leading-tight line-clamp-2 pr-4">
+                  {selectedTicket.subject || selectedTicket.institution || 'ዝርዝር መረጃ አልተገለጸም'}
                 </h2>
               </div>
               <button 
                 onClick={() => setSelectedTicket(null)}
-                className="p-2.5 rounded-xl bg-surface-secondary hover:bg-surface-secondary/80 text-text-muted hover:text-text-primary transition-colors border border-border/20"
+                className="relative z-10 p-2.5 rounded-full bg-surface-primary hover:bg-surface-secondary text-text-muted hover:text-text-primary transition-all border border-border/40 shadow-sm min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
               >
                 <IconX size={20} />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-sm text-text-primary">
+            {/* Drawer Body */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 sm:space-y-8 bg-surface-primary/50">
               
               {selectedTicket.status === 'PendingApproval' && (
-                <div className="p-5 rounded-2xl bg-sky-500/10 border border-sky-500/30 space-y-3 shadow-xs">
-                  <div className="flex items-center gap-2 text-sky-700 dark:text-sky-300 font-bold text-base">
-                    <IconShieldCheck size={22} className="text-sky-600 dark:text-sky-400" />
-                    ለእርስዎ ጽድቅ የቀረበ የኮሚቴ ውሳኔ ሀሳብ፡
+                <div className="p-5 sm:p-6 rounded-3xl bg-sky-500/5 border border-sky-500/20 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-sky-500"></div>
+                  <div className="flex items-center gap-2.5 text-sky-700 dark:text-sky-300 font-extrabold text-base mb-4">
+                    <IconShieldCheck size={24} className="text-sky-500" />
+                    የውሳኔ ሀሳብ (Decision Proposal)
                   </div>
-                  <p className="text-sm bg-surface-primary p-4 rounded-xl border border-border/30 leading-relaxed font-normal text-text-primary">
-                    {selectedTicket.resolution?.message || selectedTicket.decisionIdeaSummary || 'የውሳኔ ሀሳብ አልተጻፈም። (አጣሪ ኮሚቴው ያለምንም ተጨማሪ ማብራሪያ ለጽድቅ አስገብቷል)'}
-                  </p>
-                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                  
+                  <textarea
+                    value={editableDecision}
+                    onChange={(e) => setEditableDecision(e.target.value)}
+                    rows={4}
+                    className="w-full bg-surface-primary p-4 sm:p-5 rounded-2xl border border-sky-500/30 leading-relaxed font-medium text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 shadow-sm resize-none transition-shadow"
+                    placeholder="የውሳኔ ሀሳብ እዚህ ይጻፉ..."
+                  />
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <button
                       onClick={() => handleRatify(selectedTicket)}
                       disabled={actionLoading}
-                      className="w-full sm:flex-1 py-3 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                      className="w-full sm:flex-1 min-h-[48px] px-6 bg-success hover:bg-success/90 text-white font-bold rounded-2xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
                     >
-                      {actionLoading ? <IconLoader2 className="animate-spin" size={18} /> : <IconCheck size={18} />}
-                      ውሳኔውን ያጽድቁና ያሳውቁ (Ratify & Notify)
+                      {actionLoading ? <IconLoader2 className="animate-spin" size={20} /> : <IconCheck size={20} />}
+                      ያጽድቁ (Approve)
                     </button>
                     <button
                       onClick={() => setShowRevisionModal(true)}
                       disabled={actionLoading}
-                      className="w-full sm:w-auto py-3 px-6 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"
+                      className="w-full sm:w-auto min-h-[48px] px-6 bg-warning hover:bg-warning/90 text-white font-bold rounded-2xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
                     >
-                      <IconEdit size={18} />
-                      ማስተካከያ ይዘዙ (Request Revision)
+                      <IconEdit size={20} />
+                      ማስተካከያ ይመልሱ
                     </button>
                   </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl bg-surface-secondary/50 border border-border/20 text-xs">
-                <div>
-                  <span className="font-semibold text-text-muted block mb-1">አመልካች / ዜጋ</span>
-                  <span className="font-bold text-text-primary text-sm">{selectedTicket.name || 'አልተገለጸም (Anonymous)'}</span>
+              {/* Detail Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+                  <div className="p-2.5 bg-surface-primary rounded-xl shadow-sm border border-border/20 text-text-muted">
+                    <IconUser size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block mb-0.5">አመልካች</span>
+                    <span className="font-extrabold text-text-primary text-sm">{selectedTicket.name || 'አልተገለጸም'}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-semibold text-text-muted block mb-1">ስልክ ቁጥር</span>
-                  <span className="font-mono font-bold text-text-primary text-sm">{selectedTicket.phone || 'የለም'}</span>
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+                  <div className="p-2.5 bg-surface-primary rounded-xl shadow-sm border border-border/20 text-text-muted">
+                    <IconPhone size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block mb-0.5">ስልክ</span>
+                    <span className="font-mono font-extrabold text-text-primary text-sm">{selectedTicket.phone || 'የለም'}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-semibold text-text-muted block mb-1">ጉዳዩ የተመለከተው ተቋም</span>
-                  <span className="font-bold text-text-primary text-sm">{selectedTicket.subject || selectedTicket.institution || 'አልተገለጸም'}</span>
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+                  <div className="p-2.5 bg-surface-primary rounded-xl shadow-sm border border-border/20 text-text-muted">
+                    <IconBuilding size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block mb-0.5">ተቋም</span>
+                    <span className="font-extrabold text-text-primary text-sm line-clamp-1">{selectedTicket.institution || 'አልተገለጸም'}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-semibold text-text-muted block mb-1">የተመዘገበበት ቀን</span>
-                  <span className="text-text-primary font-medium">{selectedTicket.date}</span>
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
+                  <div className="p-2.5 bg-surface-primary rounded-xl shadow-sm border border-border/20 text-text-muted">
+                    <IconCalendar size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block mb-0.5">ቀን</span>
+                    <span className="font-extrabold text-text-primary text-sm">{selectedTicket.date}</span>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted mb-2">የአቤቱታው ወይም ጥቆማው ዝርዝር ይዘት</h4>
-                <div className="p-5 rounded-2xl bg-surface-secondary/30 border border-border/20 leading-relaxed text-text-primary font-normal text-sm">
+              {/* Message Body */}
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+                    <IconFileText size={16} />
+                  </div>
+                  <h4 className="text-sm font-extrabold text-text-primary">ዝርዝር ይዘት (Message)</h4>
+                </div>
+                <div className="p-5 sm:p-6 rounded-3xl bg-surface-secondary/30 border border-border/40 text-text-primary font-medium text-sm leading-loose whitespace-pre-wrap shadow-inner relative">
+                  <div className="absolute top-6 left-0 w-1 h-12 bg-brand-blue/40 rounded-r-full"></div>
                   {selectedTicket.message}
                 </div>
               </div>
 
+              {/* Attachments */}
               {selectedTicket.attachments && selectedTicket.attachments.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted mb-2.5 flex items-center gap-1.5">
-                    <IconPaperclip size={15} /> የቀረቡ ማስረጃ ሰነዶች ({selectedTicket.attachments.length})
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+                      <IconPaperclip size={16} />
+                    </div>
+                    <h4 className="text-sm font-extrabold text-text-primary">ማስረጃ ሰነዶች ({selectedTicket.attachments.length})</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {selectedTicket.attachments.map(att => (
                       <a
                         key={att.id}
                         href={att.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-3 rounded-xl bg-surface-secondary/50 hover:bg-surface-secondary border border-border/20 flex items-center justify-between transition-colors text-xs font-semibold text-brand-blue"
+                        className="p-4 rounded-2xl bg-surface-secondary/40 hover:bg-surface-secondary border border-border/40 flex items-center justify-between transition-all hover:shadow-sm text-sm font-bold text-brand-blue group min-h-[56px]"
                       >
-                        <span className="truncate max-w-[200px]">{att.filename}</span>
-                        <IconExternalLink size={14} className="flex-shrink-0" />
+                        <span className="truncate max-w-[150px]">{att.filename}</span>
+                        <div className="w-8 h-8 rounded-full bg-surface-primary flex items-center justify-center border border-border/20 shadow-sm group-hover:scale-110 transition-transform">
+                          <IconExternalLink size={14} className="text-text-muted group-hover:text-brand-blue" />
+                        </div>
                       </a>
                     ))}
                   </div>
                 </div>
               )}
 
+              {/* Final Resolution Box */}
               {(selectedTicket.status === 'Resolved' || selectedTicket.status === 'Rejected') && selectedTicket.resolution && (
-                <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
-                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 block">የተሰጠ የመጨረሻ ውሳኔ ምላሽ፡</span>
-                  <p className="text-text-primary font-medium text-sm leading-relaxed">{selectedTicket.resolution.message}</p>
+                <div className="p-5 sm:p-6 rounded-3xl bg-success/10 border border-success/30 relative overflow-hidden shadow-sm">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-success/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                  <span className="text-sm font-extrabold text-success flex items-center gap-2 mb-3 relative z-10">
+                    <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+                      <IconCheck size={16} />
+                    </div>
+                    የመጨረሻ ውሳኔ ምላሽ፡
+                  </span>
+                  <p className="text-text-primary font-medium text-sm leading-loose whitespace-pre-wrap relative z-10 pl-10 border-l-2 border-success/30 ml-4 py-1">
+                    {selectedTicket.resolution.message}
+                  </p>
                 </div>
               )}
 
             </div>
 
+            {/* Action Bar (Sticky Bottom) */}
             {selectedTicket.status !== 'Resolved' && selectedTicket.status !== 'Rejected' && selectedTicket.status !== 'PendingApproval' && (
-              <div className="px-6 py-4 bg-surface-secondary/50 border-t border-border/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
+              <div className="p-4 sm:p-6 bg-surface-primary border-t border-border/30 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                 {selectedTicket.status === 'Accepted' ? (
-                  <>
-                    <span className="text-xs text-text-muted font-semibold sm:mr-auto">እባክዎ ኮሚቴ ይመድቡ፡</span>
-                    <button
-                      onClick={() => setShowCommitteeModal(true)}
-                      disabled={actionLoading}
-                      className="px-5 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center flex items-center justify-center gap-2"
-                    >
-                      <IconUser size={16} />
-                      ኮሚቴ መድብና አጣራ (Assign & Start)
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setShowCommitteeModal(true)}
+                    disabled={actionLoading}
+                    className="w-full min-h-[48px] px-6 py-3 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-sm rounded-2xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    <IconUser size={20} />
+                    ኮሚቴ መድብና አጣራ (Assign & Start)
+                  </button>
                 ) : (
-                  <>
-                    <span className="text-xs text-text-muted font-semibold sm:mr-auto">የኮሚቴ ሰብሳቢ የመጨረሻ ውሳኔና ትዕዛዝ መስጫ፡</span>
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={() => setShowDirectModal(true)}
                       disabled={actionLoading}
-                      className="px-5 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center"
+                      className="flex-1 min-h-[48px] px-6 py-3 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-sm rounded-2xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                     >
+                      <IconShieldCheck size={20} />
                       በቀጥታ ውሳኔ ይስጡ (Direct Resolve)
                     </button>
                     <button
                       onClick={() => handleDirectResolve('Rejected')}
                       disabled={actionLoading}
-                      className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center"
+                      className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-danger hover:bg-danger/90 text-white font-bold text-sm rounded-2xl shadow-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                     >
-                      ውድቅ ያድርጉ (Reject Case)
+                      <IconBan size={20} />
+                      ውድቅ (Reject)
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             )}
-
           </div>
         </div>
       )}
 
-      {/* Committee Assignment Modal */}
+      {/* Committee Assignment Modal with Phone Field */}
       {showCommitteeModal && selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-primary w-full max-w-md p-6 rounded-3xl border border-border/30 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-                <IconUser className="text-brand-blue" size={20} />
-                ለኮሚቴ ይመድቡ (Assign Committee)
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className="bg-surface-primary w-full max-w-md p-6 rounded-t-3xl sm:rounded-3xl border border-border/30 shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-extrabold text-text-primary flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+                  <IconUser size={20} />
+                </div>
+                ለኮሚቴ ይመድቡ
               </h3>
-              <button onClick={() => setShowCommitteeModal(false)} className="p-1.5 hover:bg-surface-secondary rounded-xl transition-colors">
+              <button onClick={() => setShowCommitteeModal(false)} className="p-2 bg-surface-secondary hover:bg-surface-secondary/80 rounded-full transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center">
                 <IconX size={20} className="text-text-muted" />
               </button>
             </div>
 
-            <p className="text-xs text-text-muted leading-relaxed">
-              ይህን አቤቱታ የሚያጣሩትን የኮሚቴ አባላት ስም ያስገቡ። "መደብና አጣራ" ሲሉ የ15 ቀናት ጊዜ ገደብ ይጀምራል።
+            <p className="text-sm text-text-muted mb-6 leading-relaxed">
+              ይህን አቤቱታ የሚያጣሩትን የኮሚቴ አባላት ስምና ስልክ ቁጥር ያስገቡ። "መደብና አጣራ" ሲሉ የ15 ቀናት ጊዜ ገደብ ይጀምራል።
             </p>
 
-            <div className="space-y-4 max-h-[40vh] overflow-y-auto px-1 pb-2">
+            <div className="space-y-5 overflow-y-auto flex-1 px-1 pb-4 hide-scrollbar">
               {committeeMembers.map((member, index) => (
-                <div key={index}>
-                  <label className="text-xs font-bold text-text-primary mb-1 block">
-                    የኮሚቴ አባል {index + 1} ስም *
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={member}
-                      onChange={(e) => {
-                        const newMembers = [...committeeMembers];
-                        newMembers[index] = e.target.value;
-                        setCommitteeMembers(newMembers);
-                      }}
-                      className="block w-full rounded-xl border border-border/50 bg-surface-secondary/30 px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
-                      placeholder={`አባል ${index + 1} ስም`}
-                    />
+                <div key={index} className="p-4 rounded-3xl bg-surface-secondary/30 border border-border/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider">አባል {index + 1}</span>
                     {committeeMembers.length > 1 && (
                       <button
                         onClick={() => {
                           const newMembers = committeeMembers.filter((_, i) => i !== index);
                           setCommitteeMembers(newMembers);
                         }}
-                        className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100 flex-shrink-0"
+                        className="p-1.5 text-danger hover:bg-danger/10 rounded-full transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
                       >
-                        <IconX size={20} />
+                        <IconX size={16} />
                       </button>
                     )}
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-bold text-text-primary mb-1.5 block">
+                      የኮሚቴ አባል ስም *
+                    </label>
+                    <div className="relative">
+                      <IconUser size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input
+                        type="text"
+                        value={member.name}
+                        onChange={(e) => {
+                          const newMembers = [...committeeMembers];
+                          newMembers[index].name = e.target.value;
+                          setCommitteeMembers(newMembers);
+                        }}
+                        className="block w-full min-h-[48px] rounded-2xl border border-border/50 bg-surface-primary pl-11 pr-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
+                        placeholder="ሙሉ ስም ያስገቡ"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-text-primary mb-1.5 block">
+                      ስልክ ቁጥር (አማራጭ)
+                    </label>
+                    <div className="relative">
+                      <IconPhone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input
+                        type="tel"
+                        value={member.phone}
+                        onChange={(e) => {
+                          const newMembers = [...committeeMembers];
+                          newMembers[index].phone = e.target.value;
+                          setCommitteeMembers(newMembers);
+                        }}
+                        className="block w-full min-h-[48px] rounded-2xl border border-border/50 bg-surface-primary pl-11 pr-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
+                        placeholder="09..."
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
               
               <button
-                onClick={() => setCommitteeMembers([...committeeMembers, ''])}
-                className="w-full py-2.5 border-2 border-dashed border-brand-blue/30 text-brand-blue rounded-xl text-xs font-bold hover:bg-brand-blue/5 transition-colors mt-2"
+                onClick={() => setCommitteeMembers([...committeeMembers, { name: '', phone: '' }])}
+                className="w-full min-h-[48px] border-2 border-dashed border-brand-blue/30 text-brand-blue rounded-2xl text-sm font-bold hover:bg-brand-blue/5 transition-colors mt-4 flex items-center justify-center gap-2"
               >
-                + ተጨማሪ አባል ያክሉ
+                <span>+</span> ተጨማሪ አባል ያክሉ
               </button>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border/30 mt-4">
               <button
                 onClick={() => setShowCommitteeModal(false)}
-                className="px-4 py-2 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-xs font-bold rounded-xl border border-border/20"
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-sm font-bold rounded-2xl border border-border/30 transition-colors"
               >
                 ሰርዝ (Cancel)
               </button>
               <button
                 onClick={handleCommitteeAssign}
-                disabled={actionLoading || !committeeMembers.some(m => m.trim())}
-                className="px-5 py-2 bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={actionLoading || !committeeMembers.some(m => m.name.trim())}
+                className="w-full sm:w-auto min-h-[48px] px-8 py-3 bg-brand-blue hover:bg-brand-blue/90 text-white text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {actionLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconPlayerPlay size={16} />}
+                {actionLoading ? <IconLoader2 size={20} className="animate-spin" /> : <IconPlayerPlay size={20} />}
                 {actionLoading ? 'በመመደብ ላይ...' : 'መደብና አጣራ (Start)'}
               </button>
             </div>
@@ -897,13 +911,15 @@ export default function CommitteeLeaderDashboard() {
 
       {/* Revision Order Modal */}
       {showRevisionModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-primary w-full max-w-md p-6 rounded-3xl border border-border/30 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-              <IconEdit className="text-amber-500" size={20} />
-              ለአጣሪ ኮሚቴው የማስተካከያ ትዕዛዝ መስጫ
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className="bg-surface-primary w-full max-w-md p-6 rounded-t-3xl sm:rounded-3xl border border-border/30 shadow-2xl space-y-5">
+            <h3 className="text-lg font-extrabold text-text-primary flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+                <IconEdit size={20} />
+              </div>
+              የማስተካከያ ትዕዛዝ መስጫ
             </h3>
-            <p className="text-xs text-text-muted leading-relaxed">
+            <p className="text-sm text-text-muted leading-relaxed">
               ውሳኔውን ከማጽደቅዎ በፊት አጣሪ ኮሚቴው ምን ተጨማሪ ምርመራ፣ ማጣራት ወይም ማስተካከያ እንዲያደርግ እንደሚፈልጉ ያስገቡ።
             </p>
             <textarea
@@ -911,19 +927,19 @@ export default function CommitteeLeaderDashboard() {
               value={revisionNotes}
               onChange={e => setRevisionNotes(e.target.value)}
               placeholder="ለምሳሌ፡ የተቋሙ አስተያየትና ምላሽ በግልጽ አልተካተተም፤ ማስረጃው በደንብ ተጣርቶ ዳግም ይቅረብ..."
-              className="w-full p-3.5 bg-surface-secondary border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 text-text-primary placeholder-text-muted"
+              className="w-full p-4 bg-surface-secondary border border-border/30 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-warning/40 focus:border-warning text-text-primary placeholder:text-text-muted resize-none"
             />
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
               <button
                 onClick={() => setShowRevisionModal(false)}
-                className="px-4 py-2 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-xs font-bold rounded-xl border border-border/20"
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-sm font-bold rounded-2xl border border-border/30 transition-colors"
               >
                 ተዉት (Cancel)
               </button>
               <button
                 onClick={handleRequestRevision}
                 disabled={actionLoading || !revisionNotes.trim()}
-                className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50"
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-warning hover:bg-warning/90 text-white text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50"
               >
                 ትዕዛዝ ያስተላልፉ (Send Revision Order)
               </button>
@@ -934,50 +950,55 @@ export default function CommitteeLeaderDashboard() {
 
       {/* Direct Resolve Modal */}
       {showDirectModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-primary w-full max-w-lg p-6 rounded-3xl border border-border/30 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-              <IconShieldCheck className="text-brand-blue" size={22} />
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className="bg-surface-primary w-full max-w-lg p-6 rounded-t-3xl sm:rounded-3xl border border-border/30 shadow-2xl space-y-5 max-h-[90vh] flex flex-col">
+            <h3 className="text-lg font-extrabold text-text-primary flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue shrink-0">
+                <IconShieldCheck size={20} />
+              </div>
               የመጨረሻ ውሳኔና ምላሽ መስጫ
             </h3>
-            <p className="text-xs text-text-muted leading-relaxed">
+            <p className="text-sm text-text-muted leading-relaxed shrink-0">
               ይህን ውሳኔ ሲሰጡ ጉዳዩ የመጨረሻ ውሳኔ እንዳገኘ ተቆጥሮ ለአመልካቹ መልእክት ይተላለፋል።
             </p>
-            <div>
-              <label className="text-xs font-bold text-text-primary block mb-1.5">የውሳኔው ማብራሪያና ምላሽ፡ *</label>
-              <textarea
-                rows={5}
-                value={directMessage}
-                onChange={e => setDirectMessage(e.target.value)}
-                placeholder="ለአመልካቹ የሚሰጥ ዝርዝር የመጨረሻ ውሳኔና ምላሽ እዚህ ይጻፉ..."
-                className="w-full p-3.5 bg-surface-secondary border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue text-text-primary placeholder-text-muted"
-              />
+            
+            <div className="overflow-y-auto flex-1 space-y-5 px-1 py-1 hide-scrollbar">
+              <div>
+                <label className="text-sm font-bold text-text-primary block mb-2">የውሳኔው ማብራሪያና ምላሽ፡ *</label>
+                <textarea
+                  rows={5}
+                  value={directMessage}
+                  onChange={e => setDirectMessage(e.target.value)}
+                  placeholder="ለአመልካቹ የሚሰጥ ዝርዝር የመጨረሻ ውሳኔና ምላሽ እዚህ ይጻፉ..."
+                  className="w-full p-4 bg-surface-secondary border border-border/30 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue text-text-primary placeholder:text-text-muted resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-text-primary block mb-2">የውሳኔ ደብዳቤ ወይም ሰነድ አያይዙ (የተቻለ ከሆነ)፡</label>
+                <input
+                  type="file"
+                  multiple
+                  onChange={e => setDirectFiles(e.target.files ? Array.from(e.target.files) : [])}
+                  className="w-full text-sm text-text-secondary file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20 cursor-pointer"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-text-primary block mb-1.5">የውሳኔ ደብዳቤ ወይም ሰነድ አያይዙ (የተቻለ ከሆነ)፡</label>
-              <input
-                type="file"
-                multiple
-                onChange={e => setDirectFiles(e.target.files ? Array.from(e.target.files) : [])}
-                className="w-full text-xs text-text-secondary file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border/30 shrink-0">
               <button
                 onClick={() => setShowDirectModal(false)}
-                className="px-4 py-2 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-xs font-bold rounded-xl border border-border/20"
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-sm font-bold rounded-2xl border border-border/30 transition-colors"
               >
                 ተዉት (Cancel)
               </button>
               <button
                 onClick={() => handleDirectResolve('Resolved')}
                 disabled={actionLoading || !directMessage.trim()}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-success hover:bg-success/90 text-white text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {actionLoading && <IconLoader2 className="animate-spin" size={16} />}
-                ውሳኔውን አጽድቀው ያጠናቅቁ (Submit Resolution)
+                {actionLoading && <IconLoader2 className="animate-spin" size={20} />}
+                ውሳኔውን አጽድቀው ያጠናቅቁ
               </button>
             </div>
           </div>

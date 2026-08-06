@@ -65,14 +65,15 @@ export default function ComplaintLoginPage() {
           return;
         }
 
-        if (profile?.role === 'committee_leader') {
-          window.location.href = '/dashboard/committee-leader';
+        if (profile?.role !== 'committee_leader') {
+          await supabase.auth.signOut();
+          setErrorMsg("ይህ መግቢያ ለኮሚቴ ሰብሳቢ (Committee Leader) ብቻ የተዘጋጀ ነው። እባክዎ የአስተዳዳሪ መግቢያን ይጠቀሙ።");
+          setLoading(false);
           return;
         }
-      }
 
-      // Redirect straight to dedicated complaints module workspace
-      window.location.href = '/dashboard/complaints';
+        window.location.href = '/dashboard/committee-leader';
+      }
     } catch (error: any) {
       setErrorMsg(maskSupabaseError(error));
       setLoading(false);

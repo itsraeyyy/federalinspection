@@ -212,10 +212,7 @@ function TrackingContent() {
                       <p className={`text-sm font-semibold ${isFuture ? 'text-slate-400' : 'text-slate-800'}`}>{s.label}</p>
                       {s.date && (
                         <p className="text-xs text-slate-500 mt-0.5">
-                          {new Date(s.date).toLocaleString('am-ET', {
-                            year: 'numeric', month: 'long', day: 'numeric',
-                            hour: '2-digit', minute: '2-digit'
-                          })}
+                          {s.date}
                         </p>
                       )}
                     </div>

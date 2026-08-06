@@ -61,7 +61,9 @@ export default function LoginPage() {
         }
 
         if (profile?.role === 'committee_leader') {
-          window.location.href = '/dashboard/committee-leader';
+          await supabase.auth.signOut();
+          setErrorMsg("ይህ መግቢያ ለአስተዳዳሪዎች (Admins) ብቻ የተዘጋጀ ነው። እባክዎ የኮሚቴ ሰብሳቢ መግቢያን ይጠቀሙ።");
+          setLoading(false);
           return;
         }
       }

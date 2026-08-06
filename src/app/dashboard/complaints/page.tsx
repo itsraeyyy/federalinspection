@@ -55,10 +55,11 @@ export default function ComplaintsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<Complaint | null>(null);
   const [showResolutionModal, setShowResolutionModal] = useState(false);
-  const [resolutionAction, setResolutionAction] = useState<'Resolved' | 'Rejected'>('Resolved');
+  const [resolutionAction, setResolutionAction] = useState<'Resolved' | 'Rejected' | 'PendingApproval'>('Resolved');
   const [resolutionMessage, setResolutionMessage] = useState('');
   const [resolutionFiles, setResolutionFiles] = useState<File[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const resFileRef = useRef<HTMLInputElement>(null);
 
   // Committee Modal State (Removed, now managed by Leader)
@@ -135,18 +136,36 @@ export default function ComplaintsPage() {
   const handleResolutionSubmit = async () => {
     if (!selectedTicket || !resolutionMessage.trim()) return;
     setActionLoading(true);
+    setFeedbackMsg(null);
 
-    const success = await complaintService.updateComplaintStatus(
-      selectedTicket.id,
-      resolutionAction,
-      adminName,
-      { message: resolutionMessage, files: resolutionFiles.length > 0 ? resolutionFiles : undefined }
-    );
+    try {
+      let success = false;
+      if (resolutionAction === 'PendingApproval') {
+        success = await complaintService.submitDecisionIdea(
+          selectedTicket.id, 
+          resolutionMessage, 
+          resolutionFiles.length > 0 ? resolutionFiles : undefined, 
+          adminName
+        );
+      } else {
+        success = await complaintService.updateComplaintStatus(
+          selectedTicket.id,
+          resolutionAction,
+          adminName,
+          { message: resolutionMessage, files: resolutionFiles.length > 0 ? resolutionFiles : undefined }
+        );
+      }
 
-    if (success) {
-      await loadTickets();
-      setShowResolutionModal(false);
-      setSelectedTicket(null);
+      if (success) {
+        await loadTickets();
+        setShowResolutionModal(false);
+        setSelectedTicket(null);
+        setFeedbackMsg({ type: 'success', text: 'በትክክል ተልኳል!' });
+      } else {
+        setFeedbackMsg({ type: 'error', text: 'ስህተት አጋጥሟል።' });
+      }
+    } catch (e: any) {
+      setFeedbackMsg({ type: 'error', text: e.message || 'ስህተት አጋጥሟል።' });
     }
     setActionLoading(false);
   };
@@ -154,11 +173,19 @@ export default function ComplaintsPage() {
   const handleAcceptComplaint = async () => {
     if (!selectedTicket) return;
     setActionLoading(true);
-    const success = await complaintService.acceptComplaintByAdmin(selectedTicket.id, adminName);
-    if (success) {
-      await loadTickets();
-      const updated = await complaintService.getComplaintById(selectedTicket.id);
-      setSelectedTicket(updated);
+    setFeedbackMsg(null);
+    try {
+      const success = await complaintService.acceptComplaintByAdmin(selectedTicket.id, adminName);
+      if (success) {
+        await loadTickets();
+        const updated = await complaintService.getComplaintById(selectedTicket.id);
+        setSelectedTicket(updated);
+        setFeedbackMsg({ type: 'success', text: 'ጉዳዩ በተሳካ ሁኔታ ተቀባይነት አግኝቷል።' });
+      } else {
+        setFeedbackMsg({ type: 'error', text: 'ተቀባይነት ማድረግ አልተሳካም። እባክዎ እንደገና ይሞክሩ።' });
+      }
+    } catch (e: any) {
+      setFeedbackMsg({ type: 'error', text: e.message || 'ስህተት አጋጥሟል' });
     }
     setActionLoading(false);
   };
@@ -216,6 +243,20 @@ export default function ComplaintsPage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6 h-full pb-10">
+        {feedbackMsg && (
+          <div className={`p-4 rounded-xl flex items-center justify-between text-sm font-semibold shadow-sm animate-in fade-in slide-in-from-top-2 ${
+            feedbackMsg.type === 'success' ? 'bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span>{feedbackMsg.type === 'success' ? '✓' : '⚠'}</span>
+              <span>{feedbackMsg.text}</span>
+            </div>
+            <button onClick={() => setFeedbackMsg(null)} className="p-1 hover:opacity-75">
+              <IconX size={18} />
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
@@ -616,14 +657,24 @@ export default function ComplaintsPage() {
               <div className="sticky bottom-0 bg-surface-primary/90 backdrop-blur-xl border-t border-border/20 p-6">
                 <div className="flex gap-3">
                   {selectedTicket.status === 'New' && (
-                    <button
-                      onClick={handleAcceptComplaint}
-                      disabled={actionLoading}
-                      className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                    >
-                      <IconCheck size={18} />
-                      ተቀበል (Accept)
-                    </button>
+                    <>
+                      <button
+                        onClick={handleAcceptComplaint}
+                        disabled={actionLoading}
+                        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                      >
+                        <IconCheck size={18} />
+                        ተቀበል (Accept)
+                      </button>
+                      <button
+                        onClick={() => { setResolutionAction('Rejected'); setResolutionMessage(''); setResolutionFiles([]); setShowResolutionModal(true); }}
+                        disabled={actionLoading}
+                        className="w-auto flex items-center justify-center gap-2 py-3.5 px-6 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                      >
+                        <IconBan size={18} />
+                        ውድቅ (Reject)
+                      </button>
+                    </>
                   )}
                   {selectedTicket.status === 'Accepted' && (
                     <div className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-surface-secondary text-text-muted rounded-2xl text-sm font-bold border border-border/50 cursor-not-allowed">
@@ -654,7 +705,7 @@ export default function ComplaintsPage() {
           <div className="bg-surface-primary rounded-2xl border border-border/30 p-6 max-w-lg w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-semibold text-text-primary">
-                {resolutionAction === 'Resolved' ? 'መፍትሄ ይስጡ' : 'ውድቅ ያድርጉ'}
+                {resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ለጽድቅ ማቅረቢያ' : resolutionAction === 'Resolved' ? 'መፍትሄ ይስጡ' : 'ውድቅ ያድርጉ'}
               </h3>
               <button onClick={() => setShowResolutionModal(false)} className="p-1.5 hover:bg-surface-secondary rounded-xl transition-colors">
                 <IconX size={20} className="text-text-muted" />
@@ -662,22 +713,24 @@ export default function ComplaintsPage() {
             </div>
 
             <p className="text-sm text-text-secondary mb-4">
-              {resolutionAction === 'Resolved'
-                ? 'የተሰጠውን መፍትሄ ዝርዝር ያስገቡ። ይህ ለአቅራቢው ይላካል።'
-                : 'ውድቅ ለማድረግ ምክንያቱን ያስገቡ። ይህ ለአቅራቢው ይላካል።'}
+              {resolutionAction === 'PendingApproval'
+                ? 'የተሰጠውን የውሳኔ ሀሳብ ማጠቃለያ ያስገቡ። ይህ ለኮሚቴ ሰብሳቢው ይላካል።'
+                : resolutionAction === 'Resolved'
+                  ? 'የተሰጠውን መፍትሄ ዝርዝር ያስገቡ። ይህ ለአቅራቢው ይላካል።'
+                  : 'ውድቅ ለማድረግ ምክንያቱን ያስገቡ። ይህ ለአቅራቢው ይላካል።'}
             </p>
 
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-text-primary mb-2 block">
-                  {resolutionAction === 'Resolved' ? 'የመፍትሄ ዝርዝር *' : 'የውድቅ ምክንያት *'}
+                  {resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ማጠቃለያ *' : resolutionAction === 'Resolved' ? 'የመፍትሄ ዝርዝር *' : 'የውድቅ ምክንያት *'}
                 </label>
                 <textarea
                   value={resolutionMessage}
                   onChange={(e) => setResolutionMessage(e.target.value)}
                   rows={4}
                   className="block w-full resize-none rounded-xl border border-border/50 bg-surface-secondary/30 px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
-                  placeholder={resolutionAction === 'Resolved' ? 'የተሰጠውን መፍትሄ ያስገቡ...' : 'ውድቅ ያደረጉበትን ምክንያት ያስገቡ...'}
+                  placeholder={resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ማጠቃለያዎን እዚህ ያስገቡ...' : resolutionAction === 'Resolved' ? 'የተሰጠውን መፍትሄ ያስገቡ...' : 'ውድቅ ያደረጉበትን ምክንያት ያስገቡ...'}
                 />
               </div>
 
@@ -718,12 +771,14 @@ export default function ComplaintsPage() {
                 onClick={handleResolutionSubmit}
                 disabled={actionLoading || !resolutionMessage.trim()}
                 className={`flex-1 py-2.5 px-4 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 ${
-                  resolutionAction === 'Resolved'
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-red-500 hover:bg-red-600'
+                  resolutionAction === 'PendingApproval'
+                    ? 'bg-brand-blue hover:bg-brand-blue/90'
+                    : resolutionAction === 'Resolved'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-500 hover:bg-red-600'
                 }`}
               >
-                {actionLoading ? 'በመላክ ላይ...' : resolutionAction === 'Resolved' ? 'መፍትሄ ስጥ' : 'ውድቅ አድርግ'}
+                {actionLoading ? 'በመላክ ላይ...' : resolutionAction === 'PendingApproval' ? 'ለጽድቅ አቅርብ' : resolutionAction === 'Resolved' ? 'መፍትሄ ስጥ' : 'ውድቅ አድርግ'}
               </button>
             </div>
           </div>

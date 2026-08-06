@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     // 1. Fetch active complaints/suggestions that haven't been resolved or rejected
     const { data: tickets, error: ticketsError } = await supabaseAdmin
       .from('complaints')
-      .select('id, tracking_code, type, subject, created_at, sla_deadline, sla_notified, reminder_notified, status')
+      .select('id, tracking_code, type, subject, created_at, resolution, sla_notified, reminder_notified, status')
       .not('status', 'in', '("Resolved","Rejected")');
 
     if (ticketsError || !tickets) {
@@ -20,9 +20,10 @@ export async function GET(request: Request) {
     const escalationTickets: typeof tickets = [];
 
     for (const ticket of tickets) {
-      if (!ticket.sla_deadline) continue; // Skip tickets that haven't started processing yet
+      const slaDeadline = (ticket.resolution as any)?.slaDeadline;
+      if (!slaDeadline) continue; // Skip tickets that haven't started processing yet
 
-      const deadlineMs = new Date(ticket.sla_deadline).getTime();
+      const deadlineMs = new Date(slaDeadline).getTime();
       const remainingDays = (deadlineMs - now) / (1000 * 60 * 60 * 24);
 
       // Check if deadline has passed (Escalation to Committee Leader)

@@ -41,15 +41,15 @@ function mapRowToComplaint(item: any): Complaint {
     status: item.status,
     resolution: item.resolution,
     groupMembers: item.group_members || [],
-    assignedCommittee: item.assigned_committee,
+    assignedCommittee: (item.resolution as any)?.assignedCommittee || undefined,
     serviceName: item.service_name,
     resolutionRating: item.resolution_rating,
     resolutionFeedback: item.resolution_feedback,
-    workflowStep: item.workflow_step || (item.status === 'Accepted' ? 2 : item.status === 'Processing' ? 3 : item.status === 'PendingApproval' ? 4 : item.status === 'Resolved' || item.status === 'Rejected' ? 5 : 1),
-    adminInstructions: item.admin_instructions || undefined,
-    decisionIdeaSummary: item.decision_idea_summary || undefined,
-    decisionIdeaFiles: item.decision_idea_files || [],
-    slaDeadline: item.sla_deadline ? formatECDateTime(item.sla_deadline) : undefined,
+    workflowStep: (item.resolution as any)?.workflowStep || (item.status === 'Accepted' ? 2 : item.status === 'Processing' ? 3 : item.status === 'PendingApproval' ? 4 : item.status === 'Resolved' || item.status === 'Rejected' ? 5 : 1),
+    adminInstructions: (item.resolution as any)?.adminInstructions || undefined,
+    decisionIdeaSummary: (item.resolution as any)?.decisionIdeaSummary || undefined,
+    decisionIdeaFiles: (item.resolution as any)?.decisionIdeaFiles || [],
+    slaDeadline: (item.resolution as any)?.slaDeadline ? formatECDateTime((item.resolution as any).slaDeadline) : undefined,
     slaNotified: item.sla_notified || false,
     reminderNotified: item.reminder_notified || false,
   };
@@ -237,26 +237,25 @@ export const complaintService = {
     adminName: string,
     resolution?: { message: string; files?: File[] }
   ): Promise<boolean> => {
+    // Fetch existing record to preserve resolution data
+    const { data: existing } = await supabase.from('complaints').select('resolution').eq('id', id).single();
     const updates: any = { status: newStatus };
 
     if (newStatus === 'Processing') {
       updates.processed_at = new Date().toISOString();
       updates.processed_by = adminName;
-      updates.workflow_step = 3;
     }
 
     if (newStatus === 'PendingApproval') {
-      updates.workflow_step = 4;
       updates.processed_by = adminName;
       if (resolution?.message) {
-        updates.decision_idea_summary = resolution.message;
+        updates.resolution = { ...(existing?.resolution as any || {}), decisionIdeaSummary: resolution.message };
       }
     }
 
     if (newStatus === 'Resolved' || newStatus === 'Rejected') {
       updates.resolved_at = new Date().toISOString();
       updates.resolved_by = adminName;
-      updates.workflow_step = 5;
 
       if (resolution) {
         let resolutionAttachments: any[] = [];
@@ -292,6 +291,7 @@ export const complaintService = {
         }
 
         updates.resolution = {
+          ...(existing?.resolution as any || {}),
           message: resolution.message,
           attachments: resolutionAttachments,
           resolvedAt: new Date().toISOString(),
@@ -362,7 +362,7 @@ export const complaintService = {
   acceptComplaintByAdmin: async (id: string, adminName: string): Promise<boolean> => {
     const { error } = await supabase
       .from('complaints')
-      .update({ status: 'Accepted', workflow_step: 2, processed_by: adminName })
+      .update({ status: 'Accepted', processed_by: adminName })
       .eq('id', id);
     if (error) {
       console.error('Error accepting complaint by admin:', error);
@@ -402,12 +402,13 @@ export const complaintService = {
     const { error } = await supabase
       .from('complaints')
       .update({
-        assigned_committee: committeeName,
         status: 'Processing',
-        workflow_step: 3,
         processed_by: leaderName,
         processed_at: new Date().toISOString(),
-        sla_deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        resolution: {
+          assignedCommittee: committeeName,
+          slaDeadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        }
       })
       .eq('id', id);
 
@@ -448,12 +449,13 @@ export const complaintService = {
     const { error } = await supabase
       .from('complaints')
       .update({
-        decision_idea_summary: summary,
-        decision_idea_files: decisionAttachments,
         status: 'PendingApproval',
-        workflow_step: 4,
         processed_by: leaderName || null,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        resolution: {
+          decisionIdeaSummary: summary,
+          decisionIdeaFiles: decisionAttachments,
+        }
       })
       .eq('id', id);
 
@@ -495,9 +497,10 @@ export const complaintService = {
       .from('complaints')
       .update({
         status: 'RevisionRequested',
-        workflow_step: 3,
-        admin_instructions: feedbackNotes,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        resolution: {
+          adminInstructions: feedbackNotes,
+        }
       })
       .eq('id', id);
 
