@@ -20,17 +20,19 @@ export async function GET(request: Request) {
     const escalationTickets: typeof tickets = [];
 
     for (const ticket of tickets) {
-      const createdAtMs = new Date(ticket.created_at).getTime();
-      const elapsedDays = (now - createdAtMs) / (1000 * 60 * 60 * 24);
+      if (!ticket.sla_deadline) continue; // Skip tickets that haven't started processing yet
 
-      // Check 15-day expiration first (escalation to Committee Leader)
-      if (elapsedDays >= 15) {
+      const deadlineMs = new Date(ticket.sla_deadline).getTime();
+      const remainingDays = (deadlineMs - now) / (1000 * 60 * 60 * 24);
+
+      // Check if deadline has passed (Escalation to Committee Leader)
+      if (remainingDays <= 0) {
         if (!ticket.sla_notified) {
           escalationTickets.push(ticket);
         }
       } 
-      // Otherwise check Day 12-14 reminder (3 days remaining reminder to admins)
-      else if (elapsedDays >= 12 && elapsedDays < 15) {
+      // Otherwise check Day 12-14 reminder (3 days or less remaining, but not overdue yet)
+      else if (remainingDays <= 3 && remainingDays > 0) {
         if (!ticket.reminder_notified && !ticket.sla_notified) {
           reminderTickets.push(ticket);
         }
@@ -99,7 +101,7 @@ export async function GET(request: Request) {
     // Process Day 15 Escalation Alerts to Committee Leaders
     for (const ticket of escalationTickets) {
       const typeLabel = ticket.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const escalationSms = `አስቸኳይ ማሳሰቢያ፡ የ${typeLabel} መከታተያ ኮድ [${ticket.tracking_code}] የ15 ቀብብብ የመፍትሄ የጊዜ ገደብ ተጠናቋል! ጉዳዩ አሁንም ውሳኔ ስላላግኘ እባክዎ አስቸኳይ ክትትል ያድርጉበት።`;
+      const escalationSms = `አስቸኳይ ማሳሰቢያ፡ የ${typeLabel} መከታተያ ኮድ [${ticket.tracking_code}] የ15 ቀናት የመፍትሄ የጊዜ ገደብ ተጠናቋል! ጉዳዩ አሁንም ውሳኔ ስላላግኘ እባክዎ አስቸኳይ ክትትል ያድርጉበት።`;
 
       for (const leader of committeeLeaders) {
         if (leader.phone) {
@@ -115,7 +117,7 @@ export async function GET(request: Request) {
               phone: undefined,
               email: leader.email,
               name: 'የኮሚቴ ሰብሳቢ (Committee Leader)',
-              subject: `ICODiS አስቸኳይ፡ የ15 ቀብብብ የጊዜ ገድብብ ያለቀበት ${typeLabel} (${ticket.tracking_code})`,
+              subject: `ICODiS አስቸኳይ፡ የ15 ቀናት የጊዜ ገደብ ያለቀበት ${typeLabel} (${ticket.tracking_code})`,
               message: escalationSms,
               loginPath: '/dashboard/committee-leader',
             });

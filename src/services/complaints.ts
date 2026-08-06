@@ -359,8 +359,6 @@ export const complaintService = {
     return true;
   },
 
-  assignCommittee: async (id: string, committeeName: string): Promise<boolean> => {
-    const { error } = await supabase
   acceptComplaintByAdmin: async (id: string, adminName: string): Promise<boolean> => {
     const { error } = await supabase
       .from('complaints')

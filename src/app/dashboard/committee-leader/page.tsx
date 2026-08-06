@@ -24,6 +24,7 @@ import {
   IconBulb,
   IconSun,
   IconMoon,
+  IconPlayerPlay,
 } from "@tabler/icons-react";
 import { useEffect, useState, useCallback } from "react";
 import { complaintService } from "@/services/complaints";
@@ -777,24 +778,119 @@ export default function CommitteeLeaderDashboard() {
 
             {selectedTicket.status !== 'Resolved' && selectedTicket.status !== 'Rejected' && selectedTicket.status !== 'PendingApproval' && (
               <div className="px-6 py-4 bg-surface-secondary/50 border-t border-border/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
-                <span className="text-xs text-text-muted font-semibold sm:mr-auto">የኮሚቴ ሰብሳቢ የመጨረሻ ውሳኔና ትዕዛዝ መስጫ፡</span>
-                <button
-                  onClick={() => setShowDirectModal(true)}
-                  disabled={actionLoading}
-                  className="px-5 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center"
-                >
-                  በቀጥታ ውሳኔ ይስጡ (Direct Resolve)
-                </button>
-                <button
-                  onClick={() => handleDirectResolve('Rejected')}
-                  disabled={actionLoading}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center"
-                >
-                  ውድቅ ያድርጉ (Reject Case)
-                </button>
+                {selectedTicket.status === 'Accepted' ? (
+                  <>
+                    <span className="text-xs text-text-muted font-semibold sm:mr-auto">እባክዎ ኮሚቴ ይመድቡ፡</span>
+                    <button
+                      onClick={() => setShowCommitteeModal(true)}
+                      disabled={actionLoading}
+                      className="px-5 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center flex items-center justify-center gap-2"
+                    >
+                      <IconUser size={16} />
+                      ኮሚቴ መድብና አጣራ (Assign & Start)
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs text-text-muted font-semibold sm:mr-auto">የኮሚቴ ሰብሳቢ የመጨረሻ ውሳኔና ትዕዛዝ መስጫ፡</span>
+                    <button
+                      onClick={() => setShowDirectModal(true)}
+                      disabled={actionLoading}
+                      className="px-5 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center"
+                    >
+                      በቀጥታ ውሳኔ ይስጡ (Direct Resolve)
+                    </button>
+                    <button
+                      onClick={() => handleDirectResolve('Rejected')}
+                      disabled={actionLoading}
+                      className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-95 text-center"
+                    >
+                      ውድቅ ያድርጉ (Reject Case)
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* Committee Assignment Modal */}
+      {showCommitteeModal && selectedTicket && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-primary w-full max-w-md p-6 rounded-3xl border border-border/30 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                <IconUser className="text-brand-blue" size={20} />
+                ለኮሚቴ ይመድቡ (Assign Committee)
+              </h3>
+              <button onClick={() => setShowCommitteeModal(false)} className="p-1.5 hover:bg-surface-secondary rounded-xl transition-colors">
+                <IconX size={20} className="text-text-muted" />
+              </button>
+            </div>
+
+            <p className="text-xs text-text-muted leading-relaxed">
+              ይህን አቤቱታ የሚያጣሩትን የኮሚቴ አባላት ስም ያስገቡ። "መደብና አጣራ" ሲሉ የ15 ቀናት ጊዜ ገደብ ይጀምራል።
+            </p>
+
+            <div className="space-y-4 max-h-[40vh] overflow-y-auto px-1 pb-2">
+              {committeeMembers.map((member, index) => (
+                <div key={index}>
+                  <label className="text-xs font-bold text-text-primary mb-1 block">
+                    የኮሚቴ አባል {index + 1} ስም *
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={member}
+                      onChange={(e) => {
+                        const newMembers = [...committeeMembers];
+                        newMembers[index] = e.target.value;
+                        setCommitteeMembers(newMembers);
+                      }}
+                      className="block w-full rounded-xl border border-border/50 bg-surface-secondary/30 px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
+                      placeholder={`አባል ${index + 1} ስም`}
+                    />
+                    {committeeMembers.length > 1 && (
+                      <button
+                        onClick={() => {
+                          const newMembers = committeeMembers.filter((_, i) => i !== index);
+                          setCommitteeMembers(newMembers);
+                        }}
+                        className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100 flex-shrink-0"
+                      >
+                        <IconX size={20} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              <button
+                onClick={() => setCommitteeMembers([...committeeMembers, ''])}
+                className="w-full py-2.5 border-2 border-dashed border-brand-blue/30 text-brand-blue rounded-xl text-xs font-bold hover:bg-brand-blue/5 transition-colors mt-2"
+              >
+                + ተጨማሪ አባል ያክሉ
+              </button>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowCommitteeModal(false)}
+                className="px-4 py-2 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-xs font-bold rounded-xl border border-border/20"
+              >
+                ሰርዝ (Cancel)
+              </button>
+              <button
+                onClick={handleCommitteeAssign}
+                disabled={actionLoading || !committeeMembers.some(m => m.trim())}
+                className="px-5 py-2 bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {actionLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconPlayerPlay size={16} />}
+                {actionLoading ? 'በመመደብ ላይ...' : 'መደብና አጣራ (Start)'}
+              </button>
+            </div>
           </div>
         </div>
       )}
