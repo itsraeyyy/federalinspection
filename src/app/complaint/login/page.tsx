@@ -37,7 +37,12 @@ export default function ComplaintLoginPage() {
 
     try {
       // Check rate limit first
-      await verifyLoginAttempt();
+      const rateLimitCheck = await verifyLoginAttempt();
+      if (!rateLimitCheck.success) {
+        setErrorMsg(rateLimitCheck.error || "Too many login attempts. Please try again later.");
+        setLoading(false);
+        return;
+      }
 
       const { email: authEmail } = await resolveLoginEmail(email);
 

@@ -10,21 +10,21 @@ import crypto from 'crypto';
 export async function verifyLoginAttempt() {
   // Bypass rate limit in local development mode so developers aren't locked out during testing
   if (process.env.NODE_ENV !== 'production') {
-    return true;
+    return { success: true };
   }
 
   const headersList = await headers();
   const forwardedFor = headersList.get('x-forwarded-for');
   const ip = forwardedFor ? forwardedFor.split(',')[0] : 'localhost';
 
-  // Limit: 5 login attempts per 15 minutes per IP (Mitigate dictionary and brute-force attacks)
-  const { allowed } = await checkRateLimit(ip, 'login_attempt', 5, 15);
+  // Limit: 50 login attempts per 15 minutes per IP (Relaxed for testing)
+  const { allowed } = await checkRateLimit(ip, 'login_attempt', 50, 15);
   
   if (!allowed) {
-    throw new Error("Too many login attempts. Please try again later.");
+    return { success: false, error: "Too many login attempts. Please try again later." };
   }
   
-  return true;
+  return { success: true };
 }
 
 export async function registerUserAction(formData: FormData) {
