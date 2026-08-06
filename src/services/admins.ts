@@ -15,6 +15,7 @@ export const adminService = {
       name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
       email: profile.email || '',
       phone: profile.phone || '',
+      role: profile.role || 'admin',
       accessLevel: (profile.access_level || 'specific') as AccessLevel,
       groups: profile.groups || [],
       modules: profile.modules || [],
@@ -36,6 +37,7 @@ export const adminService = {
       name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
       email: data.email || '',
       phone: data.phone || '',
+      role: data.role || 'admin',
       accessLevel: (data.access_level || 'specific') as AccessLevel,
       groups: data.groups || [],
       modules: data.modules || [],
@@ -54,6 +56,7 @@ export const adminService = {
     }
     if (updateData.email) payload.email = updateData.email;
     if (updateData.phone) payload.phone = updateData.phone;
+    if (updateData.role) payload.role = updateData.role;
     if (updateData.accessLevel) payload.access_level = updateData.accessLevel;
     if (updateData.groups) payload.groups = updateData.groups;
     if (updateData.modules !== undefined) payload.modules = updateData.modules;

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { ReportPeriod } from "@/lib/et-calendar";
 
-export default async function RepHistoryDetailPage({ params }: { params: { id: string } }) {
+export default async function RepHistoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 

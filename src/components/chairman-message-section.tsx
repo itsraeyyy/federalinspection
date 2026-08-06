@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
 
 interface MessageData {
   id: string;
@@ -88,7 +89,7 @@ export function ChairmanMessageSection() {
               {/* Photo placeholder */}
               <div className="relative h-[460px] w-[340px] overflow-hidden rounded-3xl bg-gradient-to-br from-slate-200 to-slate-100 shadow-2xl ring-1 ring-slate-200 sm:h-[520px] sm:w-[380px]">
                 {msg.photo ? (
-                  <img src={msg.photo} alt={msg.name} className="h-full w-full object-cover" />
+                  <Image src={msg.photo} alt={msg.name} fill className="object-cover" sizes="(max-width: 640px) 340px, 380px" />
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center gap-4">
                     <div className="flex size-28 items-center justify-center rounded-full bg-slate-200">

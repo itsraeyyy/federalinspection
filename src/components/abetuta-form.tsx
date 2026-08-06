@@ -70,17 +70,24 @@ export function AbetutaForm() {
 
   const validatePersonal = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!phone.trim()) errs.phone = 'ስልክ ቁጥርዎን ያስገቡ';
+    if (!fullName.trim()) errs.fullName = 'እባክዎ ሙሉ ስምዎን ያስገቡ (ግዴታ)';
+    if (!age.trim()) errs.age = 'እባክዎ እድሜዎን ያስገቡ (ግዴታ)';
+    if (!gender.trim()) errs.gender = 'እባክዎ ጾታዎን ይምረጡ (ግዴታ)';
+    if (!phone.trim()) errs.phone = 'ስልክ ቁጥርዎን ያስገቡ (ግዴታ)';
+    if (!email.trim()) errs.email = 'እባክዎ ኢሜይል ያስገቡ (ግዴታ)';
+    if (!address.trim()) errs.address = 'እባክዎ አድራሻዎን ያስገቡ (ግዴታ)';
     setPersonalErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const validateDetails = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!targetRegion.trim()) errs.targetRegion = 'ክልል ይምረጡ';
-    if (!targetZone.trim()) errs.targetZone = 'ዞን/ክፍለ ከተማ ይምረጡ';
-    if (!institution.trim()) errs.institution = 'የተቋሙን ስም ያስገቡ';
-    if (!mainSubject.trim()) errs.mainSubject = 'ዝርዝር ሁኔታውን ያስገቡ';
+    if (!targetRegion.trim()) errs.targetRegion = 'ክልል ይምረጡ (ግዴታ)';
+    if (!targetZone.trim()) errs.targetZone = 'ዞን/ክፍለ ከተማ ይምረጡ (ግዴታ)';
+    if (!institution.trim()) errs.institution = 'የተቋሙን ስም ያስገቡ (ግዴታ)';
+    if (!mainSubject.trim()) errs.mainSubject = 'ዝርዝር ሁኔታውን ያስገቡ (ግዴታ)';
+    if (!requestedResolution.trim()) errs.requestedResolution = 'የሚፈልጉትን መፍትሄ ያስገቡ (ግዴታ)';
+    if (files.length === 0) errs.files = 'እባክዎ ማስረጃዎችን (ፋይል) አያይዙ። ይህ ማስታወሻ ግዴታ ነው';
     setDetailErrors(errs);
     return Object.keys(errs).length === 0;
   };

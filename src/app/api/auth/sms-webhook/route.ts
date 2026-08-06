@@ -14,6 +14,7 @@ export async function POST(req: Request) {
 
     const deviceId = process.env.TEXTBEE_DEVICE_ID;
     const apiKey = process.env.TEXTBEE_API_KEY;
+    const baseUrl = process.env.TEXTBEE_BASE_URL || "https://api.text.raey.work";
 
     if (!deviceId || !apiKey) {
       console.error('Textbee environment variables (TEXTBEE_DEVICE_ID, TEXTBEE_API_KEY) are missing');
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
     // Format phone number if needed (Textbee expects international format usually)
     const formattedPhone = phone.startsWith('+') ? phone : `+${phone}`;
 
-    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`, {
+    const response = await fetch(`${baseUrl}/api/v1/gateway/devices/${deviceId}/send-sms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

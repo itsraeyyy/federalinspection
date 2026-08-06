@@ -3,7 +3,12 @@ import { Footer } from "@/components/footer";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { InstitutionalWorkflow } from "@/components/institutional-workflow";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "ስለ እኛ",
+  description: "የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን አመሰራረት እና ተቋማዊ መዋቅር።",
+};
 
 export default function AboutPage() {
   return (

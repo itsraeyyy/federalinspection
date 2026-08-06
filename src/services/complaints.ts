@@ -45,6 +45,13 @@ function mapRowToComplaint(item: any): Complaint {
     serviceName: item.service_name,
     resolutionRating: item.resolution_rating,
     resolutionFeedback: item.resolution_feedback,
+    workflowStep: item.workflow_step || (item.status === 'Accepted' ? 2 : item.status === 'Processing' ? 3 : item.status === 'PendingApproval' ? 4 : item.status === 'Resolved' || item.status === 'Rejected' ? 5 : 1),
+    adminInstructions: item.admin_instructions || undefined,
+    decisionIdeaSummary: item.decision_idea_summary || undefined,
+    decisionIdeaFiles: item.decision_idea_files || [],
+    slaDeadline: item.sla_deadline ? formatECDateTime(item.sla_deadline) : undefined,
+    slaNotified: item.sla_notified || false,
+    reminderNotified: item.reminder_notified || false,
   };
 }
 
@@ -87,7 +94,7 @@ export const complaintService = {
   },
 
   submitComplaint: async (formData: {
-    name: string;
+    name?: string;
     phone: string;
     email?: string;
     age?: number;
@@ -144,7 +151,7 @@ export const complaintService = {
     const { data, error } = await supabase
       .from('complaints')
       .insert({
-        name: formData.name,
+        name: formData.name || 'አልተገለጸም (Anonymous)',
         phone: formData.phone,
         email: formData.email || null,
         age: formData.age || null,
@@ -164,6 +171,9 @@ export const complaintService = {
         tracking_code: trackingCode,
         attachments,
         status: 'New',
+        sla_deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        sla_notified: false,
+        reminder_notified: false,
       })
       .select('id')
       .single();
@@ -178,7 +188,7 @@ export const complaintService = {
         await notifyComplaintSubmitted({
           phone: formData.phone,
           email: formData.email,
-          name: formData.name,
+          name: formData.name || 'አልተገለጸም (Anonymous)',
           trackingCode,
           type: formData.type,
         });
@@ -195,11 +205,12 @@ export const complaintService = {
     if (admins) {
       const targetAdmins = admins.filter(a =>
         a.role === 'super_admin' ||
+        a.role === 'committee_leader' ||
         (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma')))
       );
 
       const typeLabel = formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const adminMessage = `አዲስ ${typeLabel} ገብቷል። መከታተያ ኮድ፡ ${trackingCode}`;
+      const adminMessage = `አዲስ ${typeLabel} ተመዝግቧል። መከታተያ ኮድ፡ ${trackingCode}`;
 
       for (const admin of targetAdmins) {
         if (admin.phone || admin.email) {
@@ -207,7 +218,7 @@ export const complaintService = {
             await notifyReportUpdate({
               phone: admin.phone || undefined,
               email: admin.email || undefined,
-              name: 'አስተዳዳሪ',
+              name: 'አስተዳዳሪ (Admin / Leader)',
               subject: `ICODiS — አዲስ ${typeLabel}`,
               message: adminMessage,
               loginPath: '/dashboard',
@@ -233,11 +244,21 @@ export const complaintService = {
     if (newStatus === 'Processing') {
       updates.processed_at = new Date().toISOString();
       updates.processed_by = adminName;
+      updates.workflow_step = 3;
+    }
+
+    if (newStatus === 'PendingApproval') {
+      updates.workflow_step = 4;
+      updates.processed_by = adminName;
+      if (resolution?.message) {
+        updates.decision_idea_summary = resolution.message;
+      }
     }
 
     if (newStatus === 'Resolved' || newStatus === 'Rejected') {
       updates.resolved_at = new Date().toISOString();
       updates.resolved_by = adminName;
+      updates.workflow_step = 5;
 
       if (resolution) {
         let resolutionAttachments: any[] = [];
@@ -293,6 +314,34 @@ export const complaintService = {
       return false;
     }
 
+    if (newStatus === 'PendingApproval') {
+      // Alert Committee Leaders for approval; do NOT notify the user yet
+      const { data: admins } = await supabase
+        .from('admin_profiles')
+        .select('phone, email, role, modules')
+        .eq('status', 'Active');
+      if (admins) {
+        const leaders = admins.filter(a => a.role === 'committee_leader' || a.role === 'super_admin');
+        for (const l of leaders) {
+          if (l.phone || l.email) {
+            try {
+              await notifyReportUpdate({
+                phone: l.phone || undefined,
+                email: l.email || undefined,
+                name: 'የኮሚቴ ሰብሳቢ (Leader)',
+                subject: 'ICODiS — የውሳኔ ሀሳብ ለጽድቅ ቀርቧል (Pending Approval)',
+                message: `ለማጽደቅ የቀረበ አዲስ የውሳኔ ሀሳብ አለ። መከታተያ ኮድ፡ [${updatedComplaint?.tracking_code || id}]። እባክዎ በመግባት ውሳኔውን ያረጋግጡና ያጽድቁ።`,
+                loginPath: '/dashboard/committee-leader',
+              });
+            } catch (e) {
+              console.error('Failed notifying committee leader:', e);
+            }
+          }
+        }
+      }
+      return true;
+    }
+
     if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
       try {
         await notifyComplaintStatusUpdate({
@@ -322,6 +371,181 @@ export const complaintService = {
       console.error('Error assigning committee:', error);
       return false;
     }
+    return true;
+  },
+
+  acceptComplaintByLeader: async (id: string, leaderName: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('complaints')
+      .update({ status: 'Accepted', workflow_step: 2, processed_by: leaderName })
+      .eq('id', id);
+    if (error) {
+      console.error('Error accepting complaint:', error);
+      return false;
+    }
+    return true;
+  },
+
+  assignCommitteeWithInstructions: async (id: string, personNames: string, instructions?: string, adminName?: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('complaints')
+      .update({
+        assigned_committee: personNames,
+        admin_instructions: instructions || null,
+        status: 'Processing',
+        workflow_step: 3,
+        processed_by: adminName || null,
+        processed_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error assigning committee and instructions:', error);
+      return false;
+    }
+
+    // Notify Committee Leaders via sms/notify
+    const { data: admins } = await supabase
+      .from('admin_profiles')
+      .select('phone, email, role, modules')
+      .eq('status', 'Active');
+    if (admins) {
+      const leaders = admins.filter(a => a.role === 'committee_leader' || (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma'))));
+      const msg = `አዲስ ጉዳይ ለኮሚቴ አባላት (${personNames}) በዋና አስተዳዳሪ ተመድቧል። ማስታወሻ፡ ${instructions || 'የለም'}`;
+      for (const l of leaders) {
+        if (l.phone || l.email) {
+          try {
+            await notifyReportUpdate({
+              phone: l.phone || undefined,
+              email: l.email || undefined,
+              name: 'የኮሚቴ ሰብሳቢ (Leader)',
+              subject: 'ICODiS — የኮሚቴ ምደባ እና መመሪያ',
+              message: msg,
+              loginPath: '/complaint/login',
+            });
+          } catch (e) {
+            console.error('Failed notifying leader:', e);
+          }
+        }
+      }
+    }
+
+    return true;
+  },
+
+  submitDecisionIdea: async (id: string, summary: string, files?: File[], leaderName?: string): Promise<boolean> => {
+    let decisionAttachments: any[] = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const fileExt = file.name.includes('.') ? file.name.split('.').pop() || '' : '';
+        const cleanExt = fileExt.replace(/[^a-zA-Z0-9]/g, '');
+        const safeExt = cleanExt ? `.${cleanExt}` : '';
+        const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}${safeExt}`;
+        const filePath = `decision-ideas/${id}/${safeFileName}`;
+
+        const { error: uploadError } = await supabase.storage.from('complaints').upload(filePath, file);
+        if (uploadError) {
+          console.error('Error uploading decision idea file:', uploadError);
+          throw uploadError;
+        }
+
+        const { data: urlData } = supabase.storage.from('complaints').getPublicUrl(filePath);
+        decisionAttachments.push({
+          id: crypto.randomUUID(),
+          filename: file.name,
+          fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
+          fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+          url: urlData.publicUrl,
+        });
+      }
+    }
+
+    const { error } = await supabase
+      .from('complaints')
+      .update({
+        decision_idea_summary: summary,
+        decision_idea_files: decisionAttachments,
+        status: 'PendingApproval',
+        workflow_step: 4,
+        processed_by: leaderName || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error submitting decision idea:', error);
+      return false;
+    }
+
+    // Notify Committee Leaders for Final Approval
+    const { data: admins } = await supabase
+      .from('admin_profiles')
+      .select('phone, email, role, modules')
+      .eq('status', 'Active');
+    if (admins) {
+      const leaders = admins.filter(a => a.role === 'committee_leader' || (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma'))));
+      for (const l of leaders) {
+        if (l.phone || l.email) {
+          try {
+            await notifyReportUpdate({
+              phone: l.phone || undefined,
+              email: l.email || undefined,
+              name: 'የኮሚቴ ሰብሳቢ (Leader)',
+              subject: 'ICODiS — የውሳኔ ሀሳብ ለጽድቅ ቀርቧል (Pending Approval)',
+              message: `ለማጽደቅ የቀረበ አዲስ የውሳኔ ሀሳብ አለ። እባክዎ በመግባት ውሳኔውን ያረጋግጡና ያጽድቁ።`,
+              loginPath: '/dashboard/committee-leader',
+            });
+          } catch (e) {
+            console.error('Failed notifying leader for approval:', e);
+          }
+        }
+      }
+    }
+
+    return true;
+  },
+
+  requestRevisions: async (id: string, feedbackNotes: string, adminName: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('complaints')
+      .update({
+        status: 'RevisionRequested',
+        workflow_step: 3,
+        admin_instructions: feedbackNotes,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error requesting revisions:', error);
+      return false;
+    }
+
+    // Notify Main Admins that revision is needed
+    const { data: admins } = await supabase
+      .from('admin_profiles')
+      .select('phone, email, role')
+      .eq('status', 'Active');
+    if (admins) {
+      const mainAdmins = admins.filter(a => a.role === 'super_admin' || a.role === 'admin');
+      for (const m of mainAdmins) {
+        if (m.phone || m.email) {
+          try {
+            await notifyReportUpdate({
+              phone: m.phone || undefined,
+              email: m.email || undefined,
+              name: 'ዋና አስተዳዳሪ',
+              subject: 'ICODiS — በውሳኔ ሃሳብ ላይ ማስተካከያ ተጠይቋል (Revision Requested)',
+              message: `በእዲቴ ሰብሳቢ (${adminName}) ማስተካከያ ተጠይቋል። መመሪያ፡ ${feedbackNotes}`,
+              loginPath: '/complaint/login',
+            });
+          } catch (e) {
+            console.error('Failed notifying admin of revision request:', e);
+          }
+        }
+      }
+    }
+
     return true;
   },
 

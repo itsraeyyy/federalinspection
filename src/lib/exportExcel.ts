@@ -24,14 +24,15 @@ function getResolutionTime(complaint: Complaint): string {
   if (!complaint.resolvedAt || !complaint.createdAt) return '-';
   const created = new Date(complaint.createdAt).getTime();
   const resolved = new Date(complaint.resolvedAt).getTime();
-  const diffMs = resolved - created;
+  if (isNaN(created) || isNaN(resolved)) return 'በወቅቱ የተጠናቀቀ';
+  const diffMs = Math.abs(resolved - created);
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);
   const remainingHours = hours % 24;
   if (days > 0) return `${days} ቀን ${remainingHours} ሰዓት`;
   if (hours > 0) return `${hours} ሰዓት`;
   const minutes = Math.floor(diffMs / (1000 * 60));
-  return `${minutes} ደቂቃ`;
+  return `${minutes > 0 ? minutes : 1} ደቂቃ`;
 }
 
 export function exportComplaintsToExcel(complaints: Complaint[], filename?: string, reportTitle: string = 'ጥቆማ እና አቤቱታ', subtitle: string = '') {
@@ -106,7 +107,7 @@ export function exportComplaintsToExcel(complaints: Complaint[], filename?: stri
       c.trackingCode || '-',
       TYPE_AM[c.type] || c.type,
       STATUS_AM[c.status] || c.status,
-      c.name,
+      c.name || 'አልተገለጸም',
       c.phone,
       c.email || '-',
       c.age?.toString() || '-',
@@ -127,7 +128,7 @@ export function exportComplaintsToExcel(complaints: Complaint[], filename?: stri
 
     xml += '<Row>\n';
     row.forEach(val => {
-      xml += `  <Cell ss:StyleID="wrap"><Data ss:Type="String">${escapeXml(val)}</Data></Cell>\n`;
+      xml += `  <Cell ss:StyleID="wrap"><Data ss:Type="String">${escapeXml(val || '-')}</Data></Cell>\n`;
     });
     xml += '</Row>\n';
   });

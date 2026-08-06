@@ -3,6 +3,7 @@
 export async function sendSMS(to: string, message: string) {
   const apiKey = process.env.TEXTBEE_API_KEY;
   const deviceId = process.env.TEXTBEE_DEVICE_ID;
+  const baseUrl = process.env.TEXTBEE_BASE_URL || "https://api.text.raey.work";
 
   const formattedPhone = to.startsWith('+') ? to : `+251${to.replace(/^0+/, '').replace(/\s+/g, '')}`;
 
@@ -16,7 +17,7 @@ export async function sendSMS(to: string, message: string) {
   }
 
   try {
-    const response = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`, {
+    const response = await fetch(`${baseUrl}/api/v1/gateway/devices/${deviceId}/send-sms`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

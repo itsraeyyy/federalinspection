@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, CalendarDays, ArrowRight } from "lucide-react";
 import { createNewsSlug } from "@/lib/slug";
+import Image from "next/image";
 
 export function NewsMessagesSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -128,7 +129,7 @@ export function NewsMessagesSection() {
               style={{ ...(canScrollLeft ? {} : {})} }
               onMouseEnter={(e) => canScrollLeft && ((e.currentTarget as HTMLElement).style.backgroundColor = "#014BAA", (e.currentTarget as HTMLElement).style.borderColor = "#014BAA")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "white", (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0")}
-              aria-label="ወደ ግራ ይגלגלו"
+              aria-label="ወደ ግራ ያሳልፉ"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -138,7 +139,7 @@ export function NewsMessagesSection() {
               className="flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-all duration-200 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
               onMouseEnter={(e) => canScrollRight && ((e.currentTarget as HTMLElement).style.backgroundColor = "#014BAA", (e.currentTarget as HTMLElement).style.borderColor = "#014BAA")}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "white", (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0")}
-              aria-label="ወደ ቀኝ ይגלגלו"
+              aria-label="ወደ ቀኝ ያሳልፉ"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -167,7 +168,7 @@ export function NewsMessagesSection() {
                 {/* Image */}
                 <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-slate-100">
                   {item.image ? (
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                    <Image src={item.image} alt={item.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                   ) : (
                     <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 to-slate-200">
                       <svg className="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

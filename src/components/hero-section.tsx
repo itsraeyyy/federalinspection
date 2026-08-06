@@ -142,13 +142,13 @@ export function HeroSection() {
           {/* Typing title */}
           <div className="relative">
             {/* Invisible spacer — reserves exact space */}
-            <h1
+            <div
               aria-hidden="true"
               className="font-heading invisible flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
             >
               <span className="text-slate-900">{LINE_1}</span>
               <span style={{ color: "#014BAA" }}>{LINE_2}</span>
-            </h1>
+            </div>
             {/* Animated overlay */}
             <h1
               id="hero-heading"

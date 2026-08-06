@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'content_editor';
+  role: 'super_admin' | 'admin' | 'content_editor' | 'committee_leader';
   avatar?: string;
 }
 
@@ -44,6 +44,7 @@ export interface Admin {
   name: string;
   email: string;
   phone: string;
+  role?: 'super_admin' | 'admin' | 'committee_leader';
   avatar?: string;
   accessLevel: AccessLevel;
   groups: PermissionGroupId[];
@@ -154,12 +155,12 @@ export interface ComplaintResolution {
   resolvedBy: string;
 }
 
-export type ComplaintStatus = 'New' | 'Processing' | 'Resolved' | 'Rejected';
+export type ComplaintStatus = 'New' | 'Accepted' | 'Processing' | 'PendingApproval' | 'Resolved' | 'Rejected' | 'RevisionRequested';
 
 export interface Complaint {
   id: string;
   trackingCode: string;
-  name: string;
+  name?: string;
   phone: string;
   email?: string;
   age?: number;
@@ -189,6 +190,13 @@ export interface Complaint {
   serviceName?: string;
   resolutionRating?: number;
   resolutionFeedback?: string;
+  workflowStep?: number;
+  adminInstructions?: string;
+  decisionIdeaSummary?: string;
+  decisionIdeaFiles?: ComplaintAttachment[];
+  slaDeadline?: string;
+  slaNotified?: boolean;
+  reminderNotified?: boolean;
 }
 
 export interface Feedback {

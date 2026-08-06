@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 type AdminProfile = {
   id: string;
-  role: 'super_admin' | 'admin';
+  role: 'super_admin' | 'admin' | 'committee_leader';
   permissions: string[];
   first_name?: string;
   last_name?: string;

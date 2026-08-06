@@ -135,7 +135,7 @@ export function TikomaForm() {
 
   const pageTitle = "ጥቆማ ማቅረቢያ";
   const formTitle = "የጥቆማ ማቅረቢያ ቅጽ";
-  const submitterLabel = "የጥቆማ አቅራቢው ሙሉ ስም";
+  const submitterLabel = "የጥቆማ አቅራቢው ሙሉ ስም (አማራጭ)";
   const subTypeLabel = "ጥቆማው የቀረበው";
   const instLabel = "ጥቆማ የቀረበበት ተቋም / የሚመለከተው አካል ስም";
   const serviceLabel = "የአገልግሎቱ አይነት / ስም";

@@ -18,9 +18,12 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን | የኢትዮጵያ ፌዴራላዊ ዲሞክራሲያዊ ሪፐብሊክ",
-  description:
-    "በመንግሥት አገልግሎቶች ውስጥ ጥራትና ተጠያቂነትን ማረጋገጥ።",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://federalinspection.gov.et'),
+  title: {
+    default: "የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን | የኢትዮጵያ ፌዴራላዊ ዲሞክራሲያዊ ሪፐብሊክ",
+    template: "%s | የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን"
+  },
+  description: "በመንግሥት አገልግሎቶች ውስጥ ጥራትና ተጠያቂነትን ማረጋገጥ።",
   keywords: [
     "ኢትዮጵያ",
     "ብልፅግና",
@@ -29,6 +32,29 @@ export const metadata: Metadata = {
     "ተጠያቂነት",
     "ሥነ-ምግባር",
   ],
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: "website",
+    locale: "am_ET",
+    url: "/",
+    siteName: "የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን",
+    images: [
+      {
+        url: "/logo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "የብልፅግና ኢንስፔክሽን ኮሚሽን ምልክት",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን",
+    description: "በመንግሥት አገልግሎቶች ውስጥ ጥራትና ተጠያቂነትን ማረጋገጥ።",
+    images: ["/logo.jpg"],
+  },
 };
 
 export default function RootLayout({

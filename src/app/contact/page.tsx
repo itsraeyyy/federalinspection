@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Menubar } from "@/components/menubar";
 import { Footer } from "@/components/footer";
 import { ChevronRight, MapPin, Phone, Mail, Clock } from "lucide-react";
-
 export default function ContactPage() {
   return (
     <>

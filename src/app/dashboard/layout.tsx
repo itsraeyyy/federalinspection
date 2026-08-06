@@ -73,6 +73,10 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
       if (moduleName === 'admin' && segments[2] === 'forms') {
         moduleName = 'admin_forms';
       }
+      // Allow committee leaders and complaints administrators access to the executive portal
+      if (moduleName === 'committee-leader' && (profile.role === 'committee_leader' || profile.modules?.includes('complaints') || profile.modules?.includes('committee-leader'))) {
+        return <>{children}</>;
+      }
       // Since all our IDs match the routes (dashboard, news, documents, complaints, feedback, personnel, qr-access, statistics, assessment, forms, admin_forms, map, analytics, admins, settings)
       if (moduleName && !profile.modules?.includes(moduleName)) {
         return (

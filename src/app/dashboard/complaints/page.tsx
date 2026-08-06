@@ -38,9 +38,12 @@ const STATUS_ORDER: ComplaintStatus[] = ['New', 'Processing', 'Resolved', 'Rejec
 
 const STATUS_CONFIG: Record<ComplaintStatus, { label: string; color: string; bgColor: string; dotColor: string; iconColor: string }> = {
   New: { label: 'አዲስ', color: 'text-blue-700', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-500', iconColor: 'text-blue-500' },
+  Accepted: { label: 'የተቀበሉት', color: 'text-blue-700', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-500', iconColor: 'text-blue-500' },
   Processing: { label: 'በሂደት ላይ', color: 'text-amber-700', bgColor: 'bg-amber-500/10', dotColor: 'bg-amber-500', iconColor: 'text-amber-500' },
+  PendingApproval: { label: 'ለማጽደቅ የቀረበ', color: 'text-sky-700', bgColor: 'bg-sky-500/10', dotColor: 'bg-sky-500', iconColor: 'text-sky-500' },
   Resolved: { label: 'የተፈታ', color: 'text-green-700', bgColor: 'bg-green-500/10', dotColor: 'bg-green-500', iconColor: 'text-green-500' },
   Rejected: { label: 'ውድቅ', color: 'text-red-700', bgColor: 'bg-red-500/10', dotColor: 'bg-red-500', iconColor: 'text-red-500' },
+  RevisionRequested: { label: 'ማስተካከያ የተጠየቀበት', color: 'text-amber-700', bgColor: 'bg-amber-500/15', dotColor: 'bg-amber-600', iconColor: 'text-amber-600' },
 };
 
 export default function ComplaintsPage() {
@@ -84,7 +87,7 @@ export default function ComplaintsPage() {
   const filteredTickets = tickets.filter(t => {
     const matchesType = t.type === activeTab;
     const matchesSearch = !searchQuery || 
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.trackingCode?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -470,8 +473,8 @@ export default function ComplaintsPage() {
                   <IconUser size={16} /> የአቅራቢው መረጃ
                 </h4>
                 <div className="grid grid-cols-2 gap-y-6 gap-x-8 relative z-10">
-                  <InfoRow icon={IconUser} label="ሙሉ ስም" value={selectedTicket.name} />
-                  <InfoRow icon={IconPhone} label="ስልክ ቁጥር" value={selectedTicket.phone} />
+                  <InfoRow icon={IconUser} label="ሙሉ ስም" value={selectedTicket.name || 'ያልተገለጸ'} />
+                  <InfoRow icon={IconPhone} label="ስልክ ቁጥር" value={selectedTicket.phone || 'ያልተገለጸ'} />
                   {selectedTicket.email && <InfoRow icon={IconMail} label="ኢሜይል" value={selectedTicket.email} />}
                   {selectedTicket.age && <InfoRow icon={IconUser} label="ዕድሜ" value={`${selectedTicket.age} ዓመት`} />}
                   {selectedTicket.gender && <InfoRow icon={IconUser} label="ፆታ" value={selectedTicket.gender} />}

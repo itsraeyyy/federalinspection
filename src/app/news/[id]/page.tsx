@@ -21,6 +21,37 @@ function getYouTubeEmbedUrl(url?: string): string | null {
   return null;
 }
 
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const item = await newsService.getArticle(id);
+  
+  if (!item) {
+    return { title: "News Not Found" };
+  }
+  
+  const description = item.description || item.excerpt || (item.content ? item.content.substring(0, 160) : "News article");
+  const mainImage = item.image || (item.images && item.images.length > 0 ? item.images[0] : null);
+  
+  return {
+    title: item.title,
+    description: description,
+    openGraph: {
+      title: item.title,
+      description: description,
+      type: "article",
+      images: mainImage ? [mainImage] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: item.title,
+      description: description,
+      images: mainImage ? [mainImage] : [],
+    },
+  };
+}
+
 export default async function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
