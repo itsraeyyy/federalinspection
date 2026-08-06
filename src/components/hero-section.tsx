@@ -19,8 +19,8 @@ const FULL_TEXT = LINE_1 + "\n" + LINE_2;
 const TYPING_SPEED = 80;
 
 const heroStats = [
-  { value: 531894, label: "የኮሚሽን አባላት", icon: Users },
-  { value: 106174, label: "የኮሚሽን መዋቅር", icon: Shield },
+  { value: 546064, label: "የኮሚሽን አባላት", icon: Users },
+  { value: 448342, label: "የህብረት ኮሚሽን", icon: Scale },
   { value: 14, label: "ክልል/ከተማ.ፌ.ተ.አ", icon: MapPin },
 ];
 

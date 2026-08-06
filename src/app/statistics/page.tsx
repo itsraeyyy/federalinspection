@@ -2,21 +2,21 @@
 
 import { Menubar } from "@/components/menubar";
 import { Footer } from "@/components/footer";
-import { ChevronRight, Users, Building2, MapPin, Layers, TrendingUp, BarChart3, Network } from "lucide-react";
+import { ChevronRight, Users, Building2, MapPin, TrendingUp, BarChart3, Network } from "lucide-react";
 import { useState } from "react";
 
 /* ─── Raw data from Section 5 ─── */
 
 const summaryCards = [
-  { label: "አጠቃላይ መዋቅር", labelEn: "Total Structure", value: 106174, icon: Layers, color: "#014BAA" },
-  { label: "የኮሚሽን አባላት", labelEn: "Commission Members", value: 531894, icon: Users, color: "#FFB800" },
-  { label: "የኮሚሽን ኃላፊዎች", labelEn: "Responsible Persons", value: 2584, icon: Building2, color: "#10B981" },
+  { label: "የኮሚሽን አባላት", labelEn: "Commission Members", value: 546064, icon: Users, color: "#014BAA" },
+  { label: "ክልል/ከተማ ኮሚሽን", labelEn: "Regional Commissions", value: 180, icon: Building2, color: "#10B981" },
+  { label: "የወረዳ ኮሚሽን", labelEn: "Woreda Commissions", value: 9464, icon: MapPin, color: "#FFB800" },
 ];
 
 const coverage = [
   { label: "ክልሎች", labelEn: "Regions", value: 14 },
-  { label: "ዞኖች", labelEn: "Zones", value: 154 },
-  { label: "ወረዳዎች", labelEn: "Woredas", value: 1348 },
+  { label: "የዞን ኮሚሽን", labelEn: "Zone Commissions", value: 1550 },
+  { label: "የወረዳ ኮሚሽን", labelEn: "Woreda Commissions", value: 9464 },
 ];
 
 interface RegionRow {
@@ -27,31 +27,30 @@ interface RegionRow {
   woredas: number;
   kebeles: number;
   union: number;
-  structure: number;
   members: number;
   officials: number;
 }
 
 const regionalData: RegionRow[] = [
-  { id: 1,  name: "ኦሮሚያ",     regions: 1, zones: 44, woredas: 432, kebeles: 7342,  union: 38343, structure: 46162, members: 231928, officials: 931 },
-  { id: 2,  name: "አማራ",      regions: 1, zones: 22, woredas: 266, kebeles: 2398,  union: 9029,  structure: 11716, members: 56473,  officials: 456 },
-  { id: 3,  name: "ሶማሌ",      regions: 1, zones: 17, woredas: 95,  kebeles: 1064,  union: 9194,  structure: 10371, members: 52119,  officials: 210 },
-  { id: 4,  name: "አፋር",      regions: 1, zones: 7,  woredas: 50,  kebeles: 497,   union: 4166,  structure: 4721,  members: 23740,  officials: 61  },
-  { id: 5,  name: "ቤን-ጉሙዝ",   regions: 1, zones: 8,  woredas: 24,  kebeles: 546,   union: 692,   structure: 1271,  members: 6438,   officials: 35  },
-  { id: 6,  name: "ጋምቤላ",     regions: 1, zones: 5,  woredas: 12,  kebeles: 264,   union: 200,   structure: 483,   members: 2474,   officials: 44  },
-  { id: 7,  name: "ሐረሪ",      regions: 1, zones: 0,  woredas: 9,   kebeles: 36,    union: 249,   structure: 255,   members: 1502,   officials: 14  },
-  { id: 8,  name: "ሲዳማ",      regions: 1, zones: 5,  woredas: 44,  kebeles: 568,   union: 3619,  structure: 4238,  members: 21313,  officials: 102 },
-  { id: 9,  name: "ደ/ም/ኢ/ያ",   regions: 1, zones: 6,  woredas: 61,  kebeles: 906,   union: 2881,  structure: 3855,  members: 19493,  officials: 119 },
-  { id: 10, name: "ደቡብ ኢ/ያ",  regions: 1, zones: 15, woredas: 111, kebeles: 1527,  union: 10295, structure: 11949, members: 60067,  officials: 255 },
-  { id: 11, name: "ማዕ/ኢ/ያ",   regions: 1, zones: 10, woredas: 79,  kebeles: 1317,  union: 4602,  structure: 6010,  members: 30297,  officials: 179 },
-  { id: 12, name: "አዲስ አበባ",  regions: 1, zones: 12, woredas: 136, kebeles: 0,     union: 4474,  structure: 4623,  members: 23353,  officials: 158 },
-  { id: 13, name: "ድሬ ደዋ",    regions: 1, zones: 0,  woredas: 13,  kebeles: 331,   union: 331,   structure: 345,   members: 1731,   officials: 20  },
-  { id: 14, name: "ፌዴራል ተአ.",  regions: 1, zones: 3,  woredas: 16,  kebeles: 0,     union: 157,   structure: 175,   members: 966,    officials: 0   },
+  { id: 1,  name: "ኦሮሚያ",     regions: 1, zones: 434, woredas: 3054, kebeles: 36700,  union: 191715, members: 231918, officials: 15 },
+  { id: 2,  name: "አማራ",      regions: 1, zones: 242, woredas: 1827, kebeles: 14717,  union: 50937,  members: 67737,  officials: 14 },
+  { id: 3,  name: "ሶማሌ",      regions: 1, zones: 153, woredas: 665,  kebeles: 6180,   union: 45985,  members: 52994,  officials: 11 },
+  { id: 4,  name: "አፋር",      regions: 1, zones: 63,  woredas: 350,  kebeles: 2775,   union: 20830,  members: 24030,  officials: 12 },
+  { id: 5,  name: "ቤን-ጉሙዝ",   regions: 1, zones: 72,  woredas: 168,  kebeles: 2690,   union: 3505,   members: 6447,   officials: 11 },
+  { id: 6,  name: "ጋምቤላ",     regions: 1, zones: 55,  woredas: 84,   kebeles: 1320,   union: 1330,   members: 2804,   officials: 15 },
+  { id: 7,  name: "ሐረሪ",      regions: 1, zones: 0,   woredas: 63,   kebeles: 180,    union: 1300,   members: 1557,   officials: 14 },
+  { id: 8,  name: "ሲዳማ",      regions: 1, zones: 55,  woredas: 308,  kebeles: 2840,   union: 18095,  members: 21313,  officials: 15 },
+  { id: 9,  name: "ደ/ም/ኢ/",   regions: 1, zones: 57,  woredas: 486,  kebeles: 4635,   union: 14645,  members: 19838,  officials: 15 },
+  { id: 10, name: "ደ/ኢ/ያ",    regions: 1, zones: 165, woredas: 777,  kebeles: 7885,   union: 51640,  members: 60482,  officials: 15 },
+  { id: 11, name: "ማዕ/ኢ/",    regions: 1, zones: 104, woredas: 586,  kebeles: 6585,   union: 23010,  members: 30297,  officials: 12 },
+  { id: 12, name: "አዲስ አበባ",  regions: 1, zones: 126, woredas: 918,  kebeles: 0,      union: 22840,  members: 23896,  officials: 12 },
+  { id: 13, name: "ድሬ ደዋ",    regions: 1, zones: 0,   woredas: 65,   kebeles: 0,      union: 1660,   members: 1736,   officials: 11 },
+  { id: 14, name: "ፌዴራል ተአ",  regions: 1, zones: 24,  woredas: 113,  kebeles: 0,      union: 850,    members: 1015,   officials: 8  },
 ];
 
 const totals = {
-  regions: 14, zones: 154, woredas: 1348, kebeles: 16796,
-  union: 88232, structure: 106174, members: 531894, officials: 2584,
+  regions: 14, zones: 1550, woredas: 9464, kebeles: 86507,
+  union: 448342, members: 546064, officials: 180,
 };
 
 function formatNumber(n: number): string {
@@ -74,7 +73,7 @@ function HorizontalBar({ value, max, color, label }: { value: number; max: numbe
           className="absolute inset-y-0 left-0 rounded-xl transition-all duration-1000 ease-out"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
-        <span className="absolute inset-y-0 right-3 flex items-center text-xs font-bold text-slate-600">
+        <span className={`absolute inset-y-0 right-3 flex items-center text-xs font-bold ${pct > 70 ? "text-white" : "text-slate-600"}`}>
           {formatNumber(value)}
         </span>
       </div>
@@ -124,16 +123,16 @@ function DonutChart({ data, colors }: { data: { label: string; value: number }[]
 
 /* ─── Main Page ─── */
 export default function StatisticsPage() {
-  const [activeMetric, setActiveMetric] = useState<"members" | "structure" | "kebeles">("members");
+  const [activeMetric, setActiveMetric] = useState<"members" | "woredas" | "kebeles">("members");
 
   const maxMembers = Math.max(...regionalData.map((r) => r.members));
-  const maxStructure = Math.max(...regionalData.map((r) => r.structure));
+  const maxWoredas = Math.max(...regionalData.map((r) => r.woredas));
   const maxKebeles = Math.max(...regionalData.map((r) => r.kebeles));
 
   const metricConfig = {
-    members:   { max: maxMembers,   key: "members" as const,   label: "የኮሚሽን አባላት", color: "#014BAA" },
-    structure: { max: maxStructure, key: "structure" as const, label: "አጠቃላይ መዋቅር",   color: "#FFB800" },
-    kebeles:   { max: maxKebeles,   key: "kebeles" as const,   label: "ቀበሌ",           color: "#10B981" },
+    members: { max: maxMembers, key: "members" as const, label: "የኮሚሽን አባላት", color: "#014BAA" },
+    woredas: { max: maxWoredas, key: "woredas" as const, label: "ወረዳ", color: "#FFB800" },
+    kebeles: { max: maxKebeles, key: "kebeles" as const, label: "ቀበሌ", color: "#10B981" },
   };
 
   const config = metricConfig[activeMetric];
@@ -296,43 +295,40 @@ export default function StatisticsPage() {
             <table className="w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="px-5 py-4 text-left font-bold text-slate-500 text-xs tracking-wider uppercase">ተ.ቁ</th>
-                  <th className="px-5 py-4 text-left font-bold text-slate-500 text-xs tracking-wider uppercase">ቅ/ጽ/ቤት</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ዞን</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ወረዳ</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ቀበሌ</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን ህብረት</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን መዋቅር</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን አባላት</th>
-                  <th className="px-5 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የኮሚሽን ኃላፊዎች</th>
+                  <th className="px-4 py-4 text-left font-bold text-slate-500 text-xs tracking-wider uppercase">ተ.ቁ</th>
+                  <th className="px-4 py-4 text-left font-bold text-slate-500 text-xs tracking-wider uppercase">ቅ/ጽ/ቤት</th>
+                  <th className="px-4 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የክልል ኮሚሽን</th>
+                  <th className="px-4 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የዞን ኮሚሽን</th>
+                  <th className="px-4 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የወረዳ ኮሚሽን</th>
+                  <th className="px-4 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የቀበሌ ኮሚሽን</th>
+                  <th className="px-4 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">የብልፅግና ህብረት</th>
+                  <th className="px-4 py-4 text-right font-bold text-slate-500 text-xs tracking-wider uppercase">ጠቅላላ ድምር</th>
                 </tr>
               </thead>
               <tbody>
                 {regionalData.map((r, i) => (
                   <tr key={r.id} className={`border-b border-slate-50 transition-colors hover:bg-blue-50/40 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/40"}`}>
-                    <td className="px-5 py-3.5 font-bold text-slate-400 tabular-nums">{r.id}</td>
-                    <td className="px-5 py-3.5 font-semibold text-slate-900">{r.name}</td>
-                    <td className="px-5 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.zones)}</td>
-                    <td className="px-5 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.woredas)}</td>
-                    <td className="px-5 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.kebeles)}</td>
-                    <td className="px-5 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.union)}</td>
-                    <td className="px-5 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.structure)}</td>
-                    <td className="px-5 py-3.5 text-right font-bold tabular-nums" style={{ color: "#014BAA" }}>{formatNumber(r.members)}</td>
-                    <td className="px-5 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.officials)}</td>
+                    <td className="px-4 py-3.5 font-bold text-slate-400 tabular-nums">{r.id}</td>
+                    <td className="px-4 py-3.5 font-semibold text-slate-900">{r.name}</td>
+                    <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.officials)}</td>
+                    <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.zones)}</td>
+                    <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.woredas)}</td>
+                    <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.kebeles)}</td>
+                    <td className="px-4 py-3.5 text-right text-slate-600 tabular-nums">{formatNumber(r.union)}</td>
+                    <td className="px-4 py-3.5 text-right font-bold tabular-nums" style={{ color: "#014BAA" }}>{formatNumber(r.members)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-slate-200 bg-slate-50">
-                  <td className="px-5 py-4" />
-                  <td className="px-5 py-4 font-bold text-slate-900">ጠቅላላ ድምር</td>
-                  <td className="px-5 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.zones)}</td>
-                  <td className="px-5 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.woredas)}</td>
-                  <td className="px-5 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.kebeles)}</td>
-                  <td className="px-5 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.union)}</td>
-                  <td className="px-5 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.structure)}</td>
-                  <td className="px-5 py-4 text-right font-bold tabular-nums" style={{ color: "#014BAA" }}>{formatNumber(totals.members)}</td>
-                  <td className="px-5 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.officials)}</td>
+                  <td className="px-4 py-4" />
+                  <td className="px-4 py-4 font-bold text-slate-900">ጠቅላላ ድምር</td>
+                  <td className="px-4 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.officials)}</td>
+                  <td className="px-4 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.zones)}</td>
+                  <td className="px-4 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.woredas)}</td>
+                  <td className="px-4 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.kebeles)}</td>
+                  <td className="px-4 py-4 text-right font-bold text-slate-900 tabular-nums">{formatNumber(totals.union)}</td>
+                  <td className="px-4 py-4 text-right font-bold tabular-nums" style={{ color: "#014BAA" }}>{formatNumber(totals.members)}</td>
                 </tr>
               </tfoot>
             </table>
