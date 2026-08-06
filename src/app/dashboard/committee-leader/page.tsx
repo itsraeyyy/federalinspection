@@ -33,7 +33,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
 
-type StatusTab = 'All' | 'PendingApproval' | 'Processing' | 'Resolved';
+type StatusTab = 'All' | 'Accepted' | 'PendingApproval' | 'Processing' | 'Resolved';
 
 const STATUS_BADGES: Record<string, { label: string; bg: string; text: string; border: string }> = {
   New: { label: 'አዲስ የተመዘገበ', bg: 'bg-blue-500/10 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300 font-semibold', border: 'border-blue-500/20' },
@@ -95,6 +95,10 @@ export default function CommitteeLeaderDashboard() {
   const [revisionNotes, setRevisionNotes] = useState('');
   const [showRevisionModal, setShowRevisionModal] = useState(false);
 
+  // Committee Modal State
+  const [showCommitteeModal, setShowCommitteeModal] = useState(false);
+  const [committeeMembers, setCommitteeMembers] = useState<string[]>(['']);
+
   const leaderName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'የኮሚቴ ሰብሳቢ (Leader)' : 'የኮሚቴ ሰብሳቢ';
 
   const fetchTickets = useCallback(async () => {
@@ -107,6 +111,28 @@ export default function CommitteeLeaderDashboard() {
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  const handleCommitteeAssign = async () => {
+    const validMembers = committeeMembers.filter(m => m.trim());
+    if (!selectedTicket || validMembers.length === 0) return;
+    setActionLoading(true);
+    
+    const assignedStr = validMembers.join('፣ ');
+    const assigned = await complaintService.startProcessingByLeader(selectedTicket.id, leaderName, assignedStr);
+    if (assigned) {
+      await fetchTickets();
+      const updated = await complaintService.getComplaintById(selectedTicket.id);
+      setSelectedTicket(updated);
+      setShowCommitteeModal(false);
+      setCommitteeMembers(['']);
+      setFeedbackMsg({ type: 'success', text: 'ኮሚቴው በተሳካ ሁኔታ ተመድቧል፣ እና የ15 ቀናት ጊዜ ገደብ ጀምሯል።' });
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    } else {
+      setFeedbackMsg({ type: 'error', text: 'ኮሚቴውን መመደብ አልተሳካም። እባክዎ እንደገና ይሞክሩ።' });
+      setTimeout(() => setFeedbackMsg(null), 5000);
+    }
+    setActionLoading(false);
+  };
 
   const getTimelineStatus = (createdAt: string, status: string) => {
     if (status === 'Resolved' || status === 'Rejected') {
@@ -135,16 +161,18 @@ export default function CommitteeLeaderDashboard() {
 
     if (!matchesSearch) return false;
 
+    if (activeTab === 'Accepted') return t.status === 'Accepted';
     if (activeTab === 'PendingApproval') return t.status === 'PendingApproval';
-    if (activeTab === 'Processing') return t.status === 'Processing' || t.status === 'New' || t.status === 'RevisionRequested';
+    if (activeTab === 'Processing') return t.status === 'Processing' || t.status === 'RevisionRequested';
     if (activeTab === 'Resolved') return t.status === 'Resolved' || t.status === 'Rejected';
-    return true;
+    return t.status !== 'New'; // Default All tab shouldn't show 'New' tickets to Leaders
   });
 
   const stats = {
-    total: tickets.length,
+    total: tickets.filter(t => t.status !== 'New').length,
+    accepted: tickets.filter(t => t.status === 'Accepted').length,
     pendingApproval: tickets.filter(t => t.status === 'PendingApproval').length,
-    processing: tickets.filter(t => t.status === 'Processing' || t.status === 'New' || t.status === 'RevisionRequested').length,
+    processing: tickets.filter(t => t.status === 'Processing' || t.status === 'RevisionRequested').length,
     resolved: tickets.filter(t => t.status === 'Resolved' || t.status === 'Rejected').length,
     resolutionRate: tickets.length > 0 ? Math.round((tickets.filter(t => t.status === 'Resolved').length / tickets.length) * 100) : 0,
   };
@@ -358,7 +386,7 @@ export default function CommitteeLeaderDashboard() {
         </div>
 
         {/* Executive KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div 
             onClick={() => setActiveTab('All')}
             className={`p-5 rounded-2xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
@@ -379,6 +407,32 @@ export default function CommitteeLeaderDashboard() {
             </div>
             <span className="text-xs text-text-muted block mt-2 font-medium">
               የገቡ ቅሬታዎች እና ጥቆማዎች
+            </span>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('Accepted')}
+            className={`p-5 rounded-2xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
+              activeTab === 'Accepted' 
+                ? 'bg-surface-primary border-brand-blue shadow-md ring-1 ring-brand-blue/20'
+                : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-brand-blue/40 shadow-xs hover:shadow-sm'
+            }`}
+          >
+            {activeTab === 'Accepted' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-blue"></div>}
+            <div>
+              <div className="flex items-center justify-between text-brand-blue dark:text-blue-400 mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  {stats.accepted > 0 && <span className="w-2 h-2 rounded-full bg-brand-blue animate-ping"></span>}
+                  ለኮሚቴ ምደባ
+                </span>
+                <IconUser size={18} stroke={1.75} className="text-brand-blue dark:text-blue-400" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-brand-blue dark:text-blue-400 tabular-nums tracking-tight">
+                {stats.accepted}
+              </div>
+            </div>
+            <span className="text-xs text-text-muted block mt-2 font-medium">
+              በአስተዳዳሪ ተቀባይነት ያገኙ
             </span>
           </div>
 
@@ -458,9 +512,10 @@ export default function CommitteeLeaderDashboard() {
         {/* Filter Bar & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-surface-primary p-3.5 rounded-2xl border border-border shadow-xs">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0">
-            {(['All', 'PendingApproval', 'Processing', 'Resolved'] as StatusTab[]).map(tab => {
+            {(['All', 'Accepted', 'PendingApproval', 'Processing', 'Resolved'] as StatusTab[]).map(tab => {
               const labels: Record<StatusTab, string> = {
                 All: 'ሁሉም (All)',
+                Accepted: 'ለኮሚቴ ምደባ',
                 PendingApproval: 'ለማጽደቅ የቀረቡ',
                 Processing: 'በማጣራት ላይ',
                 Resolved: 'የተጠናቀቁ',

@@ -171,7 +171,6 @@ export const complaintService = {
         tracking_code: trackingCode,
         attachments,
         status: 'New',
-        sla_deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
         sla_notified: false,
         reminder_notified: false,
       })
@@ -205,7 +204,6 @@ export const complaintService = {
     if (admins) {
       const targetAdmins = admins.filter(a =>
         a.role === 'super_admin' ||
-        a.role === 'committee_leader' ||
         (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma')))
       );
 
@@ -218,7 +216,7 @@ export const complaintService = {
             await notifyReportUpdate({
               phone: admin.phone || undefined,
               email: admin.email || undefined,
-              name: 'አስተዳዳሪ (Admin / Leader)',
+              name: 'አስተዳዳሪ (Admin)',
               subject: `ICODiS — አዲስ ${typeLabel}`,
               message: adminMessage,
               loginPath: '/dashboard',
@@ -363,55 +361,24 @@ export const complaintService = {
 
   assignCommittee: async (id: string, committeeName: string): Promise<boolean> => {
     const { error } = await supabase
-      .from('complaints')
-      .update({ assigned_committee: committeeName })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error assigning committee:', error);
-      return false;
-    }
-    return true;
-  },
-
-  acceptComplaintByLeader: async (id: string, leaderName: string): Promise<boolean> => {
+  acceptComplaintByAdmin: async (id: string, adminName: string): Promise<boolean> => {
     const { error } = await supabase
       .from('complaints')
-      .update({ status: 'Accepted', workflow_step: 2, processed_by: leaderName })
+      .update({ status: 'Accepted', workflow_step: 2, processed_by: adminName })
       .eq('id', id);
     if (error) {
-      console.error('Error accepting complaint:', error);
-      return false;
-    }
-    return true;
-  },
-
-  assignCommitteeWithInstructions: async (id: string, personNames: string, instructions?: string, adminName?: string): Promise<boolean> => {
-    const { error } = await supabase
-      .from('complaints')
-      .update({
-        assigned_committee: personNames,
-        admin_instructions: instructions || null,
-        status: 'Processing',
-        workflow_step: 3,
-        processed_by: adminName || null,
-        processed_at: new Date().toISOString()
-      })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error assigning committee and instructions:', error);
+      console.error('Error accepting complaint by admin:', error);
       return false;
     }
 
     // Notify Committee Leaders via sms/notify
     const { data: admins } = await supabase
       .from('admin_profiles')
-      .select('phone, email, role, modules')
+      .select('phone, email, role')
       .eq('status', 'Active');
     if (admins) {
-      const leaders = admins.filter(a => a.role === 'committee_leader' || (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma'))));
-      const msg = `አዲስ ጉዳይ ለኮሚቴ አባላት (${personNames}) በዋና አስተዳዳሪ ተመድቧል። ማስታወሻ፡ ${instructions || 'የለም'}`;
+      const leaders = admins.filter(a => a.role === 'committee_leader' || a.role === 'super_admin');
+      const msg = `አዲስ ጉዳይ በአስተዳዳሪ ተቀባይነት አግኝቷል እና ለኮሚቴ ምደባ ዝግጁ ነው። እባክዎ ኮሚቴ ይመድቡ እና ሂደቱን ያስጀምሩ።`;
       for (const l of leaders) {
         if (l.phone || l.email) {
           try {
@@ -419,9 +386,9 @@ export const complaintService = {
               phone: l.phone || undefined,
               email: l.email || undefined,
               name: 'የኮሚቴ ሰብሳቢ (Leader)',
-              subject: 'ICODiS — የኮሚቴ ምደባ እና መመሪያ',
+              subject: 'ICODiS — አዲስ ጉዳይ ለኮሚቴ ምደባ (Awaiting Assignment)',
               message: msg,
-              loginPath: '/complaint/login',
+              loginPath: '/dashboard/committee-leader',
             });
           } catch (e) {
             console.error('Failed notifying leader:', e);
@@ -430,6 +397,26 @@ export const complaintService = {
       }
     }
 
+    return true;
+  },
+
+  startProcessingByLeader: async (id: string, leaderName: string, committeeName: string): Promise<boolean> => {
+    const { error } = await supabase
+      .from('complaints')
+      .update({
+        assigned_committee: committeeName,
+        status: 'Processing',
+        workflow_step: 3,
+        processed_by: leaderName,
+        processed_at: new Date().toISOString(),
+        sla_deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error starting processing by leader:', error);
+      return false;
+    }
     return true;
   },
 

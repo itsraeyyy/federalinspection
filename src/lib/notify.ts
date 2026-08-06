@@ -9,7 +9,7 @@ import {
   buildComplaintSubmittedEmail,
   buildComplaintStatusEmail,
   buildReportNotificationEmail,
-} from "@/lib/brevo";
+} from "@/lib/resend";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://ICODS.raey.work";
 

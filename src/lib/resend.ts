@@ -1,4 +1,4 @@
-const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const RESEND_API_URL = "https://api.resend.com/emails";
 
 const baseEmailStyle = `
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F4F4F5; margin: 0; padding: 40px 20px; }
@@ -31,46 +31,41 @@ function wrapEmail(title: string, subtitle: string, body: string): string {
 // ─── Core send function ──────────────────────────────────────────────────────
 
 export async function sendEmail(to: string, subject: string, html: string, textContent?: string) {
-  const apiKey = process.env.BREVO_API_KEY;
-  const fromEmail = process.env.BREVO_FROM_EMAIL;
-  const fromName = process.env.BREVO_FROM_NAME || "ICODiS System";
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = "ICODiS System <noreply@mail.raey.work>";
 
-  if (!apiKey || !fromEmail) {
-    console.warn("[Brevo] BREVO_API_KEY or BREVO_FROM_EMAIL missing — email skipped.");
-    return { error: "Brevo not configured" };
+  if (!apiKey) {
+    console.warn("[Resend] RESEND_API_KEY missing — email skipped.");
+    return { error: "Resend not configured" };
   }
 
   try {
-    const response = await fetch(BREVO_API_URL, {
+    const response = await fetch(RESEND_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "api-key": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        sender: { name: fromName, email: fromEmail },
-        to: [{ email: to }],
+        from: fromEmail,
+        to: [to],
         subject,
-        htmlContent: html,
-        ...(textContent && { textContent }),
+        html,
+        ...(textContent && { text: textContent }),
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      if (response.status === 401) {
-        console.error(`[Brevo Error 401 Unauthorized]: Likely IP restriction or invalid API key. ${err}`);
-      } else {
-        console.error(`[Brevo Error ${response.status}]:`, err);
-      }
-      return { error: `Brevo API Error (${response.status}): ${err}` };
+      console.error(`[Resend Error ${response.status}]:`, err);
+      return { error: `Resend API Error (${response.status}): ${err}` };
     }
 
-    console.log(`[Email SENT via Brevo] to ${to}`);
+    console.log(`[Email SENT via Resend] to ${to}`);
     return { success: true };
   } catch (error: any) {
-    console.error("[Brevo] Fetch error:", error);
-    return { error: error.message || "Failed to reach Brevo API" };
+    console.error("[Resend] Fetch error:", error);
+    return { error: error.message || "Failed to reach Resend API" };
   }
 }
 

@@ -61,9 +61,7 @@ export default function ComplaintsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const resFileRef = useRef<HTMLInputElement>(null);
 
-  // Committee Modal State
-  const [showCommitteeModal, setShowCommitteeModal] = useState(false);
-  const [committeeMembers, setCommitteeMembers] = useState<string[]>(['']);
+  // Committee Modal State (Removed, now managed by Leader)
 
   // Export Modal State
   const [showExportModal, setShowExportModal] = useState(false);
@@ -153,22 +151,14 @@ export default function ComplaintsPage() {
     setActionLoading(false);
   };
 
-  const handleCommitteeAssign = async () => {
-    const validMembers = committeeMembers.filter(m => m.trim());
-    if (!selectedTicket || validMembers.length === 0) return;
+  const handleAcceptComplaint = async () => {
+    if (!selectedTicket) return;
     setActionLoading(true);
-    
-    const assignedStr = validMembers.join('፣ ');
-    const assigned = await complaintService.assignCommittee(selectedTicket.id, assignedStr);
-    if (assigned) {
-      if (selectedTicket.status === 'New') {
-        await complaintService.updateComplaintStatus(selectedTicket.id, 'Processing', adminName);
-      }
+    const success = await complaintService.acceptComplaintByAdmin(selectedTicket.id, adminName);
+    if (success) {
       await loadTickets();
       const updated = await complaintService.getComplaintById(selectedTicket.id);
       setSelectedTicket(updated);
-      setShowCommitteeModal(false);
-      setCommitteeMembers(['']);
     }
     setActionLoading(false);
   };
@@ -622,60 +612,34 @@ export default function ComplaintsPage() {
             </div>
 
             {/* Action Buttons Footer */}
-            {selectedTicket.status !== 'Resolved' && selectedTicket.status !== 'Rejected' && (
+            {selectedTicket.status !== 'Resolved' && selectedTicket.status !== 'Rejected' && selectedTicket.status !== 'PendingApproval' && (
               <div className="sticky bottom-0 bg-surface-primary/90 backdrop-blur-xl border-t border-border/20 p-6">
                 <div className="flex gap-3">
                   {selectedTicket.status === 'New' && (
-                    <>
-                      <button
-                        onClick={() => handleStatusChange(selectedTicket.id, 'Processing')}
-                        disabled={actionLoading}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                      >
-                        <IconPlayerPlay size={18} />
-                        ወደ ሂደት ውሰድ
-                      </button>
-                      {selectedTicket.type === 'Complaint' && (
-                        <button
-                          onClick={() => setShowCommitteeModal(true)}
-                          disabled={actionLoading}
-                          className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                        >
-                          <IconUser size={18} />
-                          ለኮሚቴ ምደባ
-                        </button>
-                      )}
-                    </>
+                    <button
+                      onClick={handleAcceptComplaint}
+                      disabled={actionLoading}
+                      className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                    >
+                      <IconCheck size={18} />
+                      ተቀበል (Accept)
+                    </button>
                   )}
-                  {selectedTicket.status === 'Processing' && (
-                    <>
-                      {selectedTicket.type === 'Complaint' && (
-                        <button
-                          onClick={() => setShowCommitteeModal(true)}
-                          disabled={actionLoading}
-                          className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                        >
-                          <IconUser size={18} />
-                          {selectedTicket.assignedCommittee ? 'ኮሚቴ ቀይር' : 'ለኮሚቴ ምደባ'}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleStatusChange(selectedTicket.id, 'Resolved')}
-                        disabled={actionLoading}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                      >
-                        <IconCheck size={18} />
-                        መፍትሄ ስጥ
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(selectedTicket.id, 'Rejected')}
-                        disabled={actionLoading}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                      >
-                        <IconBan size={18} />
-                        ውድቅ አድርግ
-                      </button>
-                    </>
+                  {selectedTicket.status === 'Accepted' && (
+                    <div className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-surface-secondary text-text-muted rounded-2xl text-sm font-bold border border-border/50 cursor-not-allowed">
+                      <IconLoader2 size={18} className="animate-spin" />
+                      በኮሚቴ ሰብሳቢ ምደባ በመጠባበቅ ላይ...
+                    </div>
+                  )}
+                  {(selectedTicket.status === 'Processing' || selectedTicket.status === 'RevisionRequested') && (
+                    <button
+                      onClick={() => { setResolutionAction('PendingApproval' as any); setShowResolutionModal(true); }}
+                      disabled={actionLoading}
+                      className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                    >
+                      <IconCheck size={18} />
+                      የውሳኔ ሀሳብ ለጽድቅ አቅርብ (Submit for Approval)
+                    </button>
                   )}
                 </div>
               </div>
@@ -766,82 +730,7 @@ export default function ComplaintsPage() {
         </div>
       )}
 
-      {/* Committee Assignment Modal */}
-      {showCommitteeModal && selectedTicket && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCommitteeModal(false)}>
-          <div className="bg-surface-primary rounded-2xl border border-border/30 p-6 max-w-lg w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-text-primary">
-                ለኮሚቴ ይመድቡ
-              </h3>
-              <button onClick={() => setShowCommitteeModal(false)} className="p-1.5 hover:bg-surface-secondary rounded-xl transition-colors">
-                <IconX size={20} className="text-text-muted" />
-              </button>
-            </div>
 
-            <p className="text-sm text-text-secondary mb-4">
-              ይህን አቤቱታ የሚያጣሩትን የኮሚቴ አባላት ስም ያስገቡ።
-            </p>
-
-            <div className="space-y-4 max-h-[40vh] overflow-y-auto px-1 pb-2">
-              {committeeMembers.map((member, index) => (
-                <div key={index}>
-                  <label className="text-sm font-medium text-text-primary mb-2 block">
-                    የኮሚቴ አባል {index + 1} *
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={member}
-                      onChange={(e) => {
-                        const newMembers = [...committeeMembers];
-                        newMembers[index] = e.target.value;
-                        setCommitteeMembers(newMembers);
-                      }}
-                      className="block w-full rounded-xl border border-border/50 bg-surface-secondary/30 px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
-                      placeholder={`አባል ${index + 1} ስም`}
-                    />
-                    {committeeMembers.length > 1 && (
-                      <button
-                        onClick={() => {
-                          const newMembers = committeeMembers.filter((_, i) => i !== index);
-                          setCommitteeMembers(newMembers);
-                        }}
-                        className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100 flex-shrink-0"
-                      >
-                        <IconX size={20} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              
-              <button
-                onClick={() => setCommitteeMembers([...committeeMembers, ''])}
-                className="w-full py-3 border-2 border-dashed border-brand-blue/30 text-brand-blue rounded-xl text-sm font-semibold hover:bg-brand-blue/5 transition-colors mt-2"
-              >
-                + ተጨማሪ አባል ያክሉ
-              </button>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowCommitteeModal(false)}
-                className="flex-1 py-2.5 px-4 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary rounded-xl text-sm font-medium transition-colors border border-border/50"
-              >
-                ሰርዝ
-              </button>
-              <button
-                onClick={handleCommitteeAssign}
-                disabled={actionLoading || !committeeMembers.some(m => m.trim())}
-                className="flex-1 py-2.5 px-4 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 bg-brand-blue hover:bg-brand-blue/90"
-              >
-                {actionLoading ? 'በመመደብ ላይ...' : 'መደብ'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Export Modal */}
       {showExportModal && (
