@@ -56,7 +56,10 @@ export function Menubar() {
               src="/logo.jpg"
               alt="የብልፅግና ኢንስፔክሽን ኮሚሽን ምልክት"
               fill
+              sizes="48px"
               className="object-contain"
+              priority={true}
+              fetchPriority="high"
             />
           </div>
           <div className="hidden sm:block">

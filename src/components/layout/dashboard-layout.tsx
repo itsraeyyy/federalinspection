@@ -142,7 +142,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
         <div className={`p-4 flex items-center h-[88px] shrink-0 ${isCollapsed ? 'justify-center' : 'px-8'}`}>
           <div className="font-heading font-bold text-text-primary tracking-tight flex items-center gap-3 overflow-hidden whitespace-nowrap">
             <div className="relative w-10 h-10 min-w-[40px] rounded-full overflow-hidden border border-border/50">
-              <Image src="/logo.jpg" alt="Commission Logo" fill className="object-cover" />
+              <Image src="/logo.jpg" alt="Commission Logo" fill sizes="40px" className="object-cover" priority={true} />
             </div>
             {!isCollapsed && (
               <div className="flex flex-col">
@@ -218,7 +218,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           <div>
             <div className="md:hidden flex items-center gap-2">
               <div className="relative w-8 h-8 min-w-[32px] rounded-full overflow-hidden border border-border/50">
-                <Image src="/logo.jpg" alt="Commission Logo" fill className="object-cover" />
+                <Image src="/logo.jpg" alt="Commission Logo" fill sizes="32px" className="object-cover" priority={true} />
               </div>
               <span className="text-sm font-bold text-text-primary">ፖርታል</span>
             </div>

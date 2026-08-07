@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -25,27 +25,35 @@ const heroStats = [
 ];
 
 function AnimatedNumber({ target, duration = 2000 }: { target: number; duration?: number }) {
-  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    let start = 0;
-    const increment = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
+    let startTimestamp: number;
+    let animationFrame: number;
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const current = Math.floor(progress * target);
+      if (ref.current) {
+        ref.current.textContent = current.toLocaleString();
       }
-    }, 16);
-    return () => clearInterval(timer);
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(step);
+      } else if (ref.current) {
+        ref.current.textContent = target.toLocaleString();
+      }
+    };
+
+    animationFrame = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrame);
   }, [target, duration]);
 
-  return <>{count.toLocaleString()}</>;
+  return <span ref={ref}>0</span>;
 }
 
-export function HeroSection() {
+function TypewriterText() {
   const [charCount, setCharCount] = useState(0);
 
   useEffect(() => {
@@ -61,6 +69,45 @@ export function HeroSection() {
   const cursorOnLine1 = charCount <= LINE_1.length;
   const isDone = charCount >= FULL_TEXT.length;
 
+  return (
+    <div className="relative">
+      {/* Invisible spacer — reserves exact space */}
+      <div
+        aria-hidden="true"
+        className="font-heading invisible flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
+      >
+        <span className="text-slate-900">{LINE_1}</span>
+        <span style={{ color: "#014BAA" }}>{LINE_2}</span>
+      </div>
+      {/* Animated overlay */}
+      <h1
+        id="hero-heading"
+        className="font-heading absolute inset-0 flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
+      >
+        <span className="text-slate-900">
+          {line1Typed}
+          {cursorOnLine1 && !isDone && (
+            <span
+              className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm animate-pulse"
+              style={{ backgroundColor: "#FFB800" }}
+            />
+          )}
+        </span>
+        <span style={{ color: "#014BAA" }}>
+          {line2Typed}
+          {!cursorOnLine1 && !isDone && (
+            <span
+              className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm animate-pulse"
+              style={{ backgroundColor: "#FFB800" }}
+            />
+          )}
+        </span>
+      </h1>
+    </div>
+  );
+}
+
+export function HeroSection() {
   return (
     <section
       id="home"
@@ -132,48 +179,17 @@ export function HeroSection() {
                   src="/logo.jpg"
                   alt="የብልፅግና ኢንስፔክሽን ኮሚሽን ምልክት"
                   fill
+                  sizes="(max-width: 640px) 112px, 128px"
                   className="object-contain"
-                  priority
+                  priority={true}
+                  fetchPriority="high"
                 />
               </div>
             </div>
           </div>
 
           {/* Typing title */}
-          <div className="relative">
-            {/* Invisible spacer — reserves exact space */}
-            <div
-              aria-hidden="true"
-              className="font-heading invisible flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
-            >
-              <span className="text-slate-900">{LINE_1}</span>
-              <span style={{ color: "#014BAA" }}>{LINE_2}</span>
-            </div>
-            {/* Animated overlay */}
-            <h1
-              id="hero-heading"
-              className="font-heading absolute inset-0 flex flex-col gap-1 sm:gap-2 text-[2rem] font-extrabold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.25rem] xl:text-[3.75rem]"
-            >
-              <span className="text-slate-900">
-                {line1Typed}
-                {cursorOnLine1 && !isDone && (
-                  <span
-                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm animate-pulse"
-                    style={{ backgroundColor: "#FFB800" }}
-                  />
-                )}
-              </span>
-              <span style={{ color: "#014BAA" }}>
-                {line2Typed}
-                {!cursorOnLine1 && !isDone && (
-                  <span
-                    className="ml-0.5 inline-block h-[0.85em] w-[4px] translate-y-[0.05em] rounded-sm animate-pulse"
-                    style={{ backgroundColor: "#FFB800" }}
-                  />
-                )}
-              </span>
-            </h1>
-          </div>
+          <TypewriterText />
 
           {/* Motto */}
           <div
