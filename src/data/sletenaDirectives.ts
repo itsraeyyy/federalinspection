@@ -1,20 +1,12 @@
 import { InspectionDirective, TrainingCategory, SletenaSubmission } from '@/types/sletena';
 
 export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
-  // 1) የፓርቲ ፕሮግራም (2)
+  // 1) የፓርቲ ፕሮግራም
   {
     id: 'PRG-01',
     code: 'PRG-01',
-    title: 'የብልጽግና ፓርቲ ፕሮግራም (2012)',
-    description: 'የፓርቲው መያዶያ እና ስትራቴጂካዊ የፖለቲካ ፕሮግራም መመሪያ::',
-    category: 'የፓርቲ ፕሮግራም',
-    targetScore: 5.0,
-  },
-  {
-    id: 'PRG-02',
-    code: 'PRG-02',
-    title: 'የፓርቲው ስትራቴጂካዊ መግለጫ እና አቅጣጫዎች (2014)',
-    description: 'የፖሊሲ እና ስትራቴጂካዊ ግቦች መመሪያ::',
+    title: 'የፓርቲ ፕሮግራም',
+    description: 'የፓርቲው ፕሮግራም::',
     category: 'የፓርቲ ፕሮግራም',
     targetScore: 5.0,
   },
@@ -49,7 +41,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-01',
     code: 'PDIR-01',
-    title: 'የአመራር እና የአባላት የዲስፕሊን መመሪያ (2015)',
+    title: 'የአመራር እና የአባላት የዲስፕሊን መመሪያ 2015',
     description: 'የአመራሮችና አባላት የስነ-ምግባር እና ዲስፕሊን ደንብ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -57,7 +49,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-02',
     code: 'PDIR-02',
-    title: 'የአመራር ምደባ መመሪያ (2015)',
+    title: 'የአመራር ምደባ  መመሪያ 2015',
     description: 'የአመራር ስምሪት እና የቦታ ምደባ አሰራር::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -65,7 +57,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-03',
     code: 'PDIR-03',
-    title: 'የአመራር ምዘና መመሪያ (2015)',
+    title: 'የአመራር ምዘና መመሪያ 2015',
     description: 'የአመራር አፈፃፀም እና የአቅም ምዘና መስፈርት::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -73,7 +65,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-04',
     code: 'PDIR-04',
-    title: 'የአደረጃጀት እና አሰራር መመሪያ (2017)',
+    title: 'የአደረጃጀት እና አስራር መመሪያ 2017',
     description: 'የፓርቲው መዋቅራዊ አደረጃጀት እና አሰራር::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -81,7 +73,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-05',
     code: 'PDIR-05',
-    title: 'የአባላት ምልመላ፣ ግንባታና ስንብት መመሪያ (2017)',
+    title: 'የአባላት ምልመላ፣ ግንባታና ስንብት መመሪያ 2017',
     description: 'የአባላት ምልመላ፣ ስልጠና እና ስንብት ደንብ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -89,7 +81,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-06',
     code: 'PDIR-06',
-    title: 'የተተኪ አመራሮች መመሪያ (2016)',
+    title: 'የተተኪ አመራሮች መመሪያ 2016',
     description: 'የተተኪ አመራር ዝግጅት እና ማፍራት ደንብ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -97,7 +89,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-07',
     code: 'PDIR-07',
-    title: 'የኮር አመራር መመሪያ (2016)',
+    title: 'የኮር አመራች መመሪያ 2016',
     description: 'የኮር አመራር አደረጃጀት እና ተግባራት::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -105,7 +97,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-08',
     code: 'PDIR-08',
-    title: 'ወርሃዊ መዋጮ ለመወሰን የወጣ መመሪያ (2017)',
+    title: 'ወርሃዊ መዋጮ ለመወሰን የወጣ መመርያ 2017',
     description: 'የአባላት ወርሃዊ መዋጮ ክፍያ ስታንዳርድ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -113,7 +105,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-09',
     code: 'PDIR-09',
-    title: 'የግዢ ማስፈጸሚያ መመሪያ (2014)',
+    title: 'የግዢ ማስፈጸሚያ መመርያ 2014',
     description: 'የግዥ አሰራር፣ ጨረታ እና ማስፈጸሚያ ደንብ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -121,7 +113,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-10',
     code: 'PDIR-10',
-    title: 'የፓርቲ ንብረት አስተዳደር መመሪያ (2014)',
+    title: 'የፓርቲ ንብረት አስተዳደር መመርያ 2014',
     description: 'የሀብት እና ንብረት ቁጥጥርና አስተዳደር::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -129,7 +121,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-11',
     code: 'PDIR-11',
-    title: 'የሰው ሃይል አስተዳደር እና አሰራር መመሪያ (2014)',
+    title: 'የሰው ሃይል አስተዳደር እና አሰራር መመርያ 2014',
     description: 'የሰራተኞች አስተዳደር እና ቅጥር ደንብ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -137,7 +129,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-12',
     code: 'PDIR-12',
-    title: 'የውስጥ ኦዲት አስተዳደር መመሪያ (2014)',
+    title: 'የውስጥ ኦዲት አስተዳደር መመርያ 2014',
     description: 'የፋይናንስ እና ሂሳብ ኦዲት አሰራር::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -145,7 +137,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-13',
     code: 'PDIR-13',
-    title: 'የፓርቲ የበጀት ዝግጅት እና አስተዳደር መመሪያ (2014)',
+    title: 'የፓርቲ የበጀት ዝግጅት እና አስተዳደር መመሪያ 2014',
     description: 'የበጀት ማቀድ፣ ድልድል እና አስተዳደር::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -153,7 +145,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-14',
     code: 'PDIR-14',
-    title: 'የፋይናንስ አስተዳደር መመሪያ (2014)',
+    title: 'የፋይናስ አስተዳደር መመሪያ 2014',
     description: 'የገንዘብ እንቅስቃሴ እና ፋይናንስ ስርዓት::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -161,7 +153,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-15',
     code: 'PDIR-15',
-    title: 'የፓርቲ ኮሚንኬሽን መመሪያ (2017)',
+    title: 'የፓርቲ  ኮሚንኬሽን መመሪያ 2017',
     description: 'የሚዲያ፣ የህዝብ ግንኙነት እና ኮሙኒኬሽን መመሪያ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -169,7 +161,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-16',
     code: 'PDIR-16',
-    title: 'የአባላት ዲጂታል መታወቂያ ዝግጅት፤ አሰጣጥና አጠቃቀም መመሪያ (2016)',
+    title: 'የአባላት የድጅታል መታወቂያ ዝግጅት፤አሰጣጥና አጠቃቀም መመሪያ 2016',
     description: 'የዲጂታል መታወቂያ አሰራር እና አጠቃቀም::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -177,7 +169,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-17',
     code: 'PDIR-17',
-    title: 'የትምህርትና ስልጠና አፈጻጸም መመሪያ (2015)',
+    title: 'የትምህርትና ስልጠና አፈጻጸም መመሪያ 2015',
     description: 'የአባላትና አመራር አቅም ግንባታና ስልጠና::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -185,7 +177,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-18',
     code: 'PDIR-18',
-    title: 'የብልጽግና ፓርቲ ወጣት ሊግ መመሪያ (2016)',
+    title: 'የብልጽግና ፓርቲ ወጣት ሊግ መመሪያ 2016',
     description: 'የወጣቶች ክንፍ አደረጃጀት እና አሰራር::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -193,7 +185,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'PDIR-19',
     code: 'PDIR-19',
-    title: 'የብልጽግና ሴቶች ሊግ መመሪያ (2012)',
+    title: 'የብልጽግና ሴቶች ሊግ መመሪያ 2012',
     description: 'የሴቶች ክንፍ አደረጃጀት እና መመሪያ::',
     category: 'የፓርቲ መመሪያዎች',
     targetScore: 5.0,
@@ -203,7 +195,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'CDIR-01',
     code: 'CDIR-01',
-    title: 'የተሻሻለው አሰራር እና አደረጃጀት መመሪያ ቁጥር 2/2016',
+    title: 'የተሸሻለው አሰራር እና አደረጃጀት መመሪያ ቁጥር 2/2016',
     description: 'የኮሚሽኑ መዋቅራዊ አደረጃጀት እና አሰራር::',
     category: 'የኮሚሽን መመሪያዎች',
     targetScore: 5.0,
@@ -211,7 +203,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'CDIR-02',
     code: 'CDIR-02',
-    title: 'የኮሚሽኑ የግምገማ ምዘና መመሪያ ቁጥር 3/2016',
+    title: 'የኮምሽኑ የግምገማ ምዘና መመሪያ ቁጥር 3/2016',
     description: 'የኮሚሽኑ የቁጥጥር እና የግምገማ መስፈርት::',
     category: 'የኮሚሽን መመሪያዎች',
     targetScore: 5.0,
@@ -219,7 +211,7 @@ export const INSPECTION_DIRECTIVES: InspectionDirective[] = [
   {
     id: 'CDIR-03',
     code: 'CDIR-03',
-    title: 'የኮሚሽኑ የአቤቱታ አቀራረብ መመሪያ ቁጥር 4/2016',
+    title: 'የኮምሽኑ የአቤቱታ አቀራረብ መመሪያ ቁጥር 4/2016',
     description: 'የአቤቱታዎች እና አቤቱታ አፈታት ስርዓት::',
     category: 'የኮሚሽን መመሪያዎች',
     targetScore: 5.0,

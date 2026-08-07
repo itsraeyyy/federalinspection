@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { SatisfactionSubmission, TrainingCategory } from '@/types/sletena';
 import { PdfExportButton } from './PdfExportButton';
-import { SletenaReportPdfTemplate } from './SletenaReportPdfTemplate';
+import { SatisfactionReportPdfTemplate } from './SatisfactionReportPdfTemplate';
 import {
   IconStar,
   IconUsers,
@@ -36,7 +36,9 @@ import {
 interface SatisfactionReportViewProps {
   submissions: SatisfactionSubmission[];
   category?: TrainingCategory;
+  categories?: TrainingCategory[];
   onBack?: () => void;
+  onSelectCategory?: (category: TrainingCategory) => void;
 }
 
 const SATISFACTION_CHOICE_OPTIONS = [
@@ -50,18 +52,19 @@ const SATISFACTION_CHOICE_OPTIONS = [
 export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({ 
   submissions,
   category,
+  categories = [],
   onBack,
+  onSelectCategory,
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Filter submissions by category if a specific form is selected
-  const activeSubmissions = category
+  // Filter submissions strictly by category if a specific form is selected
+  const relevantSubmissions = category
     ? submissions.filter((s) => s.categoryId === category.id)
     : submissions;
-
-  // Fallback to all submissions if selected category has 0 submissions yet for demo
-  const relevantSubmissions = activeSubmissions.length > 0 ? activeSubmissions : submissions;
-  const count = relevantSubmissions.length || 1;
+  
+  const count = relevantSubmissions.length;
+  const safeCount = count || 1;
 
   const handleCopyLink = () => {
     if (!category) return;
@@ -72,24 +75,61 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const avgTrainer = (relevantSubmissions.reduce((a, b) => a + b.trainerRating, 0) / count).toFixed(2);
-  const avgContent = (relevantSubmissions.reduce((a, b) => a + b.contentRating, 0) / count).toFixed(2);
-  const avgVenue = (relevantSubmissions.reduce((a, b) => a + b.venueLogisticsRating, 0) / count).toFixed(2);
-  const avgRelevance = (relevantSubmissions.reduce((a, b) => a + b.relevanceRating, 0) / count).toFixed(2);
-  const avgOverall = (relevantSubmissions.reduce((a, b) => a + b.overallRating, 0) / count).toFixed(2);
+  const avgTrainer = count > 0 ? (relevantSubmissions.reduce((a, b) => a + b.trainerRating, 0) / safeCount).toFixed(2) : '0.00';
+  const avgContent = count > 0 ? (relevantSubmissions.reduce((a, b) => a + b.contentRating, 0) / safeCount).toFixed(2) : '0.00';
+  const avgVenue = count > 0 ? (relevantSubmissions.reduce((a, b) => a + b.venueLogisticsRating, 0) / safeCount).toFixed(2) : '0.00';
+  const avgRelevance = count > 0 ? (relevantSubmissions.reduce((a, b) => a + b.relevanceRating, 0) / safeCount).toFixed(2) : '0.00';
+  const avgOverall = count > 0 ? (relevantSubmissions.reduce((a, b) => a + b.overallRating, 0) / safeCount).toFixed(2) : '0.00';
 
-  const csatPct = Math.round((Number(avgOverall) / 5.0) * 100);
+  const csatPct = count > 0 ? Math.round((Number(avgOverall) / 5.0) * 100) : 0;
 
   const promoters = relevantSubmissions.filter((s) => s.recommendScore >= 9).length;
   const detractors = relevantSubmissions.filter((s) => s.recommendScore <= 6).length;
-  const npsScore = Math.round(((promoters - detractors) / count) * 100);
+  const npsScore = count > 0 ? Math.round(((promoters - detractors) / safeCount) * 100) : 0;
 
   function getSatisfactionWordLabel(scoreNum: number): string {
-    if (scoreNum >= 4.5) return 'እጅግ ከፍተኛ ዕርካታ';
-    if (scoreNum >= 3.5) return 'ጥሩ ዕርካታ';
-    if (scoreNum >= 2.5) return 'መካከለኛ ዕርካታ';
-    return 'አነስተኛ ዕርካታ';
+    if (scoreNum >= 4.5) return 'በጣም ከፍተኛ';
+    if (scoreNum >= 3.5) return 'ከፍተኛ';
+    if (scoreNum >= 2.5) return 'መካከለኛ';
+    if (scoreNum >= 1.5) return 'ዝቅተኛ';
+    return 'በጣም ዝቅተኛ';
   }
+
+  // Cross-Form Comparative Summary Data Calculation
+  const categoryComparativeData = useMemo(() => {
+    if (!categories || categories.length === 0) return [];
+    return categories.map((cat) => {
+      const catSubmissions = submissions.filter((s) => s.categoryId === cat.id);
+      const catCount = catSubmissions.length;
+      const safeCatCount = catCount || 1;
+
+      const avgT = catCount > 0 ? catSubmissions.reduce((a, b) => a + b.trainerRating, 0) / safeCatCount : 0;
+      const avgC = catCount > 0 ? catSubmissions.reduce((a, b) => a + b.contentRating, 0) / safeCatCount : 0;
+      const avgV = catCount > 0 ? catSubmissions.reduce((a, b) => a + b.venueLogisticsRating, 0) / safeCatCount : 0;
+      const avgR = catCount > 0 ? catSubmissions.reduce((a, b) => a + b.relevanceRating, 0) / safeCatCount : 0;
+      const avgO = catCount > 0 ? catSubmissions.reduce((a, b) => a + b.overallRating, 0) / safeCatCount : 0;
+
+      const dims = [
+        { name: 'አሰልጣኝ ብቃት', score: avgT },
+        { name: 'ስልጠና ይዘት', score: avgC },
+        { name: 'ከስራ ተዛማጅነት', score: avgR },
+        { name: 'ቦታና አደረጃጀት', score: avgV },
+      ];
+      const topDim = catCount > 0 ? dims.sort((a, b) => b.score - a.score)[0]?.name || 'አሰልጣኝ ብቃት' : 'ያልተመዘገበ';
+
+      const csat = catCount > 0 ? Math.round((avgO / 5.0) * 100) : 0;
+      const word = catCount > 0 ? getSatisfactionWordLabel(avgO) : 'ያልተሞላ';
+
+      return {
+        category: cat,
+        submittersCount: catCount,
+        avgScore: avgO.toFixed(2),
+        csatPct: csat,
+        wordLabel: word,
+        topDimension: topDim,
+      };
+    });
+  }, [categories, submissions]);
 
   // --- Section 1: ጥሬ ሃቅ Demographic Analytics ---
   const zoneWoredaStats = useMemo(() => {
@@ -136,27 +176,54 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
     }));
   }, [relevantSubmissions]);
 
-  // --- Chart Data ---
-  // 1. Pie chart: Satisfaction distribution (Satisfied / Neutral / Dissatisfied)
-  const satisfied = relevantSubmissions.filter((s) => s.overallRating >= 4).length;
-  const neutral = relevantSubmissions.filter((s) => s.overallRating === 3).length;
-  const dissatisfied = relevantSubmissions.filter((s) => s.overallRating <= 2).length;
+  // 1. Pie chart: Satisfaction distribution aggregating all question responses
+  let vHighCount = 0;
+  let highCount = 0;
+  let medCount = 0;
+  let lowCount = 0;
+  let vLowCount = 0;
+
+  relevantSubmissions.forEach((s) => {
+    const ratings = [
+      s.venueLogisticsRating || 5,
+      s.contentRating || 5,
+      s.trainerRating || 5,
+      s.relevanceRating || 5,
+      s.overallRating || 5,
+    ];
+
+    ratings.forEach((r) => {
+      if (r >= 5) vHighCount++;
+      else if (r >= 4) highCount++;
+      else if (r >= 3) medCount++;
+      else if (r >= 2) lowCount++;
+      else vLowCount++;
+    });
+  });
+
+  const totalAllResponses = vHighCount + highCount + medCount + lowCount + vLowCount || 1;
+
   const satisfactionPieData = [
-    { name: 'ዕርካታ ያለው (Satisfied)', value: satisfied, color: '#10b981' },
-    { name: 'ገለልተኛ (Neutral)', value: neutral, color: '#f59e0b' },
-    { name: 'ዕርካታ የሌለው (Dissatisfied)', value: dissatisfied, color: '#f43f5e' },
-  ].filter((d) => d.value > 0);
+    { name: 'በጣም ከፍተኛ', value: vHighCount, color: '#059669' },
+    { name: 'ከፍተኛ', value: highCount, color: '#0047AB' },
+    { name: 'መካከለኛ', value: medCount, color: '#d97706' },
+    { name: 'ዝቅተኛ', value: lowCount, color: '#f97316' },
+    { name: 'በጣም ዝቅተኛ', value: vLowCount, color: '#dc2626' },
+  ];
 
   // 2. Bar chart: Average score per dimension (out of 5)
   const dimensionBarData = [
-    { name: 'አሰልጣኝ', fullName: 'አሰልጣኝ ብቃት (Trainer)', avg: Number(avgTrainer), color: '#0047AB' },
-    { name: 'ይዘት', fullName: 'ስልጠና ይዘት (Content)', avg: Number(avgContent), color: '#0ea5e9' },
-    { name: 'ተዛማጅነት', fullName: 'ከስራ ተዛማጅነት (Relevance)', avg: Number(avgRelevance), color: '#8b5cf6' },
-    { name: 'አደረጃጀት', fullName: 'ቦታ እና አደረጃጀት (Venue)', avg: Number(avgVenue), color: '#10b981' },
+    { name: 'አሰልጣኝ', fullName: 'አሰልጣኝ ብቃትና አቀራረብ', avg: Number(avgTrainer), label: getSatisfactionWordLabel(Number(avgTrainer)), color: '#0047AB' },
+    { name: 'ይዘት', fullName: 'ስልጠና ይዘትና ሰነድ', avg: Number(avgContent), label: getSatisfactionWordLabel(Number(avgContent)), color: '#0ea5e9' },
+    { name: 'ተዛማጅነት', fullName: 'ከስራ ተዛማጅነትና ተሳትፎ', avg: Number(avgRelevance), label: getSatisfactionWordLabel(Number(avgRelevance)), color: '#8b5cf6' },
+    { name: 'አደረጃጀት', fullName: 'ቦታና አደረጃጀት/መስተንግዶ', avg: Number(avgVenue), label: getSatisfactionWordLabel(Number(avgVenue)), color: '#10b981' },
   ];
 
   // Helper for choice question breakdown calculation
-  const getChoiceBreakdown = (fieldKey: keyof SatisfactionSubmission) => {
+  const getChoiceBreakdown = (
+    fieldKey: keyof SatisfactionSubmission,
+    numericKey?: keyof SatisfactionSubmission
+  ) => {
     const counts: Record<string, number> = {
       'በጣም ከፍተኛ': 0,
       'ከፍተኛ': 0,
@@ -170,7 +237,26 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
     let validCount = 0;
 
     relevantSubmissions.forEach((s) => {
-      const val = (s[fieldKey] as string) || 'በጣም ከፍተኛ';
+      let val = (s[fieldKey] as string) || '';
+      let sVal = 5;
+
+      if (!val && numericKey && typeof s[numericKey] === 'number') {
+        const num = s[numericKey] as number;
+        sVal = num;
+        if (num >= 5) val = 'በጣም ከፍተኛ';
+        else if (num >= 4) val = 'ከፍተኛ';
+        else if (num >= 3) val = 'መካከለኛ';
+        else if (num >= 2) val = 'ዝቅተኛ';
+        else val = 'በጣም ዝቅተኛ';
+      } else {
+        if (!val) val = 'በጣም ከፍተኛ';
+        if (val === 'ከፍተኛ') sVal = 4;
+        else if (val === 'መካከለኛ') sVal = 3;
+        else if (val === 'ዝቅተኛ') sVal = 2;
+        else if (val === 'በጣም ዝቅተኛ') sVal = 1;
+        else if (val === 'በጣም ከፍተኛ') sVal = 5;
+      }
+
       if (counts[val] !== undefined) {
         counts[val] += 1;
       } else if (val.startsWith('ሌላ') || val.length > 0) {
@@ -179,12 +265,6 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
         counts['በጣም ከፍተኛ'] += 1;
       }
 
-      // Calculate score map
-      let sVal = 5;
-      if (val === 'ከፍተኛ') sVal = 4;
-      else if (val === 'መካከለኛ') sVal = 3;
-      else if (val === 'ዝቅተኛ') sVal = 2;
-      else if (val === 'በጣም ዝቅተኛ') sVal = 1;
       totalScoreSum += sVal;
       validCount += 1;
     });
@@ -200,6 +280,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
       category: '1. ከስልጠና ቅድመ ዝግጅት አኳያ ያለዎት አስተያየት በተመለከተ',
       title: 'ሀ/ ከስልጠና ቦታ እና ከስልጠና ቁሳቁስ ማሟላት አኳያ',
       fieldKey: 'prepVenueRating' as const,
+      numericKey: 'venueLogisticsRating' as const,
       type: 'dropdown' as const,
     },
     {
@@ -207,6 +288,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
       category: '1. ከስልጠና ቅድመ ዝግጅት አኳያ ያለዎት አስተያየት በተመለከተ',
       title: 'ለ/ ከስልጠናው ሰነድ ዝግጅት አኳያ',
       fieldKey: 'prepDocRating' as const,
+      numericKey: 'contentRating' as const,
       type: 'dropdown' as const,
     },
     {
@@ -214,6 +296,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
       category: '2. የስልጠና አሰጣጥና ውይይት በተመለከተ',
       title: 'ሀ/ ከስልጠና ሰነድ አቀራረብና ከአሰልጣኙ ዝግጅት አኳያ',
       fieldKey: 'deliveryDocTrainerRating' as const,
+      numericKey: 'trainerRating' as const,
       type: 'dropdown' as const,
     },
     {
@@ -221,6 +304,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
       category: '2. የስልጠና አሰጣጥና ውይይት በተመለከተ',
       title: 'ለ/ ከሰልጣኞች ተሳትፎና የሃሳብ ነጻነትና ጥራት አኳያ',
       fieldKey: 'deliveryParticipationRating' as const,
+      numericKey: 'relevanceRating' as const,
       type: 'dropdown' as const,
     },
     {
@@ -228,6 +312,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
       category: '2. የስልጠና አሰጣጥና ውይይት በተመለከተ',
       title: 'ሐ/ በተነሱ ሃሳቦች ላይ የተሰጡ የጋራ መደምደሚያ ነጥቦች አኳያ',
       fieldKey: 'deliveryConclusionsRating' as const,
+      numericKey: 'overallRating' as const,
       type: 'dropdown' as const,
     },
     {
@@ -305,6 +390,16 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
         </div>
       </div>
 
+      {/* Zero submissions notice banner */}
+      {category && relevantSubmissions.length === 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 text-center space-y-2">
+          <h4 className="text-sm font-bold text-amber-700">ለዚህ የዕርካታ ቅጽ እስካሁን የተላከ ምዘና የለም</h4>
+          <p className="text-xs text-text-muted">
+            ተሳታፊዎች ቅጹን ሞልተው ሲልኩ በራስ-ሰር እዚህ ይተነተናል። የቅጹን ሊንክ ኮፒ በማድረግ ለተሳታፊዎች ማጋራት ይችላሉ::
+          </p>
+        </div>
+      )}
+
       {/* KPI Overview Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-surface-primary border border-border/50 rounded-xl p-5 shadow-sm">
@@ -343,6 +438,71 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
           <div className="text-xs text-text-secondary mt-1">የተሰበሰቡ ቅጾች ብዛት</div>
         </div>
       </div>
+
+      {/* GLOBAL SUMMARY: FORM-BY-FORM COMPARATIVE SUMMARY TABLE */}
+      {!category && categoryComparativeData.length > 0 && (
+        <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-extrabold text-text-primary flex items-center gap-2">
+                <IconBulb className="text-amber-500" size={22} />
+                የየስልጠናዎች የዕርካታ ማጠቃለያና ንጽጽር ሰንጠረዥ (Cross-Training Comparative Analytics)
+              </h3>
+              <p className="text-xs text-text-muted mt-0.5">
+                በስርዓቱ ውስጥ ከተመዘገቡ ሁሉም የስልጠና ዕርካታ ቅጾች የተሰበሰቡ ውጤቶች ንጽጽር ሰንጠረዥ::
+              </p>
+            </div>
+            <span className="text-xs font-bold text-brand-blue bg-brand-blue/10 px-3 py-1 rounded-full border border-brand-blue/20">
+              {categoryComparativeData.length} ቅጾች በንጽጽር
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-surface-secondary/70 text-text-primary font-bold border-b border-border/50">
+                  <th className="p-3">የስልጠና ዕርካታ ቅጽ ርዕስ</th>
+                  <th className="p-3 text-center">ተሳታፊዎች</th>
+                  <th className="p-3 text-center">አጠቃላይ ዕርካታ (CSAT)</th>
+                  <th className="p-3 text-center">አማካይ ነጥብ</th>
+                  <th className="p-3 text-center">የዕርካታ ደረጃ</th>
+                  <th className="p-3 text-center">ከፍተኛ ውጤት ያመጣበት ዘርፍ</th>
+                  <th className="p-3 text-right">እርምጃ</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {categoryComparativeData.map(({ category: catItem, submittersCount, avgScore, csatPct, wordLabel, topDimension }) => (
+                  <tr key={catItem.id} className="hover:bg-surface-secondary/40 transition-colors">
+                    <td className="p-3 font-bold text-text-primary">
+                      {catItem.title}
+                      <div className="text-[10px] text-text-muted font-normal mt-0.5">{catItem.description}</div>
+                    </td>
+                    <td className="p-3 text-center font-bold text-text-primary">{submittersCount}</td>
+                    <td className="p-3 text-center font-extrabold text-emerald-600 font-mono">{csatPct}%</td>
+                    <td className="p-3 text-center font-extrabold text-brand-blue font-mono">{avgScore} / 5.0</td>
+                    <td className="p-3 text-center">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        {wordLabel}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center font-bold text-text-secondary">{topDimension}</td>
+                    <td className="p-3 text-right">
+                      {onSelectCategory && (
+                        <button
+                          onClick={() => onSelectCategory(catItem)}
+                          className="px-3 py-1.5 rounded-lg bg-brand-blue text-white text-[11px] font-bold shadow-2xs hover:bg-brand-blue/90 transition-all cursor-pointer"
+                        >
+                          ዝርዝር ሪፖርት
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1: 1. ጥሬ ሃቅ DEMOGRAPHICS ANALYTICS */}
       <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-4">
@@ -420,12 +580,12 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const d = payload[0].payload;
-                      const pct = Math.round((d.value / Math.max(relevantSubmissions.length, 1)) * 100);
+                      const pct = Math.round((d.value / totalAllResponses) * 100);
                       return (
                         <div className="bg-surface-primary border border-border/60 p-3 rounded-xl shadow-lg text-xs max-w-[200px]">
                           <div className="font-bold text-text-primary mb-1">{d.name}</div>
                           <div style={{ color: d.color }} className="font-bold">
-                            {d.value} ተሳታፊ ({pct}%)
+                            {d.value} ምላሽ ({pct}%)
                           </div>
                         </div>
                       );
@@ -451,12 +611,12 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/30">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-border/30">
             {satisfactionPieData.map((item) => (
               <div key={item.name} className="flex items-center gap-2 text-xs">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                 <span className="text-text-secondary truncate">
-                  {item.name.split(' ')[0]} ({Math.round((item.value / Math.max(relevantSubmissions.length, 1)) * 100)}%)
+                  <strong>{item.name}:</strong> {item.value} ({Math.round((item.value / totalAllResponses) * 100)}%)
                 </span>
               </div>
             ))}
@@ -482,7 +642,8 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
                       return (
                         <div className="bg-surface-primary border border-border/60 p-3 rounded-xl shadow-lg text-xs space-y-1">
                           <div className="font-bold text-text-primary">{d.fullName}</div>
-                          <div className="font-bold" style={{ color: d.color }}>አማካይ: {d.avg.toFixed(2)} / 5.0</div>
+                          <div className="font-extrabold text-emerald-600">ደረጃ፡ {d.label}</div>
+                          <div className="font-bold text-text-secondary" style={{ color: d.color }}>አማካይ ነጥብ: {d.avg.toFixed(2)} / 5.0</div>
                         </div>
                       );
                     }
@@ -490,7 +651,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
                   }}
                 />
                 <Bar dataKey="avg" radius={[6, 6, 0, 0]} maxBarSize={48}>
-                  <LabelList dataKey="avg" position="top" formatter={(v: unknown) => Number(v).toFixed(1)} style={{ fontSize: 10, fontWeight: 700 }} />
+                  <LabelList dataKey="avg" position="top" formatter={(v: unknown) => `${Number(v).toFixed(2)}`} style={{ fontSize: 10, fontWeight: 700 }} />
                   {dimensionBarData.map((entry, index) => (
                     <Cell key={`bar-${index}`} fill={entry.color} />
                   ))}
@@ -522,7 +683,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
         <div className="space-y-6">
           {questionReports.map((qItem, idx) => {
             if (qItem.type === 'dropdown') {
-              const { counts, meanScore } = getChoiceBreakdown(qItem.fieldKey);
+              const { counts, meanScore } = getChoiceBreakdown(qItem.fieldKey, qItem.numericKey);
               const wordLabel = getSatisfactionWordLabel(meanScore);
               const pctOverall = Math.round((meanScore / 5.0) * 100);
 
@@ -650,10 +811,10 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
 
       {/* Hidden Official PDF Document Template for Clean Printing */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '1100px' }}>
-        <SletenaReportPdfTemplate
-          needSubmissions={[]}
-          satisfactionSubmissions={relevantSubmissions}
+        <SatisfactionReportPdfTemplate
+          submissions={relevantSubmissions}
           category={category}
+          categories={categories}
           reportTitle={category ? category.title : 'የስልጠና ዕርካታ ሪፖርት'}
         />
       </div>

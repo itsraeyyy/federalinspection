@@ -10,6 +10,7 @@ import { INITIAL_SATISFACTION_CATEGORIES, MOCK_SATISFACTION_SUBMISSIONS } from '
 import { IconStar, IconFileAnalytics, IconForms } from '@tabler/icons-react';
 
 import { sletenaService } from '@/services/sletena';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function YesltenaErkataPage() {
   const [categories, setCategories] = useState<TrainingCategory[]>([]);
@@ -18,7 +19,7 @@ export default function YesltenaErkataPage() {
   const [submissions, setSubmissions] = useState<SatisfactionSubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load real data from Supabase / Service on mount
+  // Load real data from Supabase / Service on mount & subscribe to realtime changes
   React.useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -36,6 +37,29 @@ export default function YesltenaErkataPage() {
       }
     }
     loadData();
+
+    // Supabase Realtime listener for live instant updates
+    const channel = supabase
+      .channel('realtime_satisfaction_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sletena_satisfaction_submissions' },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sletena_categories' },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleCreateCategory = async (
@@ -113,10 +137,16 @@ export default function YesltenaErkataPage() {
           <SatisfactionReportView
             submissions={submissions}
             category={selectedCategory}
+            categories={categories}
             onBack={() => setSelectedCategory(null)}
+            onSelectCategory={(cat) => setSelectedCategory(cat)}
           />
         ) : activeTab === 'report' ? (
-          <SatisfactionReportView submissions={submissions} />
+          <SatisfactionReportView
+            submissions={submissions}
+            categories={categories}
+            onSelectCategory={(cat) => setSelectedCategory(cat)}
+          />
         ) : (
           <SatisfactionManagementTable
             categories={categories}

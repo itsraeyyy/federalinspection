@@ -10,6 +10,7 @@ import { INITIAL_TRAINING_CATEGORIES, MOCK_SUBMISSIONS } from '@/data/sletenaDir
 import { IconForms, IconFileAnalytics, IconTarget } from '@tabler/icons-react';
 
 import { sletenaService } from '@/services/sletena';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function YesltenaFlagotPage() {
   const [categories, setCategories] = useState<TrainingCategory[]>([]);
@@ -18,7 +19,7 @@ export default function YesltenaFlagotPage() {
   const [submissions, setSubmissions] = useState<SletenaSubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load real data from Supabase / Service on mount
+  // Load real data from Supabase / Service on mount & subscribe to realtime changes
   React.useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -36,6 +37,29 @@ export default function YesltenaFlagotPage() {
       }
     }
     loadData();
+
+    // Supabase Realtime listener for live instant updates
+    const channel = supabase
+      .channel('realtime_need_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sletena_submissions' },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sletena_categories' },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleCreateCategory = async (

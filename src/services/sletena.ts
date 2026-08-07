@@ -251,6 +251,19 @@ export const sletenaService = {
         console.error('[Supabase Submission Error]:', subErr);
       } else {
         console.log('[Supabase Submission Success]: Saved to sletena_submissions table ->', submission.id);
+
+        // Increment submitters_count in Supabase sletena_categories
+        const { data: catRow } = await supabase
+          .from('sletena_categories')
+          .select('submitters_count')
+          .eq('id', submission.categoryId)
+          .maybeSingle();
+
+        const newCount = (catRow?.submitters_count || 0) + 1;
+        await supabase
+          .from('sletena_categories')
+          .update({ submitters_count: newCount, updated_at: new Date().toISOString() })
+          .eq('id', submission.categoryId);
       }
     } catch (err) {
       console.warn('Supabase insert error for need submission:', err);
@@ -276,6 +289,14 @@ export const sletenaService = {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
+        const scoreToOption = (score: number | null | undefined): string => {
+          if (!score || score >= 5) return 'በጣም ከፍተኛ';
+          if (score >= 4) return 'ከፍተኛ';
+          if (score >= 3) return 'መካከለኛ';
+          if (score >= 2) return 'ዝቅተኛ';
+          return 'በጣም ዝቅተኛ';
+        };
+
         const mapped: SatisfactionSubmission[] = data.map((d: any) => ({
           id: d.id,
           categoryId: d.category_id,
@@ -283,12 +304,12 @@ export const sletenaService = {
           participantEmail: d.participant_email || '',
           organizationUnit: d.organization_unit || '',
           region: d.region,
-          prepVenueRating: d.prep_venue_rating || 'በጣም ከፍተኛ',
-          prepDocRating: d.prep_doc_rating || 'በጣም ከፍተኛ',
-          deliveryDocTrainerRating: d.delivery_doc_trainer_rating || 'በጣም ከፍተኛ',
+          prepVenueRating: d.prep_venue_rating || scoreToOption(d.venue_logistics_rating),
+          prepDocRating: d.prep_doc_rating || scoreToOption(d.content_rating),
+          deliveryDocTrainerRating: d.delivery_doc_trainer_rating || scoreToOption(d.trainer_rating),
           deliveryDocTrainerOther: d.delivery_doc_trainer_other || '',
-          deliveryParticipationRating: d.delivery_participation_rating || 'በጣም ከፍተኛ',
-          deliveryConclusionsRating: d.delivery_conclusions_rating || 'በጣም ከፍተኛ',
+          deliveryParticipationRating: d.delivery_participation_rating || scoreToOption(d.relevance_rating),
+          deliveryConclusionsRating: d.delivery_conclusions_rating || scoreToOption(d.overall_rating),
           knowledgeGainedText: d.knowledge_gained_text || d.positive_aspects || '',
           expectedResultsText: d.expected_results_text || '',
           generalImprovementText: d.general_improvement_text || d.improvement_suggestions || '',
@@ -317,7 +338,7 @@ export const sletenaService = {
   // ==========================================
   saveSatisfactionSubmission: async (submission: SatisfactionSubmission): Promise<void> => {
     try {
-      await supabase.from('sletena_satisfaction_submissions').insert([
+      const { error: satErr } = await supabase.from('sletena_satisfaction_submissions').insert([
         {
           id: submission.id,
           category_id: submission.categoryId,
@@ -345,6 +366,21 @@ export const sletenaService = {
           created_at: submission.createdAt || submission.submittedAt || new Date().toISOString(),
         },
       ]);
+
+      if (!satErr) {
+        // Increment submitters_count in Supabase sletena_categories
+        const { data: catRow } = await supabase
+          .from('sletena_categories')
+          .select('submitters_count')
+          .eq('id', submission.categoryId)
+          .maybeSingle();
+
+        const newCount = (catRow?.submitters_count || 0) + 1;
+        await supabase
+          .from('sletena_categories')
+          .update({ submitters_count: newCount, updated_at: new Date().toISOString() })
+          .eq('id', submission.categoryId);
+      }
     } catch (err) {
       console.warn('Supabase insert error for sat submission:', err);
     }
