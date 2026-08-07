@@ -4,6 +4,10 @@
  */
 
 export type MembershipLevel =
+  | 'Abal'
+  | 'Yebeteseb_Yehbret_Amerar'
+  | 'Mekakelegna_Amerar'
+  | 'Keftegna_Amerar'
   | 'Level_1'
   | 'Level_2'
   | 'Level_3'
@@ -59,6 +63,7 @@ export interface TrainingCategory {
   categoryType?: TrainingModuleType; // 'NEED' (ፍላጎት) or 'SATISFACTION' (ዕርካታ)
   selectedDirectiveIds?: string[]; // Checked directive IDs from the 27 directives
   questions?: FormQuestion[];     // Full list of CRUD questions for this training form
+  maxWoredas?: number;            // Configurable Woreda dropdown count (default: 14)
 }
 
 /**
@@ -73,9 +78,12 @@ export interface SletenaSubmission {
   membershipLevel: MembershipLevel;
   ratings: Record<string, number>; // Map of directiveId/questionId -> score (1 to 5)
   topPriorityDirectives: [string, string, string] | string[]; // Top selections
+  additionalNeededDirectives?: string[]; // Checkmarked additional training directives for section 3
+  preferredTrainingMethods?: string[];   // Preferred training methods and materials for section 4
   qualitativeFeedback?: string;
   region: string;
   zone: string;
+  woreda?: string;
   createdAt: string;
   updatedAt?: string;
   isDraft?: boolean;
@@ -154,9 +162,25 @@ export interface SatisfactionSubmission {
   categoryId: string;
   categoryTitle?: string;
   participantName: string;
+  memberId?: string;
+  contact?: string;
+  membershipLevel?: MembershipLevel;
   participantEmail?: string;
   organizationUnit?: string;
   region: string;
+  zone?: string;
+  woreda?: string;
+  // Specific Satisfaction Form Fields (Sections 1 through 5)
+  prepVenueRating?: string;            // 1.ሀ ከስልጠና ቦታ እና ከስልጠና ቁሳቁስ ማሟላት አኳያ
+  prepDocRating?: string;              // 1.ለ ከስልጠናው ሰነድ ዝግጅት አኳያ
+  deliveryDocTrainerRating?: string;   // 2.ሀ ከስልጠና ሰነድ አቀራረብና ከአሰልጣኙ ዝግጅት አኳያ
+  deliveryDocTrainerOther?: string;    // 2.ሀ Other custom text if selected
+  deliveryParticipationRating?: string;// 2.ለ ከሰልጣኞች ተሳትፎና የሃሳብ ነጻነትና ጥራት አኳያ
+  deliveryConclusionsRating?: string;  // 2.ሐ በተነሱሃሳቦች ላይ የተሰጡ የጋራ መደምደሚያ ነጥቦች አኳያ
+  knowledgeGainedText?: string;        // 3. ስልጠናዉ ላይ በመሳተፍዎ ያገኙት ተጨማሪ እውቀትና ግንዛቤ...
+  expectedResultsText?: string;        // 4. እርስዎ ጨምሮ ከሌሎች የስልጠና ተሳታፊዎች በቀጣይ ምን ውጤት እንጠብቅ?
+  generalImprovementText?: string;     // 5. አጠቃላይ ከስልጠናው ቅድመ ዝግጅት ጀምሮ...
+  // Legacy / Numeric aggregations for charts & backwards compatibility
   trainerRating: number;        // 1 to 5 scale
   contentRating: number;        // 1 to 5 scale
   venueLogisticsRating: number; // 1 to 5 scale

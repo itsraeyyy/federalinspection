@@ -2,9 +2,8 @@ import { GapAnalysisItem, InspectionDirective, SletenaSubmission, PriorityLevel 
 import { INSPECTION_DIRECTIVES } from '@/data/sletenaDirectives';
 
 /**
- * Calculates Knowledge Gaps across submissions.
- * Formula: Gap = Target - Current
- * Priority Flagging: If Gap > 2.0 -> HIGH, 1.0 < Gap <= 2.0 -> MEDIUM, Gap <= 1.0 -> LOW
+ * Calculates Training Need Intensity across submissions.
+ * Priority Flagging: If Average Need Score >= 3.8 -> HIGH, 2.5 <= Score < 3.8 -> MEDIUM, Score < 2.5 -> LOW
  */
 export function calculateKnowledgeGaps(
   submissions: SletenaSubmission[],
@@ -19,7 +18,7 @@ export function calculateKnowledgeGaps(
       targetScore: d.targetScore,
       currentScore: 0,
       gap: d.targetScore,
-      priorityFlag: d.targetScore > 2.0 ? 'HIGH' : 'MEDIUM',
+      priorityFlag: 'LOW',
     }));
   }
 
@@ -28,7 +27,9 @@ export function calculateKnowledgeGaps(
     let count = 0;
 
     submissions.forEach((sub) => {
-      const score = sub.ratings[directive.id];
+      const score = sub.ratings
+        ? sub.ratings[directive.id] ?? sub.ratings[directive.code]
+        : undefined;
       if (typeof score === 'number' && score >= 1 && score <= 5) {
         totalScore += score;
         count += 1;
@@ -36,12 +37,12 @@ export function calculateKnowledgeGaps(
     });
 
     const currentScore = count > 0 ? Number((totalScore / count).toFixed(2)) : 0;
-    const gap = Number((directive.targetScore - currentScore).toFixed(2));
+    const gap = currentScore; // Represents training demand intensity score
 
     let priorityFlag: PriorityLevel = 'LOW';
-    if (gap > 2.0) {
+    if (currentScore >= 3.8) {
       priorityFlag = 'HIGH';
-    } else if (gap > 1.0) {
+    } else if (currentScore >= 2.5) {
       priorityFlag = 'MEDIUM';
     }
 
@@ -59,8 +60,8 @@ export function calculateKnowledgeGaps(
 }
 
 /**
- * Automatically calculates high training needs (top 3 lowest-rated directives)
- * from a submission's ratings payload without requiring manual user selection.
+ * Automatically calculates high training needs (top 3 highest-rated directives)
+ * from a submission's ratings payload where 5 (በጣም ከፍተኛ) represents highest training need.
  */
 export function extractAutoHighNeeds(ratings: Record<string, number>): [string, string, string] {
   const entries = Object.entries(ratings);
@@ -68,8 +69,8 @@ export function extractAutoHighNeeds(ratings: Record<string, number>): [string, 
     return ['INS-01', 'INS-02', 'INS-03'];
   }
 
-  // Sort ratings ascending (lowest score = highest need)
-  entries.sort(([, scoreA], [, scoreB]) => scoreA - scoreB);
+  // Sort ratings descending (highest score = highest training need)
+  entries.sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
 
   const top3 = entries.slice(0, 3).map(([id]) => id);
   return [

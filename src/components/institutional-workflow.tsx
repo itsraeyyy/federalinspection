@@ -30,12 +30,14 @@ function ArrowDown() {
   );
 }
 
-function LineConnector() {
+function HorizontalArrow() {
   return (
-    <div className="flex justify-center py-2">
-      <svg width="12" height="24" viewBox="0 0 12 24" fill="none">
-        <path d="M6 0V24" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
+    <div className="w-full flex items-center justify-center px-1">
+      <div className="h-[1.5px] w-full bg-slate-300 relative flex items-center justify-end">
+        <svg width="7" height="10" viewBox="0 0 7 10" fill="none" className="translate-x-[2px] text-slate-400">
+          <path d="M1.5 1.5L5.5 5L1.5 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
     </div>
   );
 }
@@ -91,17 +93,17 @@ export function InstitutionalWorkflow() {
                 <StepCard label={left.label} icon={left.icon} />
               </div>
               <div className="flex justify-center">
-                <div className="w-full h-px bg-slate-300" />
+                <HorizontalArrow />
               </div>
               <div className="flex justify-start">
                 <StepCard label={rightSteps[i].label} icon={rightSteps[i].icon} />
               </div>
             </div>
 
-            {/* Arrow row - left arrow */}
+            {/* Arrow row - down arrow for all vertical connections */}
             {i < leftSteps.length - 1 && (
               <div className="grid grid-cols-[1fr_48px_1fr]">
-                <div className="flex justify-center">{(i === 1 || i === 2 || i === 3) ? <LineConnector /> : <ArrowDown />}</div>
+                <div className="flex justify-center"><ArrowDown /></div>
                 <div />
                 <div className="flex justify-center"><ArrowDown /></div>
               </div>

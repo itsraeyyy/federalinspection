@@ -104,7 +104,7 @@ export default function YesltenaFlagotPage() {
               }`}
             >
               <IconFileAnalytics size={16} />
-              <span>የከፍተኛ ፍላጎት ሪፖርት</span>
+              <span>አጠቃላይ የስልጠና ፍላጎት ሪፖርት</span>
             </button>
           </div>
         </div>
@@ -121,6 +121,7 @@ export default function YesltenaFlagotPage() {
         ) : (
           <DataManagementTable
             categories={categories}
+            submissions={submissions}
             onSelectCategory={(cat) => setSelectedCategory(cat)}
             onCreateCategory={handleCreateCategory}
             onUpdateCategory={handleUpdateCategory}

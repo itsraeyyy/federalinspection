@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { SubmissionForm } from '@/components/sletena/SubmissionForm';
 import { INITIAL_TRAINING_CATEGORIES } from '@/data/sletenaDirectives';
 import { TrainingCategory, SletenaSubmission } from '@/types/sletena';
-import { IconForms } from '@tabler/icons-react';
 import Image from 'next/image';
 
 function PublicNeedFormContent() {
@@ -45,17 +44,20 @@ function PublicNeedFormContent() {
           <div className="absolute right-[-20px] top-[-20px] opacity-10 text-9xl font-black select-none">
             ICODS
           </div>
-          <div className="flex items-center gap-3">
-            <IconForms size={32} className="text-white" />
+          <div className="flex items-center gap-3.5">
+            <Image
+              src="/logo.jpg"
+              alt="Commission Logo"
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-full object-cover shrink-0 border-2 border-white/40 shadow-sm"
+            />
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
-                ብሔራዊ የፌደራል ፍተሻ ፖርታል (Public Form)
-              </span>
-              <h1 className="text-xl sm:text-2xl font-black mt-1">የስልጠና ፍላጎት ማሰበሰቢያ ቅጽ</h1>
+              <h1 className="text-xl sm:text-2xl font-black leading-tight">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት የስልጠና ፍላጎት ማሰበሰቢያ ቅጽ</h1>
             </div>
           </div>
           <p className="text-xs sm:text-sm text-blue-100 leading-relaxed max-w-2xl">
-            እባክዎን ከዚህ በታች ያሉትን የስልጠና አርዕስቶች ይመልከቱ እና ለአካባቢዎ/ለስራ ክፍልዎ አስፈላጊ የሆኑትን የስልጠና ፍላጎቶች ይሙሉ። ቅጹን ለመሙላት መግባት (Login) አያስፈልግም።
+            ጊዜዎን ሰተው ስለሚሞሉ እናመሰግናለን
           </p>
         </div>
 
@@ -67,8 +69,8 @@ function PublicNeedFormContent() {
 
         {/* Clean Footer */}
         <footer className="text-center text-[11px] text-text-muted py-4 space-y-1">
-          <p>© 2026 Federal Inspection Authority - ICODS Training Portal</p>
-          <p>የፌደራል ፍተሻ ባለስልጣን - የስልጠና ፍላጎቶች ማሰበሰቢያ</p>
+          <p>© 2017 ICODiS</p>
+          <p>የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</p>
         </footer>
       </div>
     </div>

@@ -1,10 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { SatisfactionSubmission, TrainingCategory } from '@/types/sletena';
 import { PdfExportButton } from './PdfExportButton';
 import { SletenaReportPdfTemplate } from './SletenaReportPdfTemplate';
-import { IconStar, IconUsers, IconHeartHandshake, IconChartBar, IconBulb, IconFileChart, IconArrowLeft } from '@tabler/icons-react';
+import {
+  IconStar,
+  IconUsers,
+  IconHeartHandshake,
+  IconChartBar,
+  IconBulb,
+  IconFileChart,
+  IconArrowLeft,
+  IconCopy,
+  IconCheck,
+  IconUserCheck,
+  IconMapPin,
+  IconListCheck,
+  IconMessage2,
+} from '@tabler/icons-react';
 import {
   PieChart,
   Pie,
@@ -25,11 +39,21 @@ interface SatisfactionReportViewProps {
   onBack?: () => void;
 }
 
+const SATISFACTION_CHOICE_OPTIONS = [
+  'በጣም ከፍተኛ',
+  'ከፍተኛ',
+  'መካከለኛ',
+  'ዝቅተኛ',
+  'በጣም ዝቅተኛ',
+];
+
 export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({ 
   submissions,
   category,
   onBack,
 }) => {
+  const [copiedLink, setCopiedLink] = useState(false);
+
   // Filter submissions by category if a specific form is selected
   const activeSubmissions = category
     ? submissions.filter((s) => s.categoryId === category.id)
@@ -38,6 +62,15 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
   // Fallback to all submissions if selected category has 0 submissions yet for demo
   const relevantSubmissions = activeSubmissions.length > 0 ? activeSubmissions : submissions;
   const count = relevantSubmissions.length || 1;
+
+  const handleCopyLink = () => {
+    if (!category) return;
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://icods.raey.work';
+    const link = `${origin}/sletena/erkata?cat=${category.id}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   const avgTrainer = (relevantSubmissions.reduce((a, b) => a + b.trainerRating, 0) / count).toFixed(2);
   const avgContent = (relevantSubmissions.reduce((a, b) => a + b.contentRating, 0) / count).toFixed(2);
@@ -58,6 +91,51 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
     return 'አነስተኛ ዕርካታ';
   }
 
+  // --- Section 1: ጥሬ ሃቅ Demographic Analytics ---
+  const zoneWoredaStats = useMemo(() => {
+    const table: Record<string, { region: string; zone: string; woreda: string; count: number }> = {};
+    relevantSubmissions.forEach((s) => {
+      if (!s.region) return;
+      const key = `${s.region}-${s.zone || 'N/A'}-${s.woreda || 'N/A'}`;
+      if (!table[key]) {
+        table[key] = {
+          region: s.region,
+          zone: s.zone || 'ያልተገለጸ',
+          woreda: s.woreda || 'ያልተገለጸ',
+          count: 0,
+        };
+      }
+      table[key].count += 1;
+    });
+    return Object.values(table).sort((a, b) => b.count - a.count);
+  }, [relevantSubmissions]);
+
+  const membershipLevelStats = useMemo(() => {
+    const counts: Record<string, number> = {
+      'አባል': 0,
+      'የቤተሰብ/የሕብረት አመራር': 0,
+      'መካከለኛ አመራር': 0,
+      'ከፍተኛ አመራር': 0,
+    };
+
+    relevantSubmissions.forEach((s) => {
+      const lvl = s.membershipLevel;
+      if (lvl === 'Abal') counts['አባል'] += 1;
+      else if (lvl === 'Yebeteseb_Yehbret_Amerar') counts['የቤተሰብ/የሕብረት አመራር'] += 1;
+      else if (lvl === 'Mekakelegna_Amerar') counts['መካከለኛ አመራር'] += 1;
+      else if (lvl === 'Keftegna_Amerar') counts['ከፍተኛ አመራር'] += 1;
+      else counts['አባል'] += 1;
+    });
+
+    const colors = ['#0047AB', '#10b981', '#f59e0b', '#7c3aed'];
+    return Object.entries(counts).map(([name, value], idx) => ({
+      name,
+      value,
+      percentage: Math.round((value / Math.max(relevantSubmissions.length, 1)) * 100),
+      color: colors[idx % colors.length],
+    }));
+  }, [relevantSubmissions]);
+
   // --- Chart Data ---
   // 1. Pie chart: Satisfaction distribution (Satisfied / Neutral / Dissatisfied)
   const satisfied = relevantSubmissions.filter((s) => s.overallRating >= 4).length;
@@ -77,27 +155,126 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
     { name: 'አደረጃጀት', fullName: 'ቦታ እና አደረጃጀት (Venue)', avg: Number(avgVenue), color: '#10b981' },
   ];
 
+  // Helper for choice question breakdown calculation
+  const getChoiceBreakdown = (fieldKey: keyof SatisfactionSubmission) => {
+    const counts: Record<string, number> = {
+      'በጣም ከፍተኛ': 0,
+      'ከፍተኛ': 0,
+      'መካከለኛ': 0,
+      'ዝቅተኛ': 0,
+      'በጣም ዝቅተኛ': 0,
+      'ሌላ (Other)': 0,
+    };
+
+    let totalScoreSum = 0;
+    let validCount = 0;
+
+    relevantSubmissions.forEach((s) => {
+      const val = (s[fieldKey] as string) || 'በጣም ከፍተኛ';
+      if (counts[val] !== undefined) {
+        counts[val] += 1;
+      } else if (val.startsWith('ሌላ') || val.length > 0) {
+        counts['ሌላ (Other)'] += 1;
+      } else {
+        counts['በጣም ከፍተኛ'] += 1;
+      }
+
+      // Calculate score map
+      let sVal = 5;
+      if (val === 'ከፍተኛ') sVal = 4;
+      else if (val === 'መካከለኛ') sVal = 3;
+      else if (val === 'ዝቅተኛ') sVal = 2;
+      else if (val === 'በጣም ዝቅተኛ') sVal = 1;
+      totalScoreSum += sVal;
+      validCount += 1;
+    });
+
+    const meanScore = validCount > 0 ? (totalScoreSum / validCount).toFixed(2) : '5.00';
+    return { counts, meanScore: Number(meanScore) };
+  };
+
+  // List of every question for detailed breakdown
+  const questionReports = [
+    {
+      code: '1.ሀ',
+      category: '1. ከስልጠና ቅድመ ዝግጅት አኳያ ያለዎት አስተያየት በተመለከተ',
+      title: 'ሀ/ ከስልጠና ቦታ እና ከስልጠና ቁሳቁስ ማሟላት አኳያ',
+      fieldKey: 'prepVenueRating' as const,
+      type: 'dropdown' as const,
+    },
+    {
+      code: '1.ለ',
+      category: '1. ከስልጠና ቅድመ ዝግጅት አኳያ ያለዎት አስተያየት በተመለከተ',
+      title: 'ለ/ ከስልጠናው ሰነድ ዝግጅት አኳያ',
+      fieldKey: 'prepDocRating' as const,
+      type: 'dropdown' as const,
+    },
+    {
+      code: '2.ሀ',
+      category: '2. የስልጠና አሰጣጥና ውይይት በተመለከተ',
+      title: 'ሀ/ ከስልጠና ሰነድ አቀራረብና ከአሰልጣኙ ዝግጅት አኳያ',
+      fieldKey: 'deliveryDocTrainerRating' as const,
+      type: 'dropdown' as const,
+    },
+    {
+      code: '2.ለ',
+      category: '2. የስልጠና አሰጣጥና ውይይት በተመለከተ',
+      title: 'ለ/ ከሰልጣኞች ተሳትፎና የሃሳብ ነጻነትና ጥራት አኳያ',
+      fieldKey: 'deliveryParticipationRating' as const,
+      type: 'dropdown' as const,
+    },
+    {
+      code: '2.ሐ',
+      category: '2. የስልጠና አሰጣጥና ውይይት በተመለከተ',
+      title: 'ሐ/ በተነሱ ሃሳቦች ላይ የተሰጡ የጋራ መደምደሚያ ነጥቦች አኳያ',
+      fieldKey: 'deliveryConclusionsRating' as const,
+      type: 'dropdown' as const,
+    },
+    {
+      code: '3',
+      category: '3. ያገኙት እውቀትና ግንዛቤ',
+      title: '3. ስልጠናዉ ላይ በመሳተፍዎ ያገኙት ተጨማሪ እውቀትና ግንዛቤ እንዴትይገልፁታል?',
+      fieldKey: 'knowledgeGainedText' as const,
+      type: 'text' as const,
+    },
+    {
+      code: '4',
+      category: '4. የሚጠበቅ ውጤት',
+      title: '4. እርስዎ ጨምሮ ከሌሎች የስልጠና ተሳታፊዎች በቀጣይ ምን ውጤት እንጠብቅ?',
+      fieldKey: 'expectedResultsText' as const,
+      type: 'text' as const,
+    },
+    {
+      code: '5',
+      category: '5. ተጨማሪ አስተያየትና ማሻሻያ',
+      title: '5. አጠቃላይ ከስልጠናው ቅድመ ዝግጅት ጀምሮ ስልጠና እስከተመራበት አግባብ በቀጣይ ቢስተካከል የሚሉት ተጨማሪ አስተያየት ካለዎት',
+      fieldKey: 'generalImprovementText' as const,
+      type: 'text' as const,
+    },
+  ];
+
   return (
     <div id="satisfaction-report-container" className="space-y-6">
+      {/* Top Header Card */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3">
           {onBack && (
             <button
               onClick={onBack}
-              className="p-2 rounded-xl bg-surface-secondary text-text-secondary hover:text-text-primary border border-border/50 transition-all cursor-pointer mt-1"
+              className="p-2.5 rounded-xl bg-surface-secondary text-text-secondary hover:text-text-primary border border-border/50 transition-all cursor-pointer mt-1"
               title="ተመለስ ወደ ዕርካታ ቅጾች"
             >
               <IconArrowLeft size={18} />
             </button>
           )}
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <IconStar className="text-brand-blue" size={24} />
               <h2 className="text-xl font-extrabold text-text-primary">
                 {category ? category.title : 'የስልጠና ዕርካታ ሪፖርት (Satisfaction Report)'}
               </h2>
               {category && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
                   የቅጽ ዝርዝር ሪፖርት
                 </span>
               )}
@@ -109,12 +286,26 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
             </p>
           </div>
         </div>
-        <PdfExportButton
-          elementId="satisfaction-report-container"
-          reportTitle="የስልጠና_ዕርካታ_ሪፖርት"
-        />
+
+        {/* Top Header Controls (Copy Link & Export PDF) */}
+        <div className="flex items-center gap-3 flex-wrap shrink-0">
+          {category && (
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-secondary hover:bg-surface-secondary/80 text-brand-blue text-xs font-bold transition-all border border-border/50 cursor-pointer"
+            >
+              {copiedLink ? <IconCheck size={16} /> : <IconCopy size={16} />}
+              <span>{copiedLink ? 'ሊንክ ኮፒ ተደርጓል' : 'የቅጹን ሊንክ ኮፒ'}</span>
+            </button>
+          )}
+          <PdfExportButton
+            elementId="satisfaction-report-container"
+            reportTitle={category ? `የዕርካታ_ሪፖርት_${category.title.replace(/\s+/g, '_')}` : 'የስልጠና_ዕርካታ_ሪፖርት'}
+          />
+        </div>
       </div>
 
+      {/* KPI Overview Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-surface-primary border border-border/50 rounded-xl p-5 shadow-sm">
           <div className="flex justify-between items-center text-text-muted mb-2">
@@ -148,8 +339,69 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
             <span className="text-xs font-bold uppercase">ተሳታፊዎች</span>
             <IconUsers size={18} className="text-brand-blue" />
           </div>
-          <div className="text-3xl font-extrabold text-brand-blue">{submissions.length}</div>
+          <div className="text-3xl font-extrabold text-brand-blue">{relevantSubmissions.length}</div>
           <div className="text-xs text-text-secondary mt-1">የተሰበሰቡ ቅጾች ብዛት</div>
+        </div>
+      </div>
+
+      {/* SECTION 1: 1. ጥሬ ሃቅ DEMOGRAPHICS ANALYTICS */}
+      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+          <IconUserCheck className="text-brand-blue" size={22} />
+          <h3 className="text-sm font-extrabold text-text-primary uppercase tracking-wide">
+            1. ጥሬ ሃቅ — የተሳታፊዎች ስነ-ህዝባዊ መረጃ (Participant Demographics)
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Membership Level Distribution */}
+          <div className="space-y-3 bg-surface-secondary/30 p-4 rounded-xl border border-border/40">
+            <h4 className="text-xs font-bold text-text-primary">የአባልነት / የሥራ ደረጃ ስርጭት</h4>
+            <div className="space-y-2">
+              {membershipLevelStats.map((item) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex justify-between text-xs text-text-secondary">
+                    <span>{item.name}</span>
+                    <span className="font-bold text-text-primary">{item.value} ተሳታፊ ({item.percentage}%)</span>
+                  </div>
+                  <div className="h-2 w-full bg-surface-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${item.percentage}%`, backgroundColor: item.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Region / Location Overview */}
+          <div className="space-y-3 bg-surface-secondary/30 p-4 rounded-xl border border-border/40">
+            <h4 className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+              <IconMapPin size={16} className="text-brand-blue" />
+              የተሳታፊዎች ዞን እና ወረዳ ስርጭት (Sub-city & Woreda Breakdown)
+            </h4>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {zoneWoredaStats.length === 0 ? (
+                <div className="text-xs text-text-muted p-3 text-center">ምንም አካባቢ አልተመዘገበም</div>
+              ) : (
+                zoneWoredaStats.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-xs p-2 bg-surface-primary/70 rounded-lg border border-border/30">
+                    <div className="flex items-center gap-1.5 font-bold text-text-primary">
+                      <span>{item.region}</span>
+                      <span className="text-text-muted font-normal">• {item.zone}</span>
+                      {item.woreda !== 'ያልተገለጸ' && (
+                        <span className="text-brand-blue font-bold">• {item.woreda}</span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-extrabold text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-md shrink-0">
+                      {item.count} ተሳታፊ ({Math.round((item.count / Math.max(relevantSubmissions.length, 1)) * 100)}%)
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -168,7 +420,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const d = payload[0].payload;
-                      const pct = Math.round((d.value / Math.max(submissions.length, 1)) * 100);
+                      const pct = Math.round((d.value / Math.max(relevantSubmissions.length, 1)) * 100);
                       return (
                         <div className="bg-surface-primary border border-border/60 p-3 rounded-xl shadow-lg text-xs max-w-[200px]">
                           <div className="font-bold text-text-primary mb-1">{d.name}</div>
@@ -204,7 +456,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
               <div key={item.name} className="flex items-center gap-2 text-xs">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                 <span className="text-text-secondary truncate">
-                  {item.name.split(' ')[0]} ({Math.round((item.value / Math.max(submissions.length, 1)) * 100)}%)
+                  {item.name.split(' ')[0]} ({Math.round((item.value / Math.max(relevantSubmissions.length, 1)) * 100)}%)
                 </span>
               </div>
             ))}
@@ -249,200 +501,150 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
         </div>
       </div>
 
-      {/* Detailed Satisfaction Breakdown Report */}
-      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      {/* EVERY QUESTION REPORT SECTION (እያንዳንዱ መጠይቅ ሪፖርት) */}
+      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/40">
           <div>
-            <h3 className="text-sm font-extrabold text-text-primary">
-              ዝርዝር የዕርካታ ትንተና ሪፖርት (Detailed Satisfaction Analysis)
+            <h3 className="text-base font-extrabold text-text-primary flex items-center gap-2">
+              <IconListCheck className="text-brand-blue" size={22} />
+              እያንዳንዱ መጠይቅ ሪፖርት (Every Question Detailed Analytics)
             </h3>
             <p className="text-xs text-text-muted mt-0.5">
-              በየዘርፉ የተመዘገበ የዕርካታ ደረጃ እና ትኩረት የሚሹ ክፍተቶች (High vs. Low Performing Areas)
+              በቅጹ ላይ በተካተቱ ሁሉም ጥያቄዎች የተሰጡ የደረጃ ምላሾች እና ክፍት አስተያየቶች በዝርዝር::
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-text-muted shrink-0">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> ጥሩ ዕርካታ (Good Area)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" /> መካከለኛ (Fair Area)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" /> ማሻሻያ የሚፈልግ (Needs Improvement)
-            </span>
-          </div>
+          <span className="text-xs font-bold text-brand-blue bg-brand-blue/10 px-3 py-1 rounded-full border border-brand-blue/20">
+            {questionReports.length} ጥያቄዎች የተተነተኑ
+          </span>
         </div>
 
-        {/* Breakdown Cards */}
-        <div className="space-y-4">
-          {[
-            {
-              id: 'trainer',
-              title: 'የአሰልጣኝ ብቃት እና ዝግጅት (Trainer Expertise & Preparation)',
-              avgNum: Number(avgTrainer),
-              field: 'trainerRating' as const,
-              desc: 'የአሰልጣኙ የርዕስ እውቀት፣ የማብራራት ችሎታ እና ለተሳታፊዎች ጥያቄ የሰጡት ምላሽ'
-            },
-            {
-              id: 'content',
-              title: 'የስልጠና ይዘት ጥራት (Content Quality & Clarity)',
-              avgNum: Number(avgContent),
-              field: 'contentRating' as const,
-              desc: 'የስልጠናው ሞጁሎች ግልፅነት፣ የህትመት ሰነዶች ጥራት እና የተካተቱ ተግባራዊ ምሳሌዎች'
-            },
-            {
-              id: 'relevance',
-              title: 'ከስራ ጋር ያለው ተዛማጅነት (Job Relevance & Practical Utility)',
-              avgNum: Number(avgRelevance),
-              field: 'relevanceRating' as const,
-              desc: 'የስልጠናው ይዘት ከተሳታፊዎች የእለት ተእለት የስራ ሀላፊነት እና ከክትትል ስራዎች ጋር ያለው ግንኙነት'
-            },
-            {
-              id: 'venue',
-              title: 'የአደረጃጀት እና መስተንግዶ ጥራት (Venue, Logistics & Hospitality)',
-              avgNum: Number(avgVenue),
-              field: 'venueLogisticsRating' as const,
-              desc: 'የስልጠና አዳራሹ ይመችነት፣ የቴክኖሎጂ ቁሳቁሶች እና የምግብ/መስተንግዶ ጥራት'
-            },
-            {
-              id: 'overall',
-              title: 'አጠቃላይ የስልጠና ዕርካታ (Overall Training Satisfaction)',
-              avgNum: Number(avgOverall),
-              field: 'overallRating' as const,
-              desc: 'ተሳታፊዎች በጠቅላላው በስልጠናው ሂደት ላይ ያላቸው አጠቃላይ የዕርካታ ግምገማ'
-            },
-          ].map((item, idx) => {
-            const avg = item.avgNum;
-            const pct = Math.round((avg / 5.0) * 100);
+        {/* Loop through every question */}
+        <div className="space-y-6">
+          {questionReports.map((qItem, idx) => {
+            if (qItem.type === 'dropdown') {
+              const { counts, meanScore } = getChoiceBreakdown(qItem.fieldKey);
+              const wordLabel = getSatisfactionWordLabel(meanScore);
+              const pctOverall = Math.round((meanScore / 5.0) * 100);
 
-            // Calculate exact counts
-            const satisfiedCount = submissions.filter((s) => s[item.field] >= 4).length;
-            const neutralCount = submissions.filter((s) => s[item.field] === 3).length;
-            const dissatisfiedCount = submissions.filter((s) => s[item.field] <= 2).length;
-
-            const satisfiedPct = Math.round((satisfiedCount / count) * 100);
-            const neutralPct = Math.round((neutralCount / count) * 100);
-            const dissatisfiedPct = Math.round((dissatisfiedCount / count) * 100);
-
-            const isGood = avg >= 3.5;
-            const isFair = avg >= 2.5 && avg < 3.5;
-
-            const badgeBg = isGood
-              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
-              : isFair
-              ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
-              : 'bg-rose-500/10 text-rose-600 border-rose-500/30';
-
-            const rankBg = isGood
-              ? 'bg-emerald-500/10 text-emerald-600'
-              : isFair
-              ? 'bg-amber-400/10 text-amber-600'
-              : 'bg-rose-500/10 text-rose-600';
-
-            const barColor = isGood
-              ? 'bg-emerald-500'
-              : isFair
-              ? 'bg-amber-400'
-              : 'bg-rose-500';
-
-            const wordLabel = getSatisfactionWordLabel(avg);
-            const statusTag = isGood
-              ? 'ጥሩ ብቃት የታየበት (Good Area)'
-              : isFair
-              ? 'መካከለኛ ደረጃ (Fair Area)'
-              : 'ማሻሻያ የሚፈልግ (Needs Improvement)';
-
-            return (
-              <div
-                key={item.id}
-                className="bg-surface-secondary/30 hover:bg-surface-secondary/60 border border-border/40 hover:border-border/70 rounded-xl p-4 transition-all duration-200"
-              >
-                {/* Header Row */}
-                <div className="flex items-start gap-3">
-                  <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-extrabold mt-0.5 ${rankBg}`}>
-                    #{idx + 1}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${badgeBg}`}>
-                        {statusTag}
+              return (
+                <div
+                  key={qItem.code}
+                  className="bg-surface-secondary/30 border border-border/50 rounded-xl p-5 space-y-4 hover:border-brand-blue/30 transition-all"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/30 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 rounded-lg bg-brand-blue/10 text-brand-blue font-black flex items-center justify-center text-xs shrink-0">
+                        {qItem.code}
                       </span>
-                      <span className="text-[11px] font-bold text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-md">
+                      <div>
+                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                          {qItem.category}
+                        </span>
+                        <h4 className="text-sm font-extrabold text-text-primary">{qItem.title}</h4>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-bold text-brand-blue bg-brand-blue/10 px-2.5 py-1 rounded-lg">
+                        አማካይ፡ {meanScore.toFixed(2)} / 5.0
+                      </span>
+                      <span className="text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
                         {wordLabel}
                       </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-text-primary leading-snug">{item.title}</h4>
-                    <p className="text-xs text-text-muted mt-0.5">{item.desc}</p>
                   </div>
 
-                  <div className="shrink-0 text-right hidden sm:block">
-                    <div className="text-2xl font-extrabold text-brand-blue">{pct}%</div>
-                    <div className="text-[10px] text-text-muted">የዕርካታ መጠን</div>
+                  {/* Choice Response Bar Breakdown */}
+                  <div className="space-y-2.5">
+                    {SATISFACTION_CHOICE_OPTIONS.map((choice) => {
+                      const choiceCount = counts[choice] || 0;
+                      const choicePct = Math.round((choiceCount / Math.max(relevantSubmissions.length, 1)) * 100);
+
+                      const barBg =
+                        choice === 'በጣም ከፍተኛ' || choice === 'ከፍተኛ'
+                          ? 'bg-emerald-500'
+                          : choice === 'መካከለኛ'
+                          ? 'bg-amber-400'
+                          : 'bg-rose-500';
+
+                      return (
+                        <div key={choice} className="space-y-1 text-xs">
+                          <div className="flex justify-between text-text-secondary font-medium">
+                            <span>{choice}</span>
+                            <span className="font-bold text-text-primary">
+                              {choiceCount} ምላሽ ({choicePct}%)
+                            </span>
+                          </div>
+                          <div className="h-2 w-full bg-surface-primary rounded-full overflow-hidden border border-border/40">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${barBg}`}
+                              style={{ width: `${choicePct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
+              );
+            } else {
+              // Open Paragraph Text Questions (3, 4, 5)
+              const answers = relevantSubmissions
+                .map((s) => ({
+                  name: s.participantName,
+                  unit: s.organizationUnit,
+                  region: s.region,
+                  text: (s[qItem.fieldKey] as string) || '',
+                }))
+                .filter((a) => a.text.trim().length > 0);
 
-                {/* Progress Bar & Breakdown */}
-                <div className="mt-4 space-y-2">
-                  <div>
-                    <div className="flex justify-between text-xs text-text-muted mb-1 font-medium">
-                      <span>የዕርካታ ደረጃ (Satisfaction Score)</span>
-                      <span className="font-bold text-text-primary">{wordLabel} ({pct}%)</span>
+              return (
+                <div
+                  key={qItem.code}
+                  className="bg-surface-secondary/30 border border-border/50 rounded-xl p-5 space-y-4 hover:border-brand-blue/30 transition-all"
+                >
+                  <div className="flex items-center justify-between border-b border-border/30 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 font-black flex items-center justify-center text-xs shrink-0">
+                        {qItem.code}
+                      </span>
+                      <div>
+                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">
+                          {qItem.category} (Open Text Responses)
+                        </span>
+                        <h4 className="text-sm font-extrabold text-text-primary">{qItem.title}</h4>
+                      </div>
                     </div>
-                    <div className="h-2 w-full bg-surface-secondary rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${barColor}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+
+                    <span className="text-xs font-bold text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                      {answers.length} ምላሾች ተሰጥተዋል
+                    </span>
                   </div>
 
-                  {/* Submitter Ratings Breakdown */}
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs">
-                    <div className="bg-surface-primary/60 p-2 rounded-lg border border-border/30 text-center">
-                      <div className="text-[10px] text-text-muted">ዕርካታ ያለው (Satisfied)</div>
-                      <div className="font-bold text-emerald-600 mt-0.5">{satisfiedCount} ተሳታፊ ({satisfiedPct}%)</div>
-                    </div>
-                    <div className="bg-surface-primary/60 p-2 rounded-lg border border-border/30 text-center">
-                      <div className="text-[10px] text-text-muted">ገለልተኛ (Neutral)</div>
-                      <div className="font-bold text-amber-600 mt-0.5">{neutralCount} ተሳታፊ ({neutralPct}%)</div>
-                    </div>
-                    <div className="bg-surface-primary/60 p-2 rounded-lg border border-border/30 text-center">
-                      <div className="text-[10px] text-text-muted">ዕርካታ የሌለው (Dissatisfied)</div>
-                      <div className="font-bold text-rose-600 mt-0.5">{dissatisfiedCount} ተሳታፊ ({dissatisfiedPct}%)</div>
-                    </div>
+                  {/* Participant Text Answers Cards */}
+                  <div className="space-y-3">
+                    {answers.length === 0 ? (
+                      <div className="text-xs text-text-muted p-3 bg-surface-primary/60 rounded-lg text-center border border-dashed border-border/40">
+                        ለዚህ ጥያቄ እስካሁን የተጻፈ ምላሽ የለም::
+                      </div>
+                    ) : (
+                      answers.map((ans, aIdx) => (
+                        <div key={aIdx} className="bg-surface-primary/80 p-3.5 rounded-xl border border-border/40 space-y-1.5 text-xs">
+                          <div className="flex justify-between items-center text-text-muted border-b border-border/20 pb-1 font-semibold text-[11px]">
+                            <span className="text-text-primary font-bold">{ans.name} {ans.unit && `(${ans.unit})`}</span>
+                            <span className="text-brand-blue">{ans.region}</span>
+                          </div>
+                          <p className="text-text-secondary leading-relaxed pt-0.5">
+                            "{ans.text}"
+                          </p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
-              </div>
-            );
+              );
+            }
           })}
-        </div>
-      </div>
-
-      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm">
-        <h3 className="text-sm font-bold text-text-primary mb-4 flex items-center gap-2">
-          <IconBulb size={18} className="text-brand-blue" />
-          አስተያየቶች እና የማሻሻያ ሀሳቦች (Feedback & Suggestions)
-        </h3>
-        <div className="space-y-4">
-          {submissions
-            .filter((s) => s.improvementSuggestions || s.positiveAspects)
-            .slice(0, 5)
-            .map((sub) => (
-              <div key={sub.id} className="bg-surface-secondary/30 p-4 rounded-xl border border-border/40">
-                <div className="flex justify-between items-center text-xs text-text-muted mb-2">
-                  <span className="font-bold text-text-primary">{sub.participantName}</span>
-                  <span>{sub.region}</span>
-                </div>
-                {sub.positiveAspects && (
-                  <p className="text-sm text-text-secondary mb-1"><span className="font-medium text-text-primary">ጥንካሬ፡</span> {sub.positiveAspects}</p>
-                )}
-                {sub.improvementSuggestions && (
-                  <p className="text-sm text-text-secondary"><span className="font-medium text-text-primary">ማሻሻያ፡</span> {sub.improvementSuggestions}</p>
-                )}
-              </div>
-            ))}
         </div>
       </div>
 
@@ -458,4 +660,3 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
     </div>
   );
 };
-

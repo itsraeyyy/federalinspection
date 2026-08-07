@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TrainingCategory } from '@/types/sletena';
+import { TrainingCategory, SletenaSubmission } from '@/types/sletena';
 import { INSPECTION_DIRECTIVES } from '@/data/sletenaDirectives';
 import { formatECDate } from '@/lib/date-formatter';
 import { SletenaFormBuilder } from './SletenaFormBuilder';
@@ -22,6 +22,7 @@ import {
 
 interface DataManagementTableProps {
   categories: TrainingCategory[];
+  submissions?: SletenaSubmission[];
   onSelectCategory: (category: TrainingCategory) => void;
   onCreateCategory?: (newCategory: Omit<TrainingCategory, 'id' | 'submittersCount' | 'shareableLink'>) => void;
   onUpdateCategory?: (updatedCategory: TrainingCategory) => void;
@@ -30,6 +31,7 @@ interface DataManagementTableProps {
 
 export const DataManagementTable: React.FC<DataManagementTableProps> = ({
   categories,
+  submissions = [],
   onSelectCategory,
   onCreateCategory,
   onUpdateCategory,
@@ -227,7 +229,11 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <IconUsers size={15} className="text-brand-blue" />
-                      <span>ተሳታፊዎች፡ <strong className="text-brand-blue">{cat.submittersCount} አባላት</strong></span>
+                      {(() => {
+                        const liveCount = submissions.filter((s) => s.categoryId === cat.id).length;
+                        const count = liveCount > 0 ? liveCount : (cat.submittersCount || 0);
+                        return <span>ተሳታፊዎች፡ <strong className="text-brand-blue">{count} አባላት</strong></span>;
+                      })()}
                     </div>
                   </div>
 

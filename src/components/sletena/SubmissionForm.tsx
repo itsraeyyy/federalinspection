@@ -7,9 +7,10 @@ import { INSPECTION_DIRECTIVES } from '@/data/sletenaDirectives';
 import { extractAutoHighNeeds } from '@/lib/sletena/gapEngine';
 import { MemberInfoSection } from './MemberInfoSection';
 import { LikertMatrix } from './LikertMatrix';
+import { AdditionalDirectivesSection } from './AdditionalDirectivesSection';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
 import { useAutoSave } from '@/lib/sletena/autoSave';
-import { IconSend, IconMessage2, IconCheck, IconAlertCircle, IconArrowLeft } from '@tabler/icons-react';
+import { IconSend, IconMessage2, IconCheck, IconAlertCircle, IconArrowLeft, IconSchool, IconDevices, IconVideo, IconBook } from '@tabler/icons-react';
 
 interface SubmissionFormProps {
   category: TrainingCategory;
@@ -51,14 +52,53 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
   const [memberName, setMemberName] = useState(initialSubmission?.memberName || '');
   const [contact, setContact] = useState(initialSubmission?.contact || '');
   const [membershipLevel, setMembershipLevel] = useState<MembershipLevel>(
-    initialSubmission?.membershipLevel || 'Level_3'
+    initialSubmission?.membershipLevel || 'Abal'
   );
-  const [region, setRegion] = useState(initialSubmission?.region || 'አዲስ አበባ');
-  const [zone, setZone] = useState(initialSubmission?.zone || 'ዞን 01');
+  const [region, setRegion] = useState(initialSubmission?.region || '');
+  const [zone, setZone] = useState(initialSubmission?.zone || '');
+  const [woreda, setWoreda] = useState(initialSubmission?.woreda || '');
   const [ratings, setRatings] = useState<Record<string, number>>(initialSubmission?.ratings || {});
   const [qualitativeFeedback, setQualitativeFeedback] = useState(
     initialSubmission?.qualitativeFeedback || ''
   );
+  const [hasNoSuggestions, setHasNoSuggestions] = useState(
+    initialSubmission?.qualitativeFeedback === 'ምንም የለኝም'
+  );
+  const [additionalNeededDirectives, setAdditionalNeededDirectives] = useState<string[]>(
+    initialSubmission?.additionalNeededDirectives || []
+  );
+  const [preferredTrainingMethods, setPreferredTrainingMethods] = useState<string[]>(
+    initialSubmission?.preferredTrainingMethods || []
+  );
+
+  const handleToggleAdditionalDirective = (directiveId: string) => {
+    setAdditionalNeededDirectives((prev) =>
+      prev.includes(directiveId)
+        ? prev.filter((id) => id !== directiveId)
+        : [...prev, directiveId]
+    );
+  };
+
+  const handleTogglePreferredMethod = (method: string) => {
+    setPreferredTrainingMethods((prev) => {
+      // 'በአካል' and 'Online' are mutually exclusive (select 1)
+      if (method === 'በአካል') {
+        const withoutOnline = prev.filter((m) => m !== 'Online');
+        return withoutOnline.includes('በአካል')
+          ? withoutOnline.filter((m) => m !== 'በአካል')
+          : [...withoutOnline, 'በአካል'];
+      }
+      if (method === 'Online') {
+        const withoutPhysical = prev.filter((m) => m !== 'በአካል');
+        return withoutPhysical.includes('Online')
+          ? withoutPhysical.filter((m) => m !== 'Online')
+          : [...withoutPhysical, 'Online'];
+      }
+      return prev.includes(method)
+        ? prev.filter((m) => m !== method)
+        : [...prev, method];
+    });
+  };
 
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -72,7 +112,10 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
     membershipLevel,
     region,
     zone,
+    woreda,
     ratings,
+    additionalNeededDirectives,
+    preferredTrainingMethods,
     qualitativeFeedback,
   };
 
@@ -93,15 +136,9 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
-
-    // Validation Check 1: Member Info
-    if (!memberId.trim() || !memberName.trim() || !contact.trim()) {
-      setValidationError('እባክዎን ሁሉንም የአባል/ሰራተኛ መለያ መረጃዎች (መለያ ቁጥር፣ ስም፣ ስልክ/ኢሜይል) ይሙሉ::');
-      return;
-    }
 
     // Validation Check 2: All Active Directives Rated
     const ratedCount = Object.keys(ratings).filter(
@@ -127,15 +164,18 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
       membershipLevel,
       region,
       zone,
+      woreda: woreda.trim(),
       ratings,
       topPriorityDirectives: autoCalculatedPriorities,
+      additionalNeededDirectives,
+      preferredTrainingMethods,
       qualitativeFeedback: qualitativeFeedback.trim(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    // Save to Supabase database
-    sletenaService.saveNeedSubmission(finalSubmission);
+    // Save to Supabase database (and sync to local storage fallback)
+    await sletenaService.saveNeedSubmission(finalSubmission);
 
     if (onSubmitSuccess) {
       onSubmitSuccess(finalSubmission);
@@ -151,7 +191,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
         </div>
         <h2 className="text-xl font-extrabold text-text-primary">የስልጠና ፍላጎት ቅጽዎ በስኬት ተመዝግቧል!</h2>
         <p className="text-xs text-text-muted">
-          የሰጡት የምዘና ነጥብ ሲስተሙ በራስ-ሰር ከፍተኛ የስልጠና ክፍተቶችን ለመለየት (Knowledge Gap Analysis) ጥቅም ላይ ይውላል። እናመሰግናለን!
+          የሰጡት የምዘና ነጥብ ሲስተሙ በራስ-ሰር ከፍተኛ የስልጠና ፍላጎቶችን ለመለየት (Training Needs Prioritization) ጥቅም ላይ ይውላል። እናመሰግናለን!
         </p>
         {onBack && (
           <button
@@ -167,30 +207,6 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Top Header Card */}
-      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="p-2 rounded-xl bg-surface-secondary text-text-secondary hover:text-text-primary border border-border/50 transition-all cursor-pointer"
-              >
-                <IconArrowLeft size={18} />
-              </button>
-            )}
-            <div>
-              <h2 className="text-xl font-extrabold text-text-primary">{category.title}</h2>
-              <p className="text-xs text-text-muted mt-1">{category.description}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <AutoSaveIndicator status={autoSaveStatus} lastSavedTime={lastSavedTime} />
-        </div>
-      </div>
 
       {/* Error Alert */}
       {validationError && (
@@ -211,6 +227,8 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
         membershipLevel={membershipLevel}
         region={region}
         zone={zone}
+        woreda={woreda}
+        maxWoredas={category?.maxWoredas || 14}
         onChange={(fields) => {
           if (fields.memberId !== undefined) setMemberId(fields.memberId);
           if (fields.memberName !== undefined) setMemberName(fields.memberName);
@@ -218,6 +236,7 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
           if (fields.membershipLevel !== undefined) setMembershipLevel(fields.membershipLevel);
           if (fields.region !== undefined) setRegion(fields.region);
           if (fields.zone !== undefined) setZone(fields.zone);
+          if (fields.woreda !== undefined) setWoreda(fields.woreda);
         }}
       />
 
@@ -228,47 +247,177 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
         onRatingChange={handleRatingChange}
       />
 
-      {/* Section 3: Qualitative Open-Ended Feedback */}
-      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-3">
+      {/* Section 3: Additional Needed Directives (Checkmark List) */}
+      <AdditionalDirectivesSection
+        directives={INSPECTION_DIRECTIVES}
+        selectedIds={additionalNeededDirectives}
+        onToggleDirective={handleToggleAdditionalDirective}
+      />
+
+      {/* Section 4: Preferred Training Method & Material */}
+      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-5">
         <div className="flex items-center gap-2 pb-2 border-b border-border/40">
-          <IconMessage2 className="text-brand-blue" size={20} />
+          <IconSchool className="text-brand-blue" size={20} />
           <h3 className="text-sm font-bold text-text-primary uppercase tracking-wide">
-            4. ተጨማሪ አስተያየት እና የስልጠና የውሳኔ ሃሳቦች
+            4. ተመራጭ የስልጠና መንገድና የስልጠና ቁሳቁስ/ማኑዋል ፍላጎት
           </h3>
         </div>
-        <p className="text-xs text-text-muted">
-          ተጨማሪ የስራ ላይ ተግዳሮቶች፣ የሀብት እጥረቶች ወይም የስልጠና ጥቆማዎችን እዚህ ያብራሩ (በስልጠና NLP ትንተና ሞተር ይተነተናሉ)።
-        </p>
-        <textarea
-          rows={4}
-          value={qualitativeFeedback}
-          onChange={(e) => setQualitativeFeedback(e.target.value)}
-          placeholder="ምሳሌ: የፋይናንስ ቁጥጥር እና የድንገተኛ አደጋ ዝግጁነት ላይ በዞን 01 ተጨማሪ የተግባር ስልጠና ያስፈልጋል..."
-          className="w-full px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
-        />
+
+        {/* Sub-section A: Training Mode (Mutually Exclusive: በአካል vs Online) */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider">
+            ሀ) የስልጠና አሰጣጥ መንገድ (ከሁለቱ አንዱን ብቻ ይምረጡ):
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'በአካል', icon: IconSchool, desc: 'በስልጠና ማዕከል / በአካል ተገኝቶ የሚሰጥ ስልጠና' },
+              { label: 'Online', icon: IconDevices, desc: 'በኦንላይን / በኢንተርኔት የሚሰጥ ስልጠና' },
+            ].map((item) => {
+              const isSelected = preferredTrainingMethods.includes(item.label);
+              const ItemIcon = item.icon;
+              return (
+                <div
+                  key={item.label}
+                  onClick={() => handleTogglePreferredMethod(item.label)}
+                  className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                    isSelected
+                      ? 'bg-brand-blue/10 border-brand-blue/50 text-brand-blue shadow-2xs'
+                      : 'bg-surface-secondary/30 border-border/40 text-text-secondary hover:text-text-primary hover:border-border/80'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                      isSelected
+                        ? 'border-brand-blue bg-brand-blue text-white shadow-xs'
+                        : 'border-border/80 bg-surface-primary'
+                    }`}
+                  >
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                  <div className="space-y-0.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <ItemIcon size={18} className={isSelected ? 'text-brand-blue' : 'text-text-muted'} />
+                      <span className="text-xs font-bold leading-tight">{item.label}</span>
+                    </div>
+                    <p className="text-[11px] text-text-muted">{item.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sub-section B: Training Material / Manual */}
+        <div className="space-y-2 pt-2 border-t border-border/30">
+          <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider">
+            ለ) የስልጠና ቁሳቁስ/ማኑዋል ፍላጎት (ምልክት ያድርጉ):
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'የቪዲዮና የድምፅ ማብራሪያዎች', icon: IconVideo, desc: 'መልቲሚዲያ የቪዲዮ እና ኦዲዮ ማብራሪያዎች' },
+              { label: 'የታተመ ሰነድ (Hard Copy)', icon: IconBook, desc: 'የታተሙ የስልጠና ማኑዋሎች እና ሰነዶች' },
+            ].map((item) => {
+              const isSelected = preferredTrainingMethods.includes(item.label);
+              const ItemIcon = item.icon;
+              return (
+                <div
+                  key={item.label}
+                  onClick={() => handleTogglePreferredMethod(item.label)}
+                  className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
+                    isSelected
+                      ? 'bg-brand-blue/10 border-brand-blue/50 text-brand-blue shadow-2xs'
+                      : 'bg-surface-secondary/30 border-border/40 text-text-secondary hover:text-text-primary hover:border-border/80'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                      isSelected
+                        ? 'bg-brand-blue border-brand-blue text-white shadow-xs'
+                        : 'border-border/80 bg-surface-primary'
+                    }`}
+                  >
+                    {isSelected && <IconCheck size={14} strokeWidth={3} />}
+                  </div>
+                  <div className="space-y-0.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <ItemIcon size={18} className={isSelected ? 'text-brand-blue' : 'text-text-muted'} />
+                      <span className="text-xs font-bold leading-tight">{item.label}</span>
+                    </div>
+                    <p className="text-[11px] text-text-muted">{item.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Section 5: Qualitative Open-Ended Feedback */}
+      <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/40">
+          <div className="flex items-center gap-2">
+            <IconMessage2 className="text-brand-blue" size={20} />
+            <h3 className="text-sm font-bold text-text-primary uppercase tracking-wide">
+              5. የስልጠናው ሂደት ውጤታማ እንዲሆን እንዲካተት የሚፈልጉት ተጨማሪ ነገሮች
+            </h3>
+          </div>
+
+          {/* "ምንም የለኝም" Checkbox Toggle */}
+          <label
+            onClick={() => {
+              const nextVal = !hasNoSuggestions;
+              setHasNoSuggestions(nextVal);
+              if (nextVal) {
+                setQualitativeFeedback('ምንም የለኝም');
+              } else {
+                setQualitativeFeedback('');
+              }
+            }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shrink-0 ${
+              hasNoSuggestions
+                ? 'bg-amber-500/10 border-amber-500/40 text-amber-700 shadow-2xs'
+                : 'bg-surface-secondary/40 border-border/50 text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <div
+              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                hasNoSuggestions
+                  ? 'bg-amber-600 border-amber-600 text-white'
+                  : 'border-border/80 bg-surface-primary'
+              }`}
+            >
+              {hasNoSuggestions && <IconCheck size={12} strokeWidth={3} />}
+            </div>
+            <span>ምንም የለኝም</span>
+          </label>
+        </div>
+
+        {!hasNoSuggestions ? (
+          <textarea
+            rows={4}
+            value={qualitativeFeedback}
+            onChange={(e) => setQualitativeFeedback(e.target.value)}
+            placeholder="እባክዎን የስልጠናው ሂደት ውጤታማ እንዲሆን የሚረዱ ተጨማሪ ነገሮችን ወይም ሃሳቦችን እዚህ ይጻፉ..."
+            className="w-full px-3.5 py-2.5 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+          />
+        ) : (
+          <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl text-xs text-amber-700 font-semibold flex items-center gap-2">
+            <IconCheck size={16} />
+            <span>ምንም ተጨማሪ አስተያየት የለም ተብሎ ተመዝግቧል።</span>
+          </div>
+        )}
       </div>
 
       {/* Submit Action Bar */}
       <div className="flex items-center justify-between p-4 bg-surface-primary border border-border/50 rounded-2xl shadow-sm">
         <AutoSaveIndicator status={autoSaveStatus} lastSavedTime={lastSavedTime} />
-        <div className="flex items-center gap-3">
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-text-muted hover:text-text-primary cursor-pointer"
-            >
-              ተመለስ
-            </button>
-          )}
-          <button
-            type="submit"
-            className="flex items-center gap-2 px-6 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
-          >
-            <IconSend size={16} />
-            <span>የስልጠና ፍላጎት ቅጹን ላክ</span>
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="flex items-center gap-2 px-8 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer"
+        >
+          <IconSend size={16} />
+          <span>የስልጠና ፍላጎት ቅጹን ላክ</span>
+        </button>
       </div>
     </form>
   );

@@ -17,8 +17,14 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
   const handleExportPdf = async () => {
     setIsGenerating(true);
     try {
-      const printableTemplate = document.getElementById('pdf-printable-document-template');
-      const element = printableTemplate || document.getElementById(elementId);
+      // Prioritize dedicated printable PDF document template if present
+      const element =
+        document.getElementById('pdf-printable-document-template') ||
+        document.getElementById(elementId) ||
+        document.getElementById('need-report-container') ||
+        document.getElementById('single-form-detail-report-container') ||
+        document.getElementById('satisfaction-report-container');
+
       if (!element) {
         console.error(`[PDF Export Error]: Element with ID "${elementId}" not found.`);
         return;
@@ -35,42 +41,106 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
 
       const filename = `${safeTitle}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      // Convert DOM node to PNG data URL natively (handles Tailwind v4 oklab/oklch colors perfectly)
+      // Filter out action buttons during capture
+      const filterNode = (node: HTMLElement) => {
+        if (node.tagName === 'BUTTON' && node.textContent?.includes('PDF')) {
+          return false;
+        }
+        if (node.classList && node.classList.contains('pdf-export-hide')) {
+          return false;
+        }
+        return true;
+      };
+
+      // Convert DOM node to PNG data URL natively
       const dataUrl = await toPng(element, {
         quality: 0.98,
         pixelRatio: 2,
         cacheBust: true,
         backgroundColor: '#ffffff',
+        style: {
+          margin: '0',
+          padding: '0',
+          transform: 'none',
+        },
+        filter: filterNode as any,
       });
 
-      // Create PDF document (A4 Landscape)
+      // Determine orientation based on aspect ratio
+      const imgProps = { width: element.scrollWidth, height: element.scrollHeight };
+      const isPortrait = imgProps.height > imgProps.width;
+
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: isPortrait ? 'portrait' : 'landscape',
         unit: 'mm',
         format: 'a4',
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgProps = pdf.getImageProperties(dataUrl);
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      // Professional 10mm side margin & 8mm top/bottom margin for publication quality edge spacing
+      const marginX = 10;
+      const marginY = 8;
+      const printableWidth = pdfWidth - marginX * 2; // 190mm
+      const printableHeight = pdfHeight - marginY * 2; // 281mm
 
-      let heightLeft = imgHeight;
-      let position = 0;
+      // Check if document has dedicated page break containers
+      const pageElements = element.querySelectorAll('.pdf-page');
 
-      // First page
-      pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      if (pageElements && pageElements.length > 0) {
+        for (let i = 0; i < pageElements.length; i++) {
+          const pageEl = pageElements[i] as HTMLElement;
+          const pageDataUrl = await toPng(pageEl, {
+            quality: 0.98,
+            pixelRatio: 2,
+            cacheBust: true,
+            backgroundColor: '#ffffff',
+            style: {
+              margin: '0',
+              padding: '0',
+              transform: 'none',
+            },
+            filter: filterNode as any,
+          });
 
-      // Multi-page handling if report is long
-      while (heightLeft > 5) {
-        pdf.addPage();
-        position = position - pdfHeight;
-        pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
+          const pageImgWidth = pageEl.scrollWidth || 850;
+          const pageImgHeight = pageEl.scrollHeight || 1100;
+          const calcHeight = (pageImgHeight * printableWidth) / pageImgWidth;
+
+          let drawWidth = printableWidth;
+          let drawHeight = calcHeight;
+          let posX = marginX;
+          let posY = marginY;
+
+          if (calcHeight > printableHeight) {
+            drawHeight = printableHeight;
+            drawWidth = (pageImgWidth * printableHeight) / pageImgHeight;
+            posX = marginX + (printableWidth - drawWidth) / 2;
+          }
+
+          if (i > 0) {
+            pdf.addPage();
+          }
+          pdf.addImage(pageDataUrl, 'PNG', posX, posY, drawWidth, drawHeight);
+        }
+      } else {
+        const imgHeight = (imgProps.height * printableWidth) / imgProps.width;
+        let heightLeft = imgHeight;
+        let position = marginY;
+
+        pdf.addImage(dataUrl, 'PNG', marginX, position, printableWidth, imgHeight);
+        heightLeft -= printableHeight;
+
+        while (heightLeft > 5) {
+          pdf.addPage();
+          position = position - printableHeight;
+          pdf.addImage(dataUrl, 'PNG', marginX, position, printableWidth, imgHeight);
+          heightLeft -= printableHeight;
+        }
       }
 
-      // Save PDF file directly (no print dialog)
+      // Save PDF file directly (downloads to user's computer)
       pdf.save(filename);
     } catch (err) {
       console.error('[PDF Export Error]:', err);

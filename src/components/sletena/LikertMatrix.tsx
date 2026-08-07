@@ -11,11 +11,11 @@ interface LikertMatrixProps {
 }
 
 const LIKERT_LABELS: Record<number, { label: string; desc: string }> = {
-  1: { label: '1 - በጣም ዝቅተኛ', desc: 'ከፍተኛ የስልጠና እና የእውቀት ክፍተት ያለበት' },
-  2: { label: '2 - ማሻሻያ የሚፈልግ', desc: 'ተጨማሪ ስልጠና የሚያስፈልገው' },
-  3: { label: '3 - መካከለኛ', desc: 'መሰረታዊ የስራ እውቀት ያለው' },
-  4: { label: '4 - ከፍተኛ', desc: 'ጥሩ የስራ አፈፃፀም ብቃት ያለው' },
-  5: { label: '5 - እጅግ በጣም ከፍተኛ', desc: 'ሙሉ ብቃት እና የላቀ አፈፃፀም ያለው' },
+  1: { label: '1 - በጣም ዝቅተኛ', desc: '' },
+  2: { label: '2 - ዝቅተኛ', desc: '' },
+  3: { label: '3 - መካከለኛ', desc: '' },
+  4: { label: '4 - ከፍተኛ', desc: '' },
+  5: { label: '5 - በጣም ከፍተኛ', desc: '' },
 };
 
 export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings, onRatingChange }) => {
@@ -31,12 +31,9 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
           <div className="flex items-center gap-2">
             <IconListCheck className="text-brand-blue" size={22} />
             <h3 className="text-sm font-bold text-text-primary uppercase tracking-wide">
-              2. የ27ቱ ፍተሻ መመሪያዎች የብቃት ምዘና (ከ INS-01 እስከ INS-27)
+              2. ዋና ዋና መጠይቆች
             </h3>
           </div>
-          <p className="text-xs text-text-muted mt-1">
-            እያንዳንዱን የፌደራል ፍተሻ መመሪያ አሁን ያዎትን የብቃት ደረጃ የሚገልጸውን ቃል ከተቆልቋዩ ዝርዝር (Dropdown) በመምረጥ ይመዝኑ።
-          </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -62,7 +59,9 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
         {[1, 2, 3, 4, 5].map((score) => (
           <div key={score} className="space-y-0.5">
             <span className="text-[11px] font-bold text-text-primary">{LIKERT_LABELS[score].label}</span>
-            <p className="text-[10px] text-text-muted hidden sm:block">{LIKERT_LABELS[score].desc}</p>
+            {LIKERT_LABELS[score].desc && (
+              <p className="text-[10px] text-text-muted hidden sm:block">{LIKERT_LABELS[score].desc}</p>
+            )}
           </div>
         ))}
       </div>
@@ -75,8 +74,8 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
             <div
               key={directive.id}
               className={`p-4 rounded-xl border transition-all ${currentRating > 0
-                  ? 'bg-surface-primary border-border/60 shadow-xs'
-                  : 'bg-surface-secondary/20 border-border/40'
+                ? 'bg-surface-primary border-border/60 shadow-xs'
+                : 'bg-surface-secondary/20 border-border/40'
                 }`}
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -102,26 +101,26 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
                     value={currentRating || ''}
                     onChange={(e) => onRatingChange(directive.id, Number(e.target.value))}
                     className={`w-full md:w-72 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${currentRating === 1
-                        ? 'bg-rose-500/10 text-rose-700 border-rose-500/40 ring-1 ring-rose-500/30'
-                        : currentRating === 2
-                          ? 'bg-amber-500/10 text-amber-700 border-amber-500/40 ring-1 ring-amber-500/30'
-                          : currentRating === 3
-                            ? 'bg-blue-500/10 text-blue-700 border-blue-500/40 ring-1 ring-blue-500/30'
-                            : currentRating === 4
-                              ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/40 ring-1 ring-emerald-500/30'
-                              : currentRating === 5
-                                ? 'bg-purple-500/10 text-purple-700 border-purple-500/40 ring-1 ring-purple-500/30'
-                                : 'bg-surface-primary text-text-muted border-border/60 hover:border-brand-blue'
+                      ? 'bg-rose-500/10 text-rose-700 border-rose-500/40 ring-1 ring-rose-500/30'
+                      : currentRating === 2
+                        ? 'bg-amber-500/10 text-amber-700 border-amber-500/40 ring-1 ring-amber-500/30'
+                        : currentRating === 3
+                          ? 'bg-blue-500/10 text-blue-700 border-blue-500/40 ring-1 ring-blue-500/30'
+                          : currentRating === 4
+                            ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/40 ring-1 ring-emerald-500/30'
+                            : currentRating === 5
+                              ? 'bg-purple-500/10 text-purple-700 border-purple-500/40 ring-1 ring-purple-500/30'
+                              : 'bg-surface-primary text-text-muted border-border/60 hover:border-brand-blue'
                       }`}
                   >
                     <option value="" disabled className="text-text-muted">
-                      -- የብቃት ደረጃዎን ይምረጡ --
+                      -- የስልጠና ፍላጎት ደረጃዎን ይምረጡ --
                     </option>
-                    <option value="1">🔴 1. ምንም እውቀት የለኝም (አስቸኳይ ስልጠና እፈልጋለሁ)</option>
-                    <option value="2">🟠 2. አነስተኛ እውቀት አለኝ (ተጨማሪ ስልጠና እፈልጋለሁ)</option>
-                    <option value="3">🟡 3. መካከለኛ እውቀት አለኝ (ማሻሻያ እፈልጋለሁ)</option>
-                    <option value="4">🟢 4. ጥሩ እውቀት አለኝ (ስልጠና አያስፈልገኝም)</option>
-                    <option value="5">⭐️ 5. የላቀ እውቀት አለኝ  </option>
+                    <option value="1">1 - በጣም ዝቅተኛ</option>
+                    <option value="2">2 - ዝቅተኛ</option>
+                    <option value="3">3 - መካከለኛ</option>
+                    <option value="4">4 - ከፍተኛ</option>
+                    <option value="5">5 - በጣም ከፍተኛ</option>
                   </select>
                 </div>
               </div>

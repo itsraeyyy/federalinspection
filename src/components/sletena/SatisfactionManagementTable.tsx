@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { TrainingCategory } from '@/types/sletena';
 import { formatECDate } from '@/lib/date-formatter';
+import { SatisfactionFormBuilder } from './SatisfactionFormBuilder';
 import {
   IconCopy,
   IconCheck,
   IconEdit,
   IconTrash,
-  IconEye,
   IconPlus,
   IconSearch,
   IconStar,
@@ -22,6 +22,7 @@ interface SatisfactionManagementTableProps {
   categories: TrainingCategory[];
   onSelectCategory: (category: TrainingCategory) => void;
   onCreateCategory?: (newCategory: Omit<TrainingCategory, 'id' | 'submittersCount' | 'shareableLink'>) => void;
+  onUpdateCategory?: (updatedCategory: TrainingCategory) => void;
   onDeleteCategory?: (categoryId: string) => void;
 }
 
@@ -29,15 +30,16 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
   categories,
   onSelectCategory,
   onCreateCategory,
+  onUpdateCategory,
   onDeleteCategory,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sharedId, setSharedId] = useState<string | null>(null);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
+  // Form Builder View Modes (Google Form Editor)
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [activeEditingCategory, setActiveEditingCategory] = useState<TrainingCategory | null>(null);
 
   const filteredCategories = categories.filter(
     (c) =>
@@ -78,25 +80,48 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
     setTimeout(() => setSharedId(null), 2000);
   };
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !onCreateCategory) return;
-
-    onCreateCategory({
-      title: newTitle.trim(),
-      description: newDesc.trim(),
-      dateCreated: new Date().toISOString().split('T')[0],
-      isActive: true,
-      categoryType: 'SATISFACTION',
-    });
-
-    setNewTitle('');
-    setNewDesc('');
-    setIsModalOpen(false);
+  const handleOpenCreate = () => {
+    setActiveEditingCategory(null);
+    setIsBuilderOpen(true);
   };
 
+  const handleOpenEdit = (category: TrainingCategory) => {
+    setActiveEditingCategory(category);
+    setIsBuilderOpen(true);
+  };
+
+  const handleSaveForm = (savedCategory: TrainingCategory) => {
+    if (activeEditingCategory && onUpdateCategory) {
+      onUpdateCategory(savedCategory);
+    } else if (onCreateCategory) {
+      onCreateCategory({
+        title: savedCategory.title,
+        description: savedCategory.description,
+        dateCreated: savedCategory.dateCreated,
+        isActive: savedCategory.isActive,
+        categoryType: 'SATISFACTION',
+        questions: savedCategory.questions,
+      });
+    }
+    setIsBuilderOpen(false);
+    setActiveEditingCategory(null);
+  };
+
+  if (isBuilderOpen) {
+    return (
+      <SatisfactionFormBuilder
+        category={activeEditingCategory}
+        onSave={handleSaveForm}
+        onCancel={() => {
+          setIsBuilderOpen(false);
+          setActiveEditingCategory(null);
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-6">
+    <div className="bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm space-y-6 font-sans">
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -122,7 +147,7 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
           </div>
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleOpenCreate}
             className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <IconPlus size={16} />
@@ -181,7 +206,7 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                  {/* Primary Action: Detailed Report */}
+                  {/* Detailed Report */}
                   <button
                     onClick={() => onSelectCategory(cat)}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
@@ -189,6 +214,16 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
                   >
                     <IconFileAnalytics size={16} />
                     <span>ዝርዝር ሪፖርት</span>
+                  </button>
+
+                  {/* Edit Form Builder */}
+                  <button
+                    onClick={() => handleOpenEdit(cat)}
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface-secondary text-text-secondary hover:text-brand-blue border border-border/40 text-xs font-semibold transition-all cursor-pointer"
+                    title="ቅጹን በGoogle Form Editor አስተካክል"
+                  >
+                    <IconEdit size={16} />
+                    <span>ቅጽ አርትዕ</span>
                   </button>
 
                   {/* Copy Link */}
@@ -226,55 +261,6 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
           ))
         )}
       </div>
-
-      {/* Modal for Creating New Satisfaction Form */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-surface-primary border border-border/50 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
-            <h3 className="text-base font-bold text-text-primary">አዲስ የድህረ-ስልጠና የዕርካታ ቅጽ መፍጠሪያ</h3>
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-text-primary mb-1">የስልጠናው ርዕስ *</label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="ምሳሌ: የብሔራዊ ፍተሻ ተቆጣጣሪዎች የድህረ-ስልጠና ዕርካታ..."
-                  className="w-full px-3 py-2 text-xs bg-surface-secondary/60 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-text-primary mb-1">መግለጫ / አላማ</label>
-                <textarea
-                  rows={3}
-                  value={newDesc}
-                  onChange={(e) => setNewDesc(e.target.value)}
-                  placeholder="የስልጠናውን አጠቃላይ የዕርካታ ሁኔታ ለመገምገም..."
-                  className="w-full px-3 py-2 text-xs bg-surface-secondary/60 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-text-muted hover:text-text-primary cursor-pointer"
-                >
-                  ሰርዝ
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-brand-blue hover:bg-brand-blue/90 text-white shadow-sm transition-all cursor-pointer"
-                >
-                  ቅጹን ፍጠር
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

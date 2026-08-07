@@ -257,8 +257,8 @@ export function TikomaForm() {
                   i < stepIndex
                     ? "bg-green-500 text-white"
                     : i === stepIndex
-                    ? "text-white shadow-md"
-                    : "bg-slate-100 text-slate-400"
+                      ? "text-white shadow-md"
+                      : "bg-slate-100 text-slate-400"
                 )}
                 style={i === stepIndex ? { backgroundColor: accentColor } : undefined}
               >
@@ -286,7 +286,7 @@ export function TikomaForm() {
         <div className="rounded-3xl bg-white p-6 sm:p-10 shadow-sm ring-1 ring-slate-100">
           <div className="mb-8 rounded-2xl bg-blue-50 border border-blue-100 p-5 sm:p-6">
             <h1 className="text-base sm:text-lg font-bold text-[#014BAA] leading-relaxed text-center">
-              በብልጽግና የኢንስፔክሽንና ቁጥጥር የአሰራር መመሪያ ቁጥር……/2015” በአንቀፅ 17 የጥቆማ አቀራረብ ስርአት አሰራር መመሪያ መሠረት አድርገው ጥቆማዎን ማቅረብዎን ያረጋግጡ
+              በብልጽግና የኢንስፔክሽንና ቁጥጥር የአሰራር መመሪያ ቁጥር /2015” በአንቀፅ 17 የጥቆማ አቀራረብ ስርአት አሰራር መመሪያ መሠረት አድርገው ጥቆማዎን ማቅረብዎን ያረጋግጡ
             </h1>
           </div>
 
@@ -307,7 +307,7 @@ export function TikomaForm() {
               <ShieldCheck className="size-6 text-[#014BAA]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800 mb-1">ሚስጥራዊነትዎ የተጠበቀ ነው (100% Anonymous)</h3>
+              <h3 className="text-sm font-bold text-slate-800 mb-1">በሚስጥራዊነትዎ የተጠበቀ ነው (100% Anonymous)</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
                 ማንነትዎን መግለጽ ካልፈለጉ <strong>ስምዎን ብቻ</strong> ባዶ መተው ይችላሉ።
               </p>
@@ -317,7 +317,7 @@ export function TikomaForm() {
           <div className="space-y-5">
             <div className="space-y-2">
               <label htmlFor="fullName" className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
-                {submitterLabel} 
+                {submitterLabel}
                 <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500 whitespace-nowrap">አማራጭ (Optional)</span>
               </label>
               <input
@@ -528,7 +528,7 @@ export function TikomaForm() {
                   </div>
                 ))}
                 {detailErrors.groupMembers && <p className="text-xs text-red-500">{detailErrors.groupMembers}</p>}
-                
+
                 <button type="button" onClick={addGroupMember} className="flex items-center gap-2 text-sm text-[#014BAA] font-semibold hover:underline mt-2">
                   <PlusCircle className="size-4" /> ተጨማሪ አባል አክል
                 </button>
@@ -626,7 +626,7 @@ export function TikomaForm() {
                 <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileSelect} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.mp4" />
               </div>
               {detailErrors.files && <p className="text-sm text-red-500 font-semibold">{detailErrors.files}</p>}
-              
+
               {files.length > 0 && (
                 <div className="space-y-2 mt-3">
                   {files.map((file, i) => (

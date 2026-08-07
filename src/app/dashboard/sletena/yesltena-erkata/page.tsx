@@ -45,6 +45,10 @@ export default function YesltenaErkataPage() {
     setCategories((prev) => [created, ...prev]);
   };
 
+  const handleUpdateCategory = async (updatedCategory: TrainingCategory) => {
+    setCategories((prev) => prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c)));
+  };
+
   const handleDeleteCategory = async (categoryId: string) => {
     await sletenaService.deleteCategory(categoryId, 'SATISFACTION');
     setCategories((prev) => prev.filter((c) => c.id !== categoryId));
@@ -60,7 +64,7 @@ export default function YesltenaErkataPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-primary border border-border/50 rounded-2xl p-6 shadow-sm">
           <div>
             <div className="flex items-center gap-2">
-              <IconStar size={24} className="text-purple-600 fill-purple-500" />
+              <IconStar size={24} className="text-brand-blue fill-brand-blue" />
               <h1 className="text-xl font-extrabold text-text-primary">
                 የስልጠና ዕርካታ ማስተዳደሪያ
               </h1>
@@ -79,7 +83,7 @@ export default function YesltenaErkataPage() {
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeTab === 'forms' && !selectedCategory
-                  ? 'bg-purple-600 text-white shadow-sm'
+                  ? 'bg-brand-blue text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -118,6 +122,7 @@ export default function YesltenaErkataPage() {
             categories={categories}
             onSelectCategory={(cat) => setSelectedCategory(cat)}
             onCreateCategory={handleCreateCategory}
+            onUpdateCategory={handleUpdateCategory}
             onDeleteCategory={handleDeleteCategory}
           />
         )}

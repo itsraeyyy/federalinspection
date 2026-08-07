@@ -275,8 +275,8 @@ export function AbetutaForm() {
                     i < stepIndex
                       ? "bg-green-500 text-white"
                       : i === stepIndex
-                      ? "text-white shadow-md"
-                      : "bg-slate-100 text-slate-400"
+                        ? "text-white shadow-md"
+                        : "bg-slate-100 text-slate-400"
                   )}
                   style={i === stepIndex ? { backgroundColor: accentColor } : undefined}
                 >
@@ -312,7 +312,7 @@ export function AbetutaForm() {
           <div className="rounded-2xl bg-slate-50 border border-slate-100 p-5 sm:p-8 mb-6 max-h-[50vh] overflow-y-auto">
             <div className="mb-6 rounded-xl bg-orange-50 border border-orange-100 p-5">
               <h1 className="text-base sm:text-lg font-bold text-[#B45309] leading-relaxed text-center">
-                በብልጽግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን የአቤቱታ አቀራረብና አፈታት መመሪያ ቁጥር……4/2016” በአንቀፅ 7(ስባት) , 8 (ስምንት),9 ዘጠኝ እና 10(ዠአስር!) የአቤቱታ አቀራረብ ስርአት አሰራር መመሪያ መሠረት አድርገው ጥቆማዎችን ማቅረብዎን ያረጋግጡ
+                በብልጽግና የኢንስፔክሽንና የስነ ምግባር ኮሚሽን የአቤቱታ አቀራረብና አፈታት መመሪያ ቁጥር 4/2016 በአንቀፅ 7(ስባት) , 8 (ስምንት),9 ዘጠኝ እና 10( አስር) የአቤቱታ አቀራረብ ስርአት አሰራር መመሪያ መሠረት አድርገው ጥቆማዎችን ማቅረብዎን ያረጋግጡ
               </h1>
             </div>
             <pre className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed font-amharic" style={{ fontFamily: 'inherit' }}>
@@ -357,9 +357,6 @@ export function AbetutaForm() {
             <h2 className="text-xl font-bold text-slate-800">
               የግል መረጃ
             </h2>
-            <span className="px-3 py-1 rounded-full bg-slate-100 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              አማራጭ
-            </span>
           </div>
           <p className="text-sm text-slate-500 mb-6">
             የአቤቱታ አቅራቢውን መረጃ ያስገቡ
@@ -370,53 +367,68 @@ export function AbetutaForm() {
               <ShieldCheck className="size-6 text-[#014BAA]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800 mb-1">ሚስጥራዊነትዎ የተጠበቀ ነው (100% Anonymous)</h3>
+              <h3 className="text-sm font-bold text-slate-800 mb-1">በሚስጥራዊነትዎ የተጠበቀ ነው</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
-                ማንነትዎን መግለጽ ካልፈለጉ <strong>ስምዎን ብቻ</strong> ባዶ መተው ይችላሉ።
+                ሁሉም የቀረቡ መረጃዎች በሙሉ በሚስጥራዊነት ይያዛሉ።
               </p>
             </div>
           </div>
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="fullName" className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
-                የአቤቱታ አቅራቢው ሙሉ ስም 
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500 whitespace-nowrap">አማራጭ (Optional)</span>
+              <label htmlFor="fullName" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                የአቤቱታ አቅራቢው ሙሉ ስም <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 id="fullName"
                 value={fullName}
                 onChange={(e) => { setFullName(e.target.value); setPersonalErrors(p => ({ ...p, fullName: '' })); }}
-                className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm hover:border-slate-300 focus:bg-white focus:border-[#014BAA] focus:ring-1 focus:ring-[#014BAA] transition-all duration-200"
-                placeholder="ማንነትዎን መግለጽ ካልፈለጉ ይህን ባዶ ይተዉት"
+                className={cn(
+                  "block w-full rounded-xl border bg-slate-50 px-4 py-3.5 text-sm focus:bg-white transition-all duration-200",
+                  personalErrors.fullName ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-slate-200 focus:border-[#014BAA] focus:ring-[#014BAA]"
+                )}
+                placeholder="ሙሉ ስምዎን ያስገቡ"
               />
+              {personalErrors.fullName && <p className="text-xs text-red-500">{personalErrors.fullName}</p>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="age" className="text-sm font-medium text-slate-700">እድሜ</label>
+                <label htmlFor="age" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  እድሜ <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
                   id="age"
                   value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  className="block w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3.5 text-sm focus:border-[#B45309] focus:ring-[#B45309] focus:bg-white transition-colors"
-              placeholder="እድሜ"
+                  onChange={(e) => { setAge(e.target.value); setPersonalErrors(p => ({ ...p, age: '' })); }}
+                  className={cn(
+                    "block w-full rounded-xl border bg-slate-50 px-4 py-3.5 text-sm focus:bg-white transition-colors",
+                    personalErrors.age ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-slate-200 focus:border-[#B45309] focus:ring-[#B45309]"
+                  )}
+                  placeholder="እድሜ"
                 />
+                {personalErrors.age && <p className="text-xs text-red-500">{personalErrors.age}</p>}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">ጾታ</label>
-                <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  ጾታ <span className="text-red-500">*</span>
+                </label>
+                <div className={cn(
+                  "flex flex-wrap items-center gap-4 rounded-xl border bg-slate-50 px-4 py-2",
+                  personalErrors.gender ? "border-red-300" : "border-slate-200"
+                )}>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" value="ወንድ" checked={gender === 'ወንድ'} onChange={(e) => setGender(e.target.value)} className="text-[#B45309] focus:ring-[#B45309]" />
+                    <input type="radio" name="gender" value="ወንድ" checked={gender === 'ወንድ'} onChange={(e) => { setGender(e.target.value); setPersonalErrors(p => ({ ...p, gender: '' })); }} className="text-[#B45309] focus:ring-[#B45309]" />
                     <span className="text-sm text-slate-600">ወንድ</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="gender" value="ሴት" checked={gender === 'ሴት'} onChange={(e) => setGender(e.target.value)} className="text-[#B45309] focus:ring-[#B45309]" />
+                    <input type="radio" name="gender" value="ሴት" checked={gender === 'ሴት'} onChange={(e) => { setGender(e.target.value); setPersonalErrors(p => ({ ...p, gender: '' })); }} className="text-[#B45309] focus:ring-[#B45309]" />
                     <span className="text-sm text-slate-600">ሴት</span>
                   </label>
                 </div>
+                {personalErrors.gender && <p className="text-xs text-red-500">{personalErrors.gender}</p>}
               </div>
             </div>
 
@@ -439,30 +451,40 @@ export function AbetutaForm() {
                 {personalErrors.phone && <p className="text-xs text-red-500">{personalErrors.phone}</p>}
               </div>
               <div className="space-y-2">
-                <label htmlFor="address" className="text-sm font-medium text-slate-700">አድራሻ</label>
+                <label htmlFor="address" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  አድራሻ <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   id="address"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="block w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3.5 text-sm focus:border-[#B45309] focus:ring-[#B45309] focus:bg-white transition-colors"
+                  onChange={(e) => { setAddress(e.target.value); setPersonalErrors(p => ({ ...p, address: '' })); }}
+                  className={cn(
+                    "block w-full rounded-xl border bg-slate-50 px-4 py-3.5 text-sm focus:bg-white transition-colors",
+                    personalErrors.address ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-slate-200 focus:border-[#B45309] focus:ring-[#B45309]"
+                  )}
                   placeholder="የመኖሪያ አድራሻ"
                 />
+                {personalErrors.address && <p className="text-xs text-red-500">{personalErrors.address}</p>}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                ኢሜይል (Email) <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] uppercase tracking-wider font-bold text-slate-500">አማራጭ (Optional)</span>
+              <label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                ኢሜይል (Email) <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="block w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3.5 text-sm focus:border-[#B45309] focus:ring-[#B45309] focus:bg-white transition-colors"
+                onChange={(e) => { setEmail(e.target.value); setPersonalErrors(p => ({ ...p, email: '' })); }}
+                className={cn(
+                  "block w-full rounded-xl border bg-slate-50 px-4 py-3.5 text-sm focus:bg-white transition-colors",
+                  personalErrors.email ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-slate-200 focus:border-[#B45309] focus:ring-[#B45309]"
+                )}
                 placeholder="example@domain.com"
               />
+              {personalErrors.email && <p className="text-xs text-red-500">{personalErrors.email}</p>}
             </div>
           </div>
 
@@ -556,7 +578,9 @@ export function AbetutaForm() {
 
             {/* Submission Type */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">{subTypeLabel}</label>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                {subTypeLabel} <span className="text-red-500">*</span>
+              </label>
               <div className="flex gap-3">
                 {(['በግል', 'በቡድን'] as const).map(val => (
                   <label
@@ -577,7 +601,9 @@ export function AbetutaForm() {
 
             {submissionType === 'በቡድን' && (
               <div className="space-y-2">
-                <label htmlFor="memberCount" className="text-sm font-medium text-slate-700">የአባላት ብዛት</label>
+                <label htmlFor="memberCount" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  የአባላት ብዛት <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
                   id="memberCount"
@@ -590,7 +616,9 @@ export function AbetutaForm() {
             )}
 
             <div className="space-y-2">
-              <label htmlFor="institution" className="text-sm font-medium text-slate-700">{instLabel}</label>
+              <label htmlFor="institution" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                {instLabel} <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 id="institution"
@@ -606,7 +634,9 @@ export function AbetutaForm() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="mainSubject" className="text-sm font-medium text-slate-700">{subjectLabel}</label>
+              <label htmlFor="mainSubject" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                {subjectLabel} <span className="text-red-500">*</span>
+              </label>
               <textarea
                 id="mainSubject"
                 value={mainSubject}
@@ -622,35 +652,43 @@ export function AbetutaForm() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="resolution" className="text-sm font-medium text-slate-700">
-                እንዲደረግለት / እንዲፈጸምለት የሚፈልገው መፍትሄ
+              <label htmlFor="resolution" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                እንዲደረግለት / እንዲፈጸምለት የሚፈልገው መፍትሄ <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="resolution"
                 value={requestedResolution}
-                onChange={(e) => setRequestedResolution(e.target.value)}
+                onChange={(e) => { setRequestedResolution(e.target.value); setDetailErrors(p => ({ ...p, requestedResolution: '' })); }}
                 rows={3}
-                className="block w-full resize-none rounded-xl border-slate-200 bg-slate-50 px-4 py-3.5 text-sm focus:border-[#B45309] focus:ring-[#B45309] focus:bg-white transition-colors"
+                className={cn(
+                  "block w-full resize-none rounded-xl border bg-slate-50 px-4 py-3.5 text-sm focus:bg-white transition-colors",
+                  detailErrors.requestedResolution ? "border-red-300 focus:border-red-400 focus:ring-red-400" : "border-slate-200 focus:border-[#B45309] focus:ring-[#B45309]"
+                )}
                 placeholder="የሚጠብቁትን መፍትሄ ያስገቡ..."
               />
+              {detailErrors.requestedResolution && <p className="text-xs text-red-500">{detailErrors.requestedResolution}</p>}
             </div>
 
             {/* File Upload */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                ተያያዥ ማስረጃዎች (ካሉ)
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                ተያያዥ ማስረጃዎች <span className="text-red-500">*</span>
               </label>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="flex h-28 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-[#B45309]/50 transition-colors"
+                className={cn(
+                  "flex h-28 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed bg-slate-50 hover:bg-slate-100 transition-colors",
+                  detailErrors.files ? "border-red-300 bg-red-50/20 hover:border-red-400" : "border-slate-200 hover:border-[#B45309]/50"
+                )}
               >
                 <UploadCloud className="mb-2 size-7 text-slate-400" />
                 <p className="text-sm text-slate-500">
                   <span className="font-semibold text-[#B45309]">ጫን</span> ወይም ፋይሉን እዚህ ይጎትቱ
                 </p>
                 <p className="text-xs text-slate-400">PDF, JPG, PNG, DOC (ከ 10MB ያልበለጠ)</p>
-                <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileSelect} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                <input ref={fileInputRef} type="file" className="hidden" multiple onChange={(e) => { handleFileSelect(e); setDetailErrors(p => ({ ...p, files: '' })); }} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
               </div>
+              {detailErrors.files && <p className="text-xs text-red-500">{detailErrors.files}</p>}
               {files.length > 0 && (
                 <div className="space-y-2 mt-3">
                   {files.map((file, i) => (
