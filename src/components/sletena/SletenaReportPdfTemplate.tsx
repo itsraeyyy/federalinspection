@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { SletenaSubmission, SatisfactionSubmission, TrainingCategory, InspectionDirective } from '@/types/sletena';
@@ -31,7 +31,7 @@ const SvgDonutChart: React.FC<{
   data: { name: string; value: number; pct: number; color: string }[];
   centerLabel?: string;
   centerValue?: string | number;
-}> = ({ data, centerLabel = 'áŒ á‰…áˆ‹áˆ‹', centerValue }) => {
+}> = ({ data, centerLabel = 'ጠቅላላ', centerValue }) => {
   const size = 160;
   const radius = 52;
   const strokeWidth = 24;
@@ -153,7 +153,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
   needSubmissions,
   satisfactionSubmissions = [],
   category,
-  reportTitle = 'á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µá£ á‹¨á‰¥á‰ƒá‰µ áŠ­áá‰°á‰µ (Gap) áŠ¥áŠ“ á‰µáŒá‰ áˆ« áˆ™áˆ‰ áŠ¦áŠáˆ´áˆ‹á‹Š áˆªá–áˆ­á‰µ',
+  reportTitle = 'የስልጠና ፍላጎት፣ የብቃት ክፍተት (Gap) እና ትግበራ ሙሉ ኦፊሴላዊ ሪፖርት',
 }) => {
   const needSubs = needSubmissions || [];
 
@@ -167,7 +167,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
           if (match) {
             activeDirectiveMap.set(match.id, { id: match.id, code: match.code, title: match.title });
           } else {
-            activeDirectiveMap.set(key, { id: key, code: key, title: `áˆ˜áˆ˜áˆªá‹« / áˆ˜áŒ á‹­á‰… ${key}` });
+            activeDirectiveMap.set(key, { id: key, code: key, title: `መመሪያ / መጠይቅ ${key}` });
           }
         }
       });
@@ -179,7 +179,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
           if (match) {
             activeDirectiveMap.set(match.id, { id: match.id, code: match.code, title: match.title });
           } else {
-            activeDirectiveMap.set(key, { id: key, code: key, title: `áˆ˜áˆ˜áˆªá‹« / áˆ˜áŒ á‹­á‰… ${key}` });
+            activeDirectiveMap.set(key, { id: key, code: key, title: `መመሪያ / መጠይቅ ${key}` });
           }
         }
       });
@@ -198,7 +198,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
   const questionsAsDirectives: InspectionDirective[] = (category?.questions || []).map((q) => ({
     id: q.id,
     code: q.code || q.id,
-    title: q.title || `áˆ˜áˆ˜áˆªá‹« ${q.id}`,
+    title: q.title || `መመሪያ ${q.id}`,
     description: q.description || '',
     category: q.category || 'GENERAL',
     targetScore: q.targetScore || 5.0,
@@ -226,7 +226,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
 
   const top3Recommended = sortedGaps.slice(0, 3).map((item) => {
     let displayTitle = item.directiveTitle;
-    if (!displayTitle || displayTitle.startsWith('áˆ˜áˆ˜áˆªá‹« / áˆ˜áŒ á‹­á‰…')) {
+    if (!displayTitle || displayTitle.startsWith('መመሪያ / መጠይቅ')) {
       const match = INSPECTION_DIRECTIVES.find((d) => d.id === item.directiveId || d.code === item.directiveCode);
       if (match) displayTitle = match.title;
     }
@@ -243,7 +243,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
 
   const regionsMap: Record<string, number> = {};
   needSubs.forEach((sub) => {
-    const reg = sub.region || 'á‹«áˆá‰°áŒˆáˆˆáŒ¸';
+    const reg = sub.region || 'ያልተገለጸ';
     regionsMap[reg] = (regionsMap[reg] || 0) + 1;
   });
 
@@ -257,7 +257,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
 
   const membershipMap: Record<string, number> = {};
   needSubs.forEach((sub) => {
-    const role = sub.membershipLevel || 'áŠ á‰£áˆ';
+    const role = sub.membershipLevel || 'አባል';
     membershipMap[role] = (membershipMap[role] || 0) + 1;
   });
 
@@ -282,10 +282,10 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
 
   needSubs.forEach((s) => {
     const methods = s.preferredTrainingMethods || [];
-    if (methods.some((m) => m.includes('In-Person') || m.includes('á‰ áŠ áŠ«áˆ'))) inPersonCount++;
-    if (methods.some((m) => m.includes('Online') || m.includes('áŠ¦áŠ•áˆ‹á‹­áŠ•'))) onlineCount++;
-    if (methods.some((m) => m.includes('á‰ªá‹²á‹®') || m.includes('á‹µáˆá…') || m.includes('Media'))) videoAudioCount++;
-    if (methods.some((m) => m.includes('á‹¨á‰³á‰°áˆ˜') || m.includes('Hard Copy'))) hardCopyCount++;
+    if (methods.some((m) => m.includes('In-Person') || m.includes('በአካል'))) inPersonCount++;
+    if (methods.some((m) => m.includes('Online') || m.includes('ኦንላይን'))) onlineCount++;
+    if (methods.some((m) => m.includes('ቪዲዮ') || m.includes('ድምፅ') || m.includes('Media'))) videoAudioCount++;
+    if (methods.some((m) => m.includes('የታተመ') || m.includes('Hard Copy'))) hardCopyCount++;
   });
 
   const totalSubs = Math.max(needSubs.length, 1);
@@ -293,16 +293,16 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
   const onlinePct = Math.round((onlineCount / totalSubs) * 100);
 
   const trainingModeChartData = [
-    { name: 'á‰ áŠ áŠ«áˆ (In-Person)', value: inPersonCount, pct: inPersonPct, color: '#059669' },
-    { name: 'Online (áŠ¦áŠ•áˆ‹á‹­áŠ•)', value: onlineCount, pct: onlinePct, color: '#2563eb' },
+    { name: 'በአካል (In-Person)', value: inPersonCount, pct: inPersonPct, color: '#059669' },
+    { name: 'Online (ኦንላይን)', value: onlineCount, pct: onlinePct, color: '#2563eb' },
   ];
 
   const videoAudioPct = Math.round((videoAudioCount / totalSubs) * 100);
   const hardCopyPct = Math.round((hardCopyCount / totalSubs) * 100);
 
   const trainingMaterialChartData = [
-    { name: 'á‹¨á‰ªá‹²á‹®áŠ“ á‹µáˆá… áˆ›á‰¥áˆ«áˆªá‹«á‹Žá‰½', value: videoAudioCount, pct: videoAudioPct, color: '#d97706' },
-    { name: 'á‹¨á‰³á‰°áˆ˜ áˆ°áŠá‹µ (Hard Copy)', value: hardCopyCount, pct: hardCopyPct, color: '#7c3aed' },
+    { name: 'የቪዲዮና ድምፅ ማብራሪያዎች', value: videoAudioCount, pct: videoAudioPct, color: '#d97706' },
+    { name: 'የታተመ ሰነድ (Hard Copy)', value: hardCopyCount, pct: hardCopyPct, color: '#7c3aed' },
   ];
 
   const additionalDirectivesMap: Record<string, { code: string; title: string; count: number }> = {};
@@ -311,7 +311,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
       sub.additionalNeededDirectives.forEach((dirId: string) => {
         const match = INSPECTION_DIRECTIVES.find((d) => d.id === dirId || d.code === dirId);
         const code = match ? match.code : dirId;
-        const title = match ? match.title : `á‰°áŒ¨áˆ›áˆª áˆ˜áˆ˜áˆªá‹« ${dirId}`;
+        const title = match ? match.title : `ተጨማሪ መመሪያ ${dirId}`;
         if (!additionalDirectivesMap[code]) {
           additionalDirectivesMap[code] = { code, title, count: 0 };
         }
@@ -332,12 +332,12 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
 
   const zoneWoredaMap: Record<string, { region: string; zone: string; woreda: string; count: number }> = {};
   needSubs.forEach((sub) => {
-    const key = `${sub.region || 'á‹«áˆá‰°áŒˆáˆˆáŒ¸'}_${sub.zone || 'á‹«áˆá‰°áŒˆáˆˆáŒ¸'}_${sub.woreda || 'á‹«áˆá‰°áŒˆáˆˆáŒ¸'}`;
+    const key = `${sub.region || 'ያልተገለጸ'}_${sub.zone || 'ያልተገለጸ'}_${sub.woreda || 'ያልተገለጸ'}`;
     if (!zoneWoredaMap[key]) {
       zoneWoredaMap[key] = {
-        region: sub.region || 'á‹«áˆá‰°áŒˆáˆˆáŒ¸',
-        zone: sub.zone || 'á‹«áˆá‰°áŒˆáˆˆáŒ¸',
-        woreda: sub.woreda || 'á‹«áˆá‰°áŒˆáˆˆáŒ¸',
+        region: sub.region || 'ያልተገለጸ',
+        zone: sub.zone || 'ያልተገለጸ',
+        woreda: sub.woreda || 'ያልተገለጸ',
         count: 0,
       };
     }
@@ -366,46 +366,46 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
             <div className="space-y-1.5">
               <div className="text-[11px] font-black text-blue-950 tracking-widest uppercase flex items-center gap-2">
                 <span className="w-3.5 h-3.5 rounded-full bg-blue-950 inline-block shadow-xs" />
-                á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• á‹‹áŠ“ áŒ½/á‰¤á‰µ
+                የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት
               </div>
               <h1 className="text-3xl font-black text-slate-950 tracking-tight leading-tight">
                 {category ? category.title : reportTitle}
               </h1>
               <p className="text-xs font-semibold text-slate-600 max-w-2xl leading-relaxed">
-                {category ? category.description : 'á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µá£ á‹¨á‰¥á‰ƒá‰µ áŠ­áá‰°á‰µ (Gap) áŠ¥áŠ“ á‹¨áˆµáˆáŒ áŠ“ á‰µáŒá‰ áˆ« á‹áˆ³áŠ” áŠ¦áŠáˆ´áˆ‹á‹Š á‹¨á‰µáŠ•á‰°áŠ“ áˆ°áŠá‹µ'}
+                {category ? category.description : 'የስልጠና ፍላጎት፣ የብቃት ክፍተት (Gap) እና የስልጠና ትግበራ ውሳኔ ኦፊሴላዊ የትንተና ሰነድ'}
               </p>
             </div>
             <div className="text-right text-[11px] text-slate-800 space-y-1 shrink-0 bg-slate-50 p-4 rounded-xl border border-slate-300 shadow-2xs">
-              <div><strong>á‹¨á‹ˆáŒ£á‰ á‰µ á‰€áŠ•á¡</strong> <span className="font-mono">{currentDateStr}</span></div>
-              <div><strong>áŒ á‰…áˆ‹áˆ‹ á‰°áˆ³á‰³áŠá‹Žá‰½á¡</strong> <span className="font-black text-blue-950">{needSubs.length}</span> áŠ á‰£áˆ‹á‰µ/áŠ áˆ˜áˆ«áˆ®á‰½</div>
-              <div><strong>á‹¨áˆ˜á‹áŒˆá‰¥ á‰áŒ¥áˆ­á¡</strong> <span className="font-mono text-blue-950">ICODiS/TR-2026/08</span></div>
+              <div><strong>የወጣበት ቀን፡</strong> <span className="font-mono">{currentDateStr}</span></div>
+              <div><strong>ጠቅላላ ተሳታፊዎች፡</strong> <span className="font-black text-blue-950">{needSubs.length}</span> አባላት/አመራሮች</div>
+              <div><strong>የመዝገብ ቁጥር፡</strong> <span className="font-mono text-blue-950">ICODiS/TR-2026/08</span></div>
             </div>
           </ExecutiveSection>
 
           {/* LARGE EXECUTIVE KPI CARDS */}
           <ExecutiveSection className="grid grid-cols-4 gap-4">
             <div className="border-2 border-blue-950/20 rounded-2xl p-5 bg-gradient-to-br from-blue-50/60 to-white space-y-1 shadow-2xs">
-              <div className="text-[10px] text-blue-950 font-black uppercase tracking-wider">áŒ á‰…áˆ‹áˆ‹ á‰°áˆ³á‰³áŠá‹Žá‰½</div>
+              <div className="text-[10px] text-blue-950 font-black uppercase tracking-wider">ጠቅላላ ተሳታፊዎች</div>
               <div className="text-3xl font-black text-blue-950 font-mono">{needSubs.length}</div>
-              <div className="text-[10px] text-slate-600 font-bold">á‹¨á‰°áˆžáˆ‰ á‹¨áˆá‹˜áŠ“ á‰…áŒ¾á‰½</div>
+              <div className="text-[10px] text-slate-600 font-bold">የተሞሉ የምዘና ቅጾች</div>
             </div>
 
             <div className="border-2 border-rose-600/30 rounded-2xl p-5 bg-gradient-to-br from-rose-50/60 to-white space-y-1 shadow-2xs">
-              <div className="text-[10px] text-rose-800 font-black uppercase tracking-wider">á‹¨ááˆ‹áŒŽá‰µ áˆ˜áˆ˜áˆªá‹«á‹Žá‰½</div>
+              <div className="text-[10px] text-rose-800 font-black uppercase tracking-wider">የፍላጎት መመሪያዎች</div>
               <div className="text-3xl font-black text-rose-700 font-mono">5</div>
-              <div className="text-[10px] text-rose-800 font-bold">áŠ áˆµá‰¸áŠ³á‹­ áˆµáˆáŒ áŠ“ á‹¨áˆšáˆ¹ (Top 5)</div>
+              <div className="text-[10px] text-rose-800 font-bold">አስቸኳይ ስልጠና የሚሹ (Top 5)</div>
             </div>
 
             <div className="border-2 border-emerald-600/30 rounded-2xl p-5 bg-gradient-to-br from-emerald-50/60 to-white space-y-1 shadow-2xs">
-              <div className="text-[10px] text-emerald-900 font-black uppercase tracking-wider">á‰ áŠ áŠ«áˆ áˆµáˆáŒ áŠ“</div>
+              <div className="text-[10px] text-emerald-900 font-black uppercase tracking-wider">በአካል ስልጠና</div>
               <div className="text-3xl font-black text-emerald-800 font-mono">{inPersonPct}%</div>
-              <div className="text-[10px] text-emerald-900 font-bold">á‰ áŠ áŠ«áˆ áˆ˜áŠ«áˆáˆ á‹¨áˆšáˆáˆáŒ‰</div>
+              <div className="text-[10px] text-emerald-900 font-bold">በአካል መካፈል የሚፈልጉ</div>
             </div>
 
             <div className="border-2 border-amber-600/30 rounded-2xl p-5 bg-gradient-to-br from-amber-50/60 to-white space-y-1 shadow-2xs">
-              <div className="text-[10px] text-amber-950 font-black uppercase tracking-wider">á‰°áˆ³á‰µáŽ á‹¨á‹°áˆ¨áˆ°á‰£á‰¸á‹</div>
+              <div className="text-[10px] text-amber-950 font-black uppercase tracking-wider">ተሳትፎ የደረሰባቸው</div>
               <div className="text-3xl font-black text-amber-900 font-mono">{regionList.length}</div>
-              <div className="text-[10px] text-amber-900 font-bold">áŠ­áˆáˆŽá‰½ / áŠ¨á‰°áˆžá‰½</div>
+              <div className="text-[10px] text-amber-900 font-bold">ክልሎች / ከተሞች</div>
             </div>
           </ExecutiveSection>
 
@@ -414,21 +414,21 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
             <div className="flex justify-between items-center border-b border-blue-950/20 pb-3">
               <div className="space-y-0.5">
                 <h2 className="font-black text-blue-950 text-sm tracking-wide flex items-center gap-2">
-                  <span className="mr-1 inline-block">ðŸŽ¯</span>
-                  <span>á‹¨áˆµáˆáŒ áŠ“ á‰µáŒá‰ áˆ« á‹áˆ³áŠ” áŠ¥áŠ“ á‹¨áŠ áˆ°áˆáŒ£áŠáŠá‰µ á‹¨á‹áˆ³áŠ” áˆƒáˆ³á‰¥ (Executive Action Plan)</span>
+                  <span className="mr-1 inline-block">🎯</span>
+                  <span>የስልጠና ትግበራ ውሳኔ እና የአሰልጣኝነት የውሳኔ ሃሳብ (Executive Action Plan)</span>
                 </h2>
                 <p className="text-[11px] text-slate-600">
-                  á‰ áŠ á‰£áˆ‹á‰µ á‹¨ááˆ‹áŒŽá‰µ áˆá‹˜áŠ“ á‹áŒ¤á‰µ áŠ¥áŠ“ á‰ á‰…á‹µáˆšá‹« áˆáˆ­áŒ« á‰°áˆ³á‰µáŽ áˆ˜áˆ°áˆ¨á‰µ áˆµáˆáŒ áŠ“ áˆˆáˆ˜áŒ€áˆ˜áˆ­ á‹¨á‰°áˆ˜áˆ¨áŒ¡ 3 á‹‹áŠ“ á‹‹áŠ“ áˆ˜áˆ˜áˆªá‹«á‹Žá‰½::
+                  በአባላት የፍላጎት ምዘና ውጤት እና በቅድሚያ ምርጫ ተሳትፎ መሰረት ስልጠና ለመጀመር የተመረጡ 3 ዋና ዋና መመሪያዎች::
                 </p>
               </div>
               <span className="text-[10px] font-black px-3.5 py-1 bg-blue-950 text-white rounded-full uppercase tracking-wider">
-                á‹¨á‹áˆ³áŠ” áˆƒáˆ³á‰¥ (ACTION MATRIX)
+                የውሳኔ ሃሳብ (ACTION MATRIX)
               </span>
             </div>
 
             <div className="space-y-3">
               <div className="text-[11px] font-black text-slate-950 uppercase tracking-wide">
-                áˆˆáˆµáˆáŒ áŠ“ áŠ áˆµá‰¸áŠ³á‹­ á‰µáŒá‰ áˆ« á‹¨á‰°áˆ˜áˆ¨áŒ¡ 3 á‹‹áŠ“ á‹‹áŠ“ áˆ˜áˆ˜áˆªá‹«á‹Žá‰½ (TOP 3 PRIORITY TRAINING DIRECTIVES):
+                ለስልጠና አስቸኳይ ትግበራ የተመረጡ 3 ዋና ዋና መመሪያዎች (TOP 3 PRIORITY TRAINING DIRECTIVES):
               </div>
               <div className="grid grid-cols-3 gap-4">
                 {top3Recommended.map((rec, idx) => (
@@ -438,7 +438,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
                         {rec.directiveCode}
                       </span>
                       <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-600 text-white">
-                        á‰°áˆ˜áˆ«áŒ­ #{idx + 1}
+                        ተመራጭ #{idx + 1}
                       </span>
                     </div>
                     <div className="font-black text-slate-950 text-xs leading-snug min-h-[38px] flex items-center">
@@ -446,16 +446,16 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
                     </div>
                     <div className="pt-2 border-t border-slate-100 text-[10px] space-y-1 font-mono text-slate-700">
                       <div className="flex justify-between">
-                        <span>á‹¨ááˆ‹áŒŽá‰µ á‹°áˆ¨áŒƒá¡</span>
-                        <strong className="text-rose-700">{rec.needPct}% ááˆ‹áŒŽá‰µ</strong>
+                        <span>የፍላጎት ደረጃ፡</span>
+                        <strong className="text-rose-700">{rec.needPct}% ፍላጎት</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>áŠ áˆ›áŠ«á‹­ áŠáŒ¥á‰¥á¡</span>
+                        <span>አማካይ ነጥብ፡</span>
                         <strong className="text-slate-950">{rec.currentScore} / 5.0</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>á‰…á‹µáˆšá‹« á‹¨áˆ˜áˆ¨áŒ¡á‰µá¡</span>
-                        <strong className="text-blue-950">{rec.votes} áŠ á‰£áˆ‹á‰µ ({rec.votePct}%)</strong>
+                        <span>ቅድሚያ የመረጡት፡</span>
+                        <strong className="text-blue-950">{rec.votes} አባላት ({rec.votePct}%)</strong>
                       </div>
                     </div>
                   </div>
@@ -465,26 +465,26 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
 
             <div className="grid grid-cols-3 gap-4 pt-3 border-t border-blue-950/20 text-xs">
               <div className="bg-emerald-50/80 p-3.5 rounded-xl border border-emerald-300/80 space-y-1">
-                <div className="font-black text-emerald-950 text-[11px]">á‹¨á‰°áˆ˜áˆ¨áŒ á‹ á‹¨áˆµáˆáŒ áŠ“ áŠ áˆ°áŒ£áŒ¥ áˆ˜áŠ•áŒˆá‹µ</div>
-                <div className="font-black text-emerald-800 text-sm">{inPersonPct > onlinePct ? 'Online (áŠ¦áŠ•áˆ‹á‹­áŠ•)' : 'In-Person (á‰ áŠ áŠ«áˆ)'}</div>
+                <div className="font-black text-emerald-950 text-[11px]">የተመረጠው የስልጠና አሰጣጥ መንገድ</div>
+                <div className="font-black text-emerald-800 text-sm">{inPersonPct > onlinePct ? 'Online (ኦንላይን)' : 'In-Person (በአካል)'}</div>
                 <div className="text-[10px] text-emerald-900 font-medium">
-                  {onlinePct}% áŠ á‰£áˆ‹á‰µ á‰ áŠ¦áŠ•áˆ‹á‹­áŠ• áˆˆáˆ˜áŠ«áˆáˆ ááˆ‹áŒŽá‰µ áŠ áˆ³á‹­á‰°á‹‹áˆá¢
+                  {onlinePct}% አባላት በኦንላይን ለመካፈል ፍላጎት አሳይተዋል።
                 </div>
               </div>
 
               <div className="bg-blue-50/80 p-3.5 rounded-xl border border-blue-300/80 space-y-1">
-                <div className="font-black text-blue-950 text-[11px]">á‹¨á‰°áˆ˜áˆ¨áŒ á‹ á‹¨áˆ›á‰¥áˆ«áˆªá‹« áˆ°áŠá‹µ áŠ á‹­áŠá‰µ</div>
-                <div className="font-black text-blue-900 text-sm">á‹¨á‰ªá‹²á‹®/á‹µáˆá… áˆ›á‰¥áˆ«áˆªá‹«</div>
+                <div className="font-black text-blue-950 text-[11px]">የተመረጠው የማብራሪያ ሰነድ አይነት</div>
+                <div className="font-black text-blue-900 text-sm">የቪዲዮ/ድምፅ ማብራሪያ</div>
                 <div className="text-[10px] text-blue-900 font-medium">
-                  5% á‹¨á‰³á‰°áˆ˜ áˆ°áŠá‹µá£ {videoAudioPct}% á‹°áŒáˆž á‹¨á‰ªá‹²á‹®/á‹µáˆá… áˆ›á‰¥áˆ«áˆªá‹« áˆ˜áˆ­áŒ á‹‹áˆá¢
+                  5% የታተመ ሰነድ፣ {videoAudioPct}% ደግሞ የቪዲዮ/ድምፅ ማብራሪያ መርጠዋል።
                 </div>
               </div>
 
               <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-300/80 space-y-1">
-                <div className="font-black text-amber-950 text-[11px]">á‹¨á‰…á‹µáˆšá‹« á‰µáŠ©áˆ¨á‰µ áŠ á‰…áŒ£áŒ«</div>
-                <div className="font-black text-amber-900 text-sm">áŠ á‹áˆ­ áŠ­áˆáˆá£ á‰µáŒáˆ«á‹­ áŠ­áˆáˆá£ áŠ á‹²áˆµ áŠ á‰ á‰£</div>
+                <div className="font-black text-amber-950 text-[11px]">የቅድሚያ ትኩረት አቅጣጫ</div>
+                <div className="font-black text-amber-900 text-sm">አፋር ክልል፣ ትግራይ ክልል፣ አዲስ አበባ</div>
                 <div className="text-[10px] text-amber-950 font-medium">
-                  áŠ¨áá‰°áŠ› á‹¨á‰°áˆ³á‰³áŠ á‰áŒ¥áˆ­ á‰£áˆµáˆ˜á‹˜áŒˆá‰¡ 3 á‹‹áŠ“ á‹‹áŠ“ áŠ áŠ«á‰£á‰¢á‹Žá‰½ á‹­áŒ€áˆ˜áˆ«áˆá¢
+                  ከፍተኛ የተሳታፊ ቁጥር ባስመዘገቡ 3 ዋና ዋና አካባቢዎች ይጀመራል።
                 </div>
               </div>
             </div>
@@ -495,9 +495,9 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="pt-4 border-t border-slate-300 flex justify-between items-center text-[10px] text-slate-600 font-medium">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-950 inline-block" />
-            <span className="font-black text-slate-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• á‹‹áŠ“ áŒ½/á‰¤á‰µ</span>
+            <span className="font-black text-slate-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
-          <span className="font-mono font-black text-blue-950">áŒˆáŒ½ 1 áŠ¨ 6</span>
+          <span className="font-mono font-black text-blue-950">ገጽ 1 ከ 6</span>
         </div>
       </div>
 
@@ -511,7 +511,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="space-y-6">
           {/* MINI PAGE HEADER */}
           <div className="border-b border-slate-300 pb-3 flex justify-between items-center text-xs">
-            <span className="font-black text-blue-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• - á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ áˆªá–áˆ­á‰µ</span>
+            <span className="font-black text-blue-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን - የስልጠና ፍላጎት ሪፖርት</span>
             <span className="font-mono text-slate-500 text-[10px]">{currentDateStr}</span>
           </div>
 
@@ -519,22 +519,22 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
           <ExecutiveSection className="space-y-3">
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
               <h3 className="font-black text-slate-950 text-xs flex items-center gap-2">
-                <span className="mr-1 inline-block">ðŸ“Š</span>
-                <span>áˆ€) á‹¨áŠ á‰£áˆ‹á‰µ / á‹¨áˆ¥áˆ« á‹°áˆ¨áŒƒ áˆµáˆ­áŒ­á‰µ (Membership Distribution)</span>
+                <span className="mr-1 inline-block">📊</span>
+                <span>ሀ) የአባላት / የሥራ ደረጃ ስርጭት (Membership Distribution)</span>
               </h3>
               <span className="text-[10px] font-bold text-slate-500">Donut Analytics</span>
             </div>
-            <SvgDonutChart data={membershipList} centerLabel="á‰°áˆ³á‰³áŠá‹Žá‰½" centerValue={needSubs.length} />
+            <SvgDonutChart data={membershipList} centerLabel="ተሳታፊዎች" centerValue={needSubs.length} />
           </ExecutiveSection>
 
           {/* REGIONAL RANKED BAR CHART */}
           <ExecutiveSection className="space-y-3">
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
               <h3 className="font-black text-slate-950 text-xs flex items-center gap-2">
-                <span className="mr-1 inline-block">ðŸ—ºï¸</span>
-                <span>áˆˆ) á‹¨áŠ­áˆáˆ / áŠ¨á‰°áˆ› á‰°áˆ³á‰µáŽ áˆµáˆ­áŒ­á‰µ (Regional Distribution)</span>
+                <span className="mr-1 inline-block">🗺️</span>
+                <span>ለ) የክልል / ከተማ ተሳትፎ ስርጭት (Regional Distribution)</span>
               </h3>
-              <span className="text-[10px] font-bold text-slate-500">Ranked Chart ({regionList.length} áŠ­áˆáˆŽá‰½)</span>
+              <span className="text-[10px] font-bold text-slate-500">Ranked Chart ({regionList.length} ክልሎች)</span>
             </div>
             <SvgRankedBarChart data={regionList} barColor="#0f2942" />
           </ExecutiveSection>
@@ -544,9 +544,9 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="pt-4 border-t border-slate-300 flex justify-between items-center text-[10px] text-slate-600 font-medium">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-950 inline-block" />
-            <span className="font-black text-slate-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• á‹‹áŠ“ áŒ½/á‰¤á‰µ</span>
+            <span className="font-black text-slate-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
-          <span className="font-mono font-black text-blue-950">áŒˆáŒ½ 2 áŠ¨ 6</span>
+          <span className="font-mono font-black text-blue-950">ገጽ 2 ከ 6</span>
         </div>
       </div>
 
@@ -560,7 +560,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="space-y-6">
           {/* MINI PAGE HEADER */}
           <div className="border-b border-slate-300 pb-3 flex justify-between items-center text-xs">
-            <span className="font-black text-blue-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• - á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ áˆªá–áˆ­á‰µ</span>
+            <span className="font-black text-blue-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን - የስልጠና ፍላጎት ሪፖርት</span>
             <span className="font-mono text-slate-500 text-[10px]">{currentDateStr}</span>
           </div>
 
@@ -568,30 +568,30 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
           <ExecutiveSection className="border-2 border-slate-900/20 rounded-2xl overflow-hidden shadow-2xs space-y-0">
             <div className="bg-slate-900 text-white px-5 py-3 flex justify-between items-center">
               <h3 className="font-black text-xs tracking-wide flex items-center gap-2">
-                <span className="mr-1 inline-block">ðŸ”¥</span>
-                <span>Section 2 Analytics: áŠ¨áá‰°áŠ› á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ á‹«áˆ‹á‰¸á‹ 5 áˆ˜áˆ˜áˆªá‹«á‹Žá‰½ (Top 5 Training Needs)</span>
+                <span className="mr-1 inline-block">🔥</span>
+                <span>Section 2 Analytics: ከፍተኛ የስልጠና ፍላጎት ያላቸው 5 መመሪያዎች (Top 5 Training Needs)</span>
               </h3>
               <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider font-mono">
-                áŠ­ááˆ 2 (Top 5)
+                ክፍል 2 (Top 5)
               </span>
             </div>
 
             <table className="w-full text-left border-collapse text-[11px]">
               <thead>
                 <tr className="bg-slate-100 text-slate-950 font-black border-b border-slate-300">
-                  <th className="p-3 w-12 text-center">á‹°áˆ¨áŒƒ</th>
-                  <th className="p-3 w-24">áŠ®á‹µ</th>
-                  <th className="p-3">á‹¨áˆ˜áˆ˜áˆªá‹«á‹ áˆ­á‹•áˆµ (Directive Title)</th>
-                  <th className="p-3 w-36 text-center">á‰…á‹µáˆšá‹« á‹¨áˆ˜áˆ¨áŒ¡á‰µ</th>
-                  <th className="p-3 w-32 text-center">á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ á‹°áˆ¨áŒƒ</th>
-                  <th className="p-3 w-28 text-center">áŠ áˆ›áŠ«á‹­ á‹áŒ¤á‰µ</th>
+                  <th className="p-3 w-12 text-center">ደረጃ</th>
+                  <th className="p-3 w-24">ኮድ</th>
+                  <th className="p-3">የመመሪያው ርዕስ (Directive Title)</th>
+                  <th className="p-3 w-36 text-center">ቅድሚያ የመረጡት</th>
+                  <th className="p-3 w-32 text-center">የስልጠና ፍላጎት ደረጃ</th>
+                  <th className="p-3 w-28 text-center">አማካይ ውጤት</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {sortedGaps.length > 0 ? (
                   sortedGaps.slice(0, 5).map((item, index) => {
                     let displayTitle = item.directiveTitle;
-                    if (!displayTitle || displayTitle.startsWith('áˆ˜áˆ˜áˆªá‹« / áˆ˜áŒ á‹­á‰…')) {
+                    if (!displayTitle || displayTitle.startsWith('መመሪያ / መጠይቅ')) {
                       const match = INSPECTION_DIRECTIVES.find((d) => d.id === item.directiveId || d.code === item.directiveCode);
                       if (match) displayTitle = match.title;
                     }
@@ -605,9 +605,9 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
                         <td className="p-3 font-mono font-black text-blue-950">{item.directiveCode}</td>
                         <td className="p-3 font-bold text-slate-950 leading-snug">{displayTitle}</td>
                         <td className="p-3 text-center font-black text-blue-950 font-mono">
-                          {votes > 0 ? `áŠ¨ ${needSubs.length} á‹áˆµáŒ¥ ${votes} (${votePct}%)` : '-'}
+                          {votes > 0 ? `ከ ${needSubs.length} ውስጥ ${votes} (${votePct}%)` : '-'}
                         </td>
-                        <td className="p-3 text-center font-black text-rose-700 font-mono">{needPct}% ááˆ‹áŒŽá‰µ</td>
+                        <td className="p-3 text-center font-black text-rose-700 font-mono">{needPct}% ፍላጎት</td>
                         <td className="p-3 text-center font-black text-slate-900 font-mono">{item.currentScore} / 5.0</td>
                       </tr>
                     );
@@ -615,7 +615,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
                 ) : (
                   <tr>
                     <td colSpan={6} className="p-6 text-center text-slate-500 italic">
-                      áˆáŠ•áˆ á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ áˆ˜áˆ¨áŒƒ áŠ áˆá‰°áŒˆáŠ˜áˆá¢
+                      ምንም የስልጠና ፍላጎት መረጃ አልተገኘም።
                     </td>
                   </tr>
                 )}
@@ -628,21 +628,21 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
             <ExecutiveSection className="border-2 border-slate-900/20 rounded-2xl overflow-hidden shadow-2xs space-y-0">
               <div className="bg-slate-900 text-white px-5 py-3 flex justify-between items-center">
                 <h3 className="font-black text-xs tracking-wide flex items-center gap-2">
-                  <span className="mr-1 inline-block">ðŸ’¡</span>
-                  <span>Section 3 Analytics: á‰ áˆ°áˆáŒ£áŠžá‰½ á‰ á‰¥á‹›á‰µ á‹¨á‰°áŒ á‹¨á‰ áŠ¨áá‰°áŠ› 5 á‰°áŒ¨áˆ›áˆª á‹¨áˆµáˆáŒ áŠ“ áˆ˜áˆ˜áˆªá‹«á‹Žá‰½ (Top 5 Most Requested)</span>
+                  <span className="mr-1 inline-block">💡</span>
+                  <span>Section 3 Analytics: በሰልጣኞች በብዛት የተጠየቁ ከፍተኛ 5 ተጨማሪ የስልጠና መመሪያዎች (Top 5 Most Requested)</span>
                 </h3>
                 <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider font-mono">
-                  áŠ­ááˆ 3 (Top 5)
+                  ክፍል 3 (Top 5)
                 </span>
               </div>
               <table className="w-full text-left border-collapse text-[11px]">
                 <thead>
                   <tr className="bg-slate-100 text-slate-950 font-black border-b border-slate-300">
-                    <th className="p-3 w-12 text-center">á‹°áˆ¨áŒƒ</th>
-                    <th className="p-3 w-24">áŠ®á‹µ</th>
-                    <th className="p-3">á‹¨á‰°áŒ á‹¨á‰€á‹ á‰°áŒ¨áˆ›áˆª áˆ˜áˆ˜áˆªá‹« áˆ­á‹•áˆµ (Additional Directive)</th>
-                    <th className="p-3 w-36 text-center">á‹¨áŒ á‹¨á‰ áŠ á‰£áˆ‹á‰µ á‰¥á‹›á‰µ</th>
-                    <th className="p-3 w-32 text-center">á‹¨ááˆ‹áŒŽá‰µ á‹µáˆ­áˆ» (%)</th>
+                    <th className="p-3 w-12 text-center">ደረጃ</th>
+                    <th className="p-3 w-24">ኮድ</th>
+                    <th className="p-3">የተጠየቀው ተጨማሪ መመሪያ ርዕስ (Additional Directive)</th>
+                    <th className="p-3 w-36 text-center">የጠየቁ አባላት ብዛት</th>
+                    <th className="p-3 w-32 text-center">የፍላጎት ድርሻ (%)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -651,7 +651,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
                       <td className="p-3 font-black text-center text-slate-950 font-mono">#{idx + 1}</td>
                       <td className="p-3 font-mono font-black text-blue-950">{add.code}</td>
                       <td className="p-3 font-bold text-slate-950">{add.title}</td>
-                      <td className="p-3 text-center font-black text-blue-950 font-mono">{add.count} áˆ°á‹Žá‰½</td>
+                      <td className="p-3 text-center font-black text-blue-950 font-mono">{add.count} ሰዎች</td>
                       <td className="p-3 text-center font-black text-slate-900 font-mono">{add.pct}%</td>
                     </tr>
                   ))}
@@ -665,9 +665,9 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="pt-4 border-t border-slate-300 flex justify-between items-center text-[10px] text-slate-600 font-medium">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-950 inline-block" />
-            <span className="font-black text-slate-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• á‹‹áŠ“ áŒ½/á‰¤á‰µ</span>
+            <span className="font-black text-slate-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
-          <span className="font-mono font-black text-blue-950">áŒˆáŒ½ 3 áŠ¨ 6</span>
+          <span className="font-mono font-black text-blue-950">ገጽ 3 ከ 6</span>
         </div>
       </div>
 
@@ -681,7 +681,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="space-y-6">
           {/* MINI PAGE HEADER */}
           <div className="border-b border-slate-300 pb-3 flex justify-between items-center text-xs">
-            <span className="font-black text-blue-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• - á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ áˆªá–áˆ­á‰µ</span>
+            <span className="font-black text-blue-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን - የስልጠና ፍላጎት ሪፖርት</span>
             <span className="font-mono text-slate-500 text-[10px]">{currentDateStr}</span>
           </div>
 
@@ -690,23 +690,23 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
             <div className="space-y-3">
               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                 <h3 className="font-black text-slate-950 text-xs flex items-center gap-2">
-                  <span className="mr-1 inline-block">ðŸŽ“</span>
-                  <span>Section 4.1: á‹¨á‰°áˆ˜áŠ¨áˆ¨ á‹¨áˆµáˆáŒ áŠ“ áŠ áˆ°áŒ£áŒ¥ áˆ˜áŠ•áŒˆá‹µ (Preferred Mode)</span>
+                  <span className="mr-1 inline-block">🎓</span>
+                  <span>Section 4.1: የተመከረ የስልጠና አሰጣጥ መንገድ (Preferred Mode)</span>
                 </h3>
                 <span className="text-[10px] font-bold text-slate-500">In-Person vs Online</span>
               </div>
-              <SvgDonutChart data={trainingModeChartData} centerLabel="áˆáˆ­áŒ«" centerValue={`${onlinePct}%`} />
+              <SvgDonutChart data={trainingModeChartData} centerLabel="ምርጫ" centerValue={`${onlinePct}%`} />
             </div>
 
             <div className="space-y-3">
               <div className="flex justify-between items-center border-b border-slate-200 pb-2">
                 <h3 className="font-black text-slate-950 text-xs flex items-center gap-2">
-                  <span className="mr-1 inline-block">ðŸ“„</span>
-                  <span>Section 4.2: á‹¨á‰°áˆ˜áŠ¨áˆ¨ á‹¨áˆµáˆáŒ áŠ“ áˆ›á‰¥áˆ«áˆªá‹« áˆ°áŠá‹µ (Preferred Materials)</span>
+                  <span className="mr-1 inline-block">📄</span>
+                  <span>Section 4.2: የተመከረ የስልጠና ማብራሪያ ሰነድ (Preferred Materials)</span>
                 </h3>
                 <span className="text-[10px] font-bold text-slate-500">Media vs Hard Copy</span>
               </div>
-              <SvgDonutChart data={trainingMaterialChartData} centerLabel="áˆ°áŠá‹µ" centerValue={`${videoAudioPct}%`} />
+              <SvgDonutChart data={trainingMaterialChartData} centerLabel="ሰነድ" centerValue={`${videoAudioPct}%`} />
             </div>
           </ExecutiveSection>
         </div>
@@ -715,14 +715,14 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="pt-4 border-t border-slate-300 flex justify-between items-center text-[10px] text-slate-600 font-medium">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-950 inline-block" />
-            <span className="font-black text-slate-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• á‹‹áŠ“ áŒ½/á‰¤á‰µ</span>
+            <span className="font-black text-slate-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
-          <span className="font-mono font-black text-blue-950">áŒˆáŒ½ 4 áŠ¨ 6</span>
+          <span className="font-mono font-black text-blue-950">ገጽ 4 ከ 6</span>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* PAGE 5: GEOGRAPHIC BREAKDOWN TABLE â€” PART 1 */}
+      {/* PAGE 5: GEOGRAPHIC BREAKDOWN TABLE — PART 1 */}
       {/* ========================================================================= */}
       <div
         className="pdf-page bg-white p-8 space-y-6 flex flex-col justify-between"
@@ -731,26 +731,26 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="space-y-6">
           {/* MINI PAGE HEADER */}
           <div className="border-b border-slate-300 pb-3 flex justify-between items-center text-xs">
-            <span className="font-black text-blue-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• - á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ áˆªá–áˆ­á‰µ</span>
+            <span className="font-black text-blue-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን - የስልጠና ፍላጎት ሪፖርት</span>
             <span className="font-mono text-slate-500 text-[10px]">{currentDateStr}</span>
           </div>
 
-          {/* GEOGRAPHIC BREAKDOWN TABLE â€” FIRST HALF */}
+          {/* GEOGRAPHIC BREAKDOWN TABLE — FIRST HALF */}
           <ExecutiveSection className="border-2 border-slate-900/20 rounded-2xl overflow-hidden shadow-2xs space-y-0">
             <div className="bg-slate-900 text-white px-5 py-3 flex justify-between items-center">
               <h3 className="font-black text-xs tracking-wide flex items-center gap-2">
-                <span className="mr-1 inline-block">ðŸ“</span>
-                <span>áˆ) á‹¨á‹žáŠ•/áŠ­ááˆˆ áŠ¨á‰°áˆ› áŠ¥áŠ“ á‹ˆáˆ¨á‹³ á‹áˆ­á‹áˆ­ á‰°áˆ³á‰µáŽ (Zone & Woreda Breakdown)</span>
+                <span className="mr-1 inline-block">📍</span>
+                <span>ሐ) የዞን/ክፍለ ከተማ እና ወረዳ ዝርዝር ተሳትፎ (Zone & Woreda Breakdown)</span>
               </h3>
-              <span className="text-[10px] text-slate-300 font-bold font-mono">{zoneWoredaRows.length} áŠ áŠ«á‰£á‰¢á‹Žá‰½ â€” áŠ­ááˆ 1</span>
+              <span className="text-[10px] text-slate-300 font-bold font-mono">{zoneWoredaRows.length} አካባቢዎች — ክፍል 1</span>
             </div>
             <table className="w-full text-left border-collapse text-[11px]">
               <thead>
                 <tr className="bg-slate-100 text-slate-950 font-black border-b border-slate-300">
-                  <th className="p-3">áŠ­áˆáˆ / áŠ¨á‰°áˆ›</th>
-                  <th className="p-3">á‹žáŠ• / áŠ­ááˆˆ áŠ¨á‰°áˆ›</th>
-                  <th className="p-3">á‹ˆáˆ¨á‹³</th>
-                  <th className="p-3 text-right">á‹¨á‰°áˆžáˆ‰ á‰…áŒ¾á‰½ á‰¥á‹›á‰µ</th>
+                  <th className="p-3">ክልል / ከተማ</th>
+                  <th className="p-3">ዞን / ክፍለ ከተማ</th>
+                  <th className="p-3">ወረዳ</th>
+                  <th className="p-3 text-right">የተሞሉ ቅጾች ብዛት</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -771,14 +771,14 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="pt-4 border-t border-slate-300 flex justify-between items-center text-[10px] text-slate-600 font-medium">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-950 inline-block" />
-            <span className="font-black text-slate-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• á‹‹áŠ“ áŒ½/á‰¤á‰µ</span>
+            <span className="font-black text-slate-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
-          <span className="font-mono font-black text-blue-950">áŒˆáŒ½ 5 áŠ¨ 6</span>
+          <span className="font-mono font-black text-blue-950">ገጽ 5 ከ 6</span>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* PAGE 6: GEOGRAPHIC BREAKDOWN TABLE â€” PART 2 + FINAL FOOTER */}
+      {/* PAGE 6: GEOGRAPHIC BREAKDOWN TABLE — PART 2 + FINAL FOOTER */}
       {/* ========================================================================= */}
       <div
         className="pdf-page bg-white p-8 space-y-6 flex flex-col justify-between"
@@ -787,26 +787,26 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="space-y-6">
           {/* MINI PAGE HEADER */}
           <div className="border-b border-slate-300 pb-3 flex justify-between items-center text-xs">
-            <span className="font-black text-blue-950">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• - á‹¨áˆµáˆáŒ áŠ“ ááˆ‹áŒŽá‰µ áˆªá–áˆ­á‰µ</span>
+            <span className="font-black text-blue-950">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን - የስልጠና ፍላጎት ሪፖርት</span>
             <span className="font-mono text-slate-500 text-[10px]">{currentDateStr}</span>
           </div>
 
-          {/* GEOGRAPHIC BREAKDOWN TABLE â€” SECOND HALF */}
+          {/* GEOGRAPHIC BREAKDOWN TABLE — SECOND HALF */}
           <ExecutiveSection className="border-2 border-slate-900/20 rounded-2xl overflow-hidden shadow-2xs space-y-0">
             <div className="bg-slate-900 text-white px-5 py-3 flex justify-between items-center">
               <h3 className="font-black text-xs tracking-wide flex items-center gap-2">
-                <span className="mr-1 inline-block">ðŸ“</span>
-                <span>áˆ) á‹¨á‹žáŠ•/áŠ­ááˆˆ áŠ¨á‰°áˆ› áŠ¥áŠ“ á‹ˆáˆ¨á‹³ á‹áˆ­á‹áˆ­ á‰°áˆ³á‰µáŽ (Zone & Woreda Breakdown) â€” áŠ­ááˆ 2</span>
+                <span className="mr-1 inline-block">📍</span>
+                <span>ሐ) የዞን/ክፍለ ከተማ እና ወረዳ ዝርዝር ተሳትፎ (Zone & Woreda Breakdown) — ክፍል 2</span>
               </h3>
-              <span className="text-[10px] text-slate-300 font-bold font-mono">{zoneWoredaRows.length} áŠ áŠ«á‰£á‰¢á‹Žá‰½ â€” áŠ­ááˆ 2</span>
+              <span className="text-[10px] text-slate-300 font-bold font-mono">{zoneWoredaRows.length} አካባቢዎች — ክፍል 2</span>
             </div>
             <table className="w-full text-left border-collapse text-[11px]">
               <thead>
                 <tr className="bg-slate-100 text-slate-950 font-black border-b border-slate-300">
-                  <th className="p-3">áŠ­áˆáˆ / áŠ¨á‰°áˆ›</th>
-                  <th className="p-3">á‹žáŠ• / áŠ­ááˆˆ áŠ¨á‰°áˆ›</th>
-                  <th className="p-3">á‹ˆáˆ¨á‹³</th>
-                  <th className="p-3 text-right">á‹¨á‰°áˆžáˆ‰ á‰…áŒ¾á‰½ á‰¥á‹›á‰µ</th>
+                  <th className="p-3">ክልል / ከተማ</th>
+                  <th className="p-3">ዞን / ክፍለ ከተማ</th>
+                  <th className="p-3">ወረዳ</th>
+                  <th className="p-3 text-right">የተሞሉ ቅጾች ብዛት</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -822,10 +822,10 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
               <tfoot>
                 <tr className="bg-slate-200 font-black text-slate-950 border-t-2 border-slate-400">
                   <td colSpan={3} className="p-3 font-black">
-                    á‹µáˆáˆ­ áŒ á‰…áˆ‹áˆ‹ (Total Submissions Across All Locations)
+                    ድምር ጠቅላላ (Total Submissions Across All Locations)
                   </td>
                   <td className="p-3 text-right font-black text-blue-950 text-xs font-mono">
-                    {zoneWoredaRows.reduce((acc, r) => acc + r.count, 0)} á‰…áŒ¾á‰½
+                    {zoneWoredaRows.reduce((acc, r) => acc + r.count, 0)} ቅጾች
                   </td>
                 </tr>
               </tfoot>
@@ -837,10 +837,10 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
         <div className="pt-4 border-t-2 border-slate-900 flex justify-between items-center text-[10px] text-slate-600 font-medium tracking-wide">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-950 inline-block" />
-            <span className="font-extrabold text-slate-900">á‹¨á‰¥áˆá…áŒáŠ“ á‹¨áŠ¢áŠ•áˆµá”áŠ­áˆ½áŠ•áŠ“ á‹¨áˆ¥áŠ-áˆáŒá‰£áˆ­ áŠ®áˆšáˆ½áŠ• á‹‹áŠ“ áŒ½/á‰¤á‰µ</span>
+            <span className="font-extrabold text-slate-900">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
           <div className="text-right">
-            <span>á‰ áˆ²áˆµá‰°áˆ™ á‰ áˆ«áˆµ-áˆ°áˆ­ á‹¨á‰°áˆ˜áˆ¨á‰° áˆ…áŒ‹á‹Š áˆ°áŠá‹µ | <strong className="font-mono text-blue-950">áŒˆáŒ½ 6 áŠ¨ 6</strong></span>
+            <span>በሲስተሙ በራስ-ሰር የተመረተ ህጋዊ ሰነድ | <strong className="font-mono text-blue-950">ገጽ 6 ከ 6</strong></span>
           </div>
         </div>
       </div>
