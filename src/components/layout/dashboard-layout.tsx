@@ -77,7 +77,6 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     { label: 'ሰነዶች', icon: IconFileText, href: '/dashboard/documents', id: 'documents' },
     { label: 'የአመራር አካላት', icon: IconUsers, href: '/dashboard/personnel', id: 'personnel' },
     { label: 'ጥቆማ እና አቤቱታ', icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
-    { label: 'ካርታ', icon: IconMapPin, href: '/dashboard/map', id: 'map' },
     { label: 'ምዘና', icon: IconClipboardCheck, href: '/dashboard/assessment', id: 'assessment' },
     { label: 'አስተያየት', icon: IconMessageStar, href: '/dashboard/feedback', id: 'feedback' },
     { label: 'ሪፖርት', icon: IconFileDescription, href: '/dashboard/forms', id: 'forms' },
@@ -226,6 +225,14 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           </div>
           <div className="flex items-center gap-1 bg-surface-primary/60 backdrop-blur-md p-1.5 rounded-full border border-border/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
 
+            <Link
+              href="/dashboard/map"
+              className="w-8 h-8 md:w-10 md:h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all"
+              title="ካርታ"
+            >
+              <IconMapPin size={18} stroke={2} />
+            </Link>
+            <div className="w-[1px] h-4 bg-border/50"></div>
             <Link
               href="/dashboard/analytics"
               className="w-8 h-8 md:w-10 md:h-10 flex justify-center items-center rounded-full hover:bg-surface-secondary/80 hover:text-text-primary text-text-secondary transition-all"
