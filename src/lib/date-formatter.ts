@@ -37,8 +37,13 @@ export function formatECDate(dateInput: Date | string | null | undefined): strin
     return `${monthName} ${etDate.day}, ${etDate.year}`;
   } catch (error) {
     console.error('Error formatting EC date:', error);
-    // Fallback if parsing fails
-    return new Date(dateInput).toLocaleDateString('am-ET');
+    try {
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return '-';
+      return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+    } catch {
+      return '-';
+    }
   }
 }
 
@@ -65,6 +70,14 @@ export function formatECDateTime(dateInput: Date | string | null | undefined): s
     return `${monthName} ${etDate.day}, ${etDate.year} ${hours}:${minutes}`;
   } catch (error) {
     console.error('Error formatting EC date:', error);
-    return new Date(dateInput).toLocaleString('am-ET');
+    try {
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return '-';
+      const hours = d.getHours().toString().padStart(2, '0');
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${hours}:${minutes}`;
+    } catch {
+      return '-';
+    }
   }
 }

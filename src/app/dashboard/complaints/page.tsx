@@ -25,7 +25,7 @@ import {
   IconPaperclip,
   IconExternalLink,
 } from "@tabler/icons-react";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { complaintService } from "@/services/complaints";
 import { Complaint, ComplaintStatus } from "@/types";
 import { exportComplaintsToExcel, getResolutionTime } from "@/lib/exportExcel";
@@ -107,6 +107,31 @@ export default function ComplaintsPage() {
 
   // Admin name for tracking
   const adminName = profile?.first_name || 'Admin';
+
+  // Calculate average resolution time
+  const avgResTimeDays = useMemo(() => {
+    const resolvedTickets = tickets.filter(t => t.status === 'Resolved' && (t.resolvedAtRaw || t.resolvedAt));
+    if (resolvedTickets.length === 0) return 0;
+    
+    const totalDays = resolvedTickets.reduce((acc, t) => {
+      const resolved = new Date(t.resolvedAtRaw || t.resolvedAt).getTime();
+      const created = new Date(t.createdAtRaw || t.createdAt).getTime();
+      return acc + (resolved - created) / (1000 * 60 * 60 * 24);
+    }, 0);
+    
+    return (totalDays / resolvedTickets.length).toFixed(1);
+  }, [tickets]);
+
+  // SLA Helper
+  const getSlaIndicator = (ticket: Complaint) => {
+    const deadlineRaw = ticket.slaDeadlineRaw || ticket.slaDeadline;
+    if ((ticket.status !== 'Processing' && ticket.status !== 'PendingApproval' && ticket.status !== 'RevisionRequested') || !deadlineRaw) return null;
+    const daysLeft = Math.ceil((new Date(deadlineRaw).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysLeft < 1) return { color: 'text-red-700 bg-red-500/10 border-red-500/20', label: 'ጊዜ አልፎበታል' };
+    if (daysLeft <= 5) return { color: 'text-amber-700 bg-amber-500/10 border-amber-500/20', label: `${daysLeft} ቀናት ቀርተዋል` };
+    return { color: 'text-green-700 bg-green-500/10 border-green-500/20', label: `${daysLeft} ቀናት ቀርተዋል` };
+  };
 
   // Status transition
   const handleStatusChange = async (ticketId: string, newStatus: ComplaintStatus) => {
@@ -396,10 +421,18 @@ export default function ComplaintsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4 align-middle">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${STATUS_CONFIG[ticket.status].bgColor} ${STATUS_CONFIG[ticket.status].color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[ticket.status].dotColor}`}></span>
-                            {STATUS_CONFIG[ticket.status].label}
-                          </span>
+                          <div className="flex flex-col items-start gap-1">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${STATUS_CONFIG[ticket.status].bgColor} ${STATUS_CONFIG[ticket.status].color}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[ticket.status].dotColor}`}></span>
+                              {STATUS_CONFIG[ticket.status].label}
+                            </span>
+                            {getSlaIndicator(ticket) && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getSlaIndicator(ticket)?.color}`}>
+                                <IconClock size={10} />
+                                {getSlaIndicator(ticket)?.label}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-4 align-middle">
                           <div className="flex flex-col">
@@ -412,35 +445,13 @@ export default function ComplaintsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4 align-middle text-right">
-                          <div className="flex items-center justify-end gap-1.5 opacity-100 transition-opacity">
-                            <button
-                              onClick={() => setSelectedTicket(ticket)}
-                              className="p-1.5 rounded-lg bg-surface-secondary/50 hover:bg-brand-blue hover:text-white text-text-secondary transition-all"
-                              title="ዝርዝር ይመልከቱ"
-                            >
-                              <IconEye size={16} />
-                            </button>
-                            {ticket.status === 'New' && (
-                              <button
-                                onClick={() => handleStatusChange(ticket.id, 'Processing')}
-                                disabled={actionLoading}
-                                className="p-1.5 rounded-lg bg-surface-secondary/50 hover:bg-amber-500 hover:text-white text-text-secondary transition-all disabled:opacity-50"
-                                title="ወደ ሂደት ውሰድ"
-                              >
-                                <IconPlayerPlay size={16} />
-                              </button>
-                            )}
-                            {ticket.status === 'Processing' && (
-                              <button
-                                onClick={() => handleStatusChange(ticket.id, 'Resolved')}
-                                disabled={actionLoading}
-                                className="p-1.5 rounded-lg bg-surface-secondary/50 hover:bg-green-600 hover:text-white text-text-secondary transition-all disabled:opacity-50"
-                                title="መፍትሄ ስጥ / ውድቅ አድርግ"
-                              >
-                                <IconCheck size={16} />
-                              </button>
-                            )}
-                          </div>
+                          <button
+                            onClick={() => setSelectedTicket(ticket)}
+                            className="px-3.5 py-1.5 rounded-xl bg-brand-blue/10 hover:bg-brand-blue text-brand-blue hover:text-white text-xs font-semibold transition-all shadow-sm inline-flex items-center gap-1.5"
+                          >
+                            <IconEye size={14} />
+                            ዝርዝር
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -452,11 +463,11 @@ export default function ComplaintsPage() {
         )}
       </div>
 
-      {/* Detail Drawer */}
+      {/* Full Screen Detail Modal */}
       {selectedTicket && !showResolutionModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-end z-50 transition-opacity" onClick={() => setSelectedTicket(null)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-0 sm:p-4 animate-in fade-in duration-200" onClick={() => setSelectedTicket(null)}>
           <div
-            className="w-full max-w-2xl h-full bg-surface-primary overflow-y-auto shadow-2xl animate-in slide-in-from-right-8 duration-300 border-l border-border/30 flex flex-col"
+            className="w-full h-full sm:h-[95vh] sm:max-w-5xl bg-surface-primary overflow-y-auto sm:rounded-3xl shadow-2xl border border-border/30 flex flex-col animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drawer Header */}
@@ -636,7 +647,7 @@ export default function ComplaintsPage() {
                         <p className={`text-sm font-bold ${step.active ? 'text-text-primary' : 'text-text-muted/60'}`}>{step.label}</p>
                         {step.date && (
                           <p className="text-[11px] text-text-secondary mt-1 font-medium">
-                            {new Date(step.date).toLocaleString('am-ET', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            {step.date}
                           </p>
                         )}
                       </div>
@@ -678,7 +689,7 @@ export default function ComplaintsPage() {
                   )}
                   {selectedTicket.status === 'Accepted' && (
                     <div className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-surface-secondary text-text-muted rounded-2xl text-sm font-bold border border-border/50 cursor-not-allowed">
-                      <IconLoader2 size={18} className="animate-spin" />
+                      <IconClock size={18} />
                       በኮሚቴ ሰብሳቢ ምደባ በመጠባበቅ ላይ...
                     </div>
                   )}

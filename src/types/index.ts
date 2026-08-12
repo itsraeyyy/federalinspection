@@ -146,6 +146,7 @@ export interface ComplaintAttachment {
   fileType: string;
   fileSize: string;
   url?: string;
+  filePath?: string;
 }
 
 export interface ComplaintResolution {
@@ -178,9 +179,11 @@ export interface Complaint {
   attachments: ComplaintAttachment[];
   date: string;
   createdAt: string;
+  createdAtRaw?: string;
   updatedAt?: string;
   processedAt?: string;
   resolvedAt?: string;
+  resolvedAtRaw?: string;
   processedBy?: string;
   resolvedBy?: string;
   status: ComplaintStatus;
@@ -195,6 +198,7 @@ export interface Complaint {
   decisionIdeaSummary?: string;
   decisionIdeaFiles?: ComplaintAttachment[];
   slaDeadline?: string;
+  slaDeadlineRaw?: string;
   slaNotified?: boolean;
   reminderNotified?: boolean;
 }

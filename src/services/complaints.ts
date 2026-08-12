@@ -33,9 +33,11 @@ function mapRowToComplaint(item: any): Complaint {
     attachments: item.attachments || [],
     date: formatECDate(item.created_at),
     createdAt: formatECDateTime(item.created_at),
+    createdAtRaw: item.created_at,
     updatedAt: item.updated_at ? formatECDateTime(item.updated_at) : undefined,
     processedAt: item.processed_at ? formatECDateTime(item.processed_at) : undefined,
     resolvedAt: item.resolved_at ? formatECDateTime(item.resolved_at) : undefined,
+    resolvedAtRaw: item.resolved_at,
     processedBy: item.processed_by,
     resolvedBy: item.resolved_by,
     status: item.status,
@@ -50,12 +52,53 @@ function mapRowToComplaint(item: any): Complaint {
     decisionIdeaSummary: (item.resolution as any)?.decisionIdeaSummary || undefined,
     decisionIdeaFiles: (item.resolution as any)?.decisionIdeaFiles || [],
     slaDeadline: (item.resolution as any)?.slaDeadline ? formatECDateTime((item.resolution as any).slaDeadline) : undefined,
+    slaDeadlineRaw: (item.resolution as any)?.slaDeadline || undefined,
     slaNotified: item.sla_notified || false,
     reminderNotified: item.reminder_notified || false,
   };
 }
 
 export const complaintService = {
+  getSecureAttachmentUrl: async (filePath: string): Promise<string | null> => {
+    if (!filePath) return null;
+    try {
+      const { data, error } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600); // 1 hour expiry
+      if (error) {
+        console.error('Error generating signed URL:', error);
+        return null;
+      }
+      return data.signedUrl;
+    } catch (e) {
+      console.error('Exception generating signed URL:', e);
+      return null;
+    }
+  },
+
+  refreshSecureUrls: async (complaint: Complaint): Promise<Complaint> => {
+    if (complaint.attachments) {
+      for (const att of complaint.attachments) {
+        if (att.filePath) {
+          att.url = await complaintService.getSecureAttachmentUrl(att.filePath) || att.url;
+        }
+      }
+    }
+    if (complaint.resolution?.attachments) {
+      for (const att of complaint.resolution.attachments) {
+        if (att.filePath) {
+          att.url = await complaintService.getSecureAttachmentUrl(att.filePath) || att.url;
+        }
+      }
+    }
+    if (complaint.decisionIdeaFiles) {
+      for (const att of complaint.decisionIdeaFiles) {
+        if (att.filePath) {
+          att.url = await complaintService.getSecureAttachmentUrl(att.filePath) || att.url;
+        }
+      }
+    }
+    return complaint;
+  },
+
   getComplaints: async (): Promise<Complaint[]> => {
     const { data, error } = await supabase
       .from('complaints')
@@ -78,7 +121,8 @@ export const complaintService = {
       console.error('Error fetching complaint:', error);
       return null;
     }
-    return mapRowToComplaint(data);
+    const complaint = mapRowToComplaint(data);
+    return await complaintService.refreshSecureUrls(complaint);
   },
 
   getComplaintByTrackingCode: async (trackingCode: string): Promise<Complaint | null> => {
@@ -90,7 +134,8 @@ export const complaintService = {
     if (error) {
       return null;
     }
-    return mapRowToComplaint(data);
+    const complaint = mapRowToComplaint(data);
+    return await complaintService.refreshSecureUrls(complaint);
   },
 
   submitComplaint: async (formData: {
@@ -134,16 +179,15 @@ export const complaintService = {
           throw uploadError;
         }
 
-        const { data: urlData } = supabase.storage
-          .from('complaints')
-          .getPublicUrl(filePath);
+        const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
 
         attachments.push({
           id: crypto.randomUUID(),
           filename: file.name,
           fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
           fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-          url: urlData.publicUrl,
+          url: urlData?.signedUrl,
+          filePath: filePath,
         });
       }
     }
@@ -276,16 +320,15 @@ export const complaintService = {
               throw uploadError;
             }
 
-            const { data: urlData } = supabase.storage
-              .from('complaints')
-              .getPublicUrl(filePath);
+            const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
 
             resolutionAttachments.push({
               id: crypto.randomUUID(),
               filename: file.name,
               fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
               fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-              url: urlData.publicUrl,
+              url: urlData?.signedUrl,
+              filePath: filePath,
             });
           }
         }
@@ -399,7 +442,7 @@ export const complaintService = {
   },
 
   startProcessingByLeader: async (id: string, leaderName: string, committeeName: string): Promise<boolean> => {
-    const { error } = await supabase
+    const { data: updatedComplaint, error } = await supabase
       .from('complaints')
       .update({
         status: 'Processing',
@@ -410,12 +453,30 @@ export const complaintService = {
           slaDeadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
         }
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select('name, phone, email, type, tracking_code')
+      .single();
 
     if (error) {
       console.error('Error starting processing by leader:', error);
       return false;
     }
+
+    if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
+      try {
+        await notifyComplaintStatusUpdate({
+          phone: updatedComplaint.phone,
+          email: (updatedComplaint as any).email,
+          name: updatedComplaint.name,
+          type: updatedComplaint.type,
+          status: 'Processing',
+          trackingCode: updatedComplaint.tracking_code || '',
+        });
+      } catch (notifyErr) {
+        console.error('Failed to send complaint status notification:', notifyErr);
+      }
+    }
+
     return true;
   },
 
@@ -435,13 +496,14 @@ export const complaintService = {
           throw uploadError;
         }
 
-        const { data: urlData } = supabase.storage.from('complaints').getPublicUrl(filePath);
+        const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
         decisionAttachments.push({
           id: crypto.randomUUID(),
           filename: file.name,
           fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
           fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-          url: urlData.publicUrl,
+          url: urlData?.signedUrl,
+          filePath: filePath,
         });
       }
     }

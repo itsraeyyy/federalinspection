@@ -21,9 +21,11 @@ function escapeXml(str: string): string {
 }
 
 function getResolutionTime(complaint: Complaint): string {
-  if (!complaint.resolvedAt || !complaint.createdAt) return '-';
-  const created = new Date(complaint.createdAt).getTime();
-  const resolved = new Date(complaint.resolvedAt).getTime();
+  const createdStr = complaint.createdAtRaw || complaint.createdAt;
+  const resolvedStr = complaint.resolvedAtRaw || complaint.resolvedAt;
+  if (!resolvedStr || !createdStr) return '-';
+  const created = new Date(createdStr).getTime();
+  const resolved = new Date(resolvedStr).getTime();
   if (isNaN(created) || isNaN(resolved)) return 'በወቅቱ የተጠናቀቀ';
   const diffMs = Math.abs(resolved - created);
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
