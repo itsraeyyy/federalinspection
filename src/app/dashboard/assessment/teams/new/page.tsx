@@ -44,8 +44,8 @@ type NewMemberDraft = {
 };
 
 const ROLE_OPTIONS = [
-  { value: 'regular', label: 'ተገምጋሚ (Regular)' },
-  { value: 'evaluator', label: 'ገምጋሚ (Evaluator)' },
+  { value: 'regular', label: 'ተመዛኝ (Regular)' },
+  { value: 'evaluator', label: 'መዛኝ (Evaluator)' },
   { value: 'approver', label: 'አጽዳቂ (Approver)' },
   { value: 'admin', label: 'አስተዳዳሪ (Admin)' },
 ];
@@ -323,7 +323,7 @@ export default function CreatePeriodPage() {
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-brand-blue" />
                 <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                  2. ተገምጋሚዎችን እና ገምጋሚዎችን መድብ (Assign Members)
+                  2. ተመዛኞችን እና መዛኞችን መድብ (Assign Members)
                 </h2>
               </div>
 
@@ -453,7 +453,7 @@ export default function CreatePeriodPage() {
                             </div>
                           ) : (
                             <span className="text-[11px] text-text-muted shrink-0 hidden sm:inline">
-                              {user.last_role === 'evaluator' ? 'ገምጋሚ' : user.last_role === 'approver' ? 'አጽዳቂ' : 'ተገምጋሚ'}
+                              {user.last_role === 'evaluator' ? 'መዛኝ' : user.last_role === 'approver' ? 'አጽዳቂ' : 'ተመዛኝ'}
                             </span>
                           )}
                         </div>
