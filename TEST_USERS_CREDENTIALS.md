@@ -4,28 +4,45 @@ This document contains all pre-configured credentials and test accounts across a
 
 ---
 
-## 📩 1. Complaints & Suggestions Management (የጥቆማ እና አቤቱታ ስርዓት)
+## 🏛️ 1. Institution Representative Accounts (የተቋም ተወካዮች)
+
+- **Login URL:** `/representative/login`
+- **Default Password for all Representatives:** `Password123!`
+- **Portal Purpose:** Regional & institutional representatives reporting data and managing local submissions.
+
+| Phone / Username | Password | Full Name | Region (ክልል/ተቋም) | Status |
+|---|---|---|---|---|
+| `0911000001` (or `+251911000001`) | `Password123!` | Sample Representative | አዲስ አበባ (Addis Ababa) | ✅ Active & Verified |
+| `0900969037` (or `+251900969037`) | `Password123!` | Rep ኦሮሚያ | ኦሮሚያ (Oromia) | ✅ Active & Verified |
+| `0900152023` (or `+251900152023`) | `Password123!` | Rep ሶማሌ | ሶማሌ (Somali) | ✅ Active & Verified |
+| `0900256415` (or `+251900256415`) | `Password123!` | Rep ቤን-ጉሙዝ | ቤን-ጉሙዝ (Benshangul-Gumuz) | ✅ Active & Verified |
+| `0900666379` (or `+251900666379`) | `Password123!` | Rep ጋምቤላ | ጋምቤላ (Gambella) | ✅ Active & Verified |
+| `0900668858` (or `+251900668858`) | `Password123!` | Rep ሐረሪ | ሐረሪ (Harari) | ✅ Active & Verified |
+| `0900764287` (or `+251900764287`) | `Password123!` | Rep ሲዳማ | ሲዳማ (Sidama) | ✅ Active & Verified |
+| `0900346639` (or `+251900346639`) | `Password123!` | Rep ደ/ም/ኢ/ያ | ደ/ም/ኢ/ያ (SWEP) | ✅ Active & Verified |
+| `0900866167` (or `+251900866167`) | `Password123!` | Rep ደቡብ ኢ/ያ | ደቡብ ኢ/ያ (South Ethiopia) | ✅ Active & Verified |
+| `0900543711` (or `+251900543711`) | `Password123!` | Rep ማዕ/ኢ/ያ | ማዕከላዊ ኢ/ያ (Central Ethiopia) | ✅ Active & Verified |
+| `0900631684` (or `+251900631684`) | `Password123!` | Rep አዲስ አበባ | አዲስ አበባ (Addis Ababa) | ✅ Active & Verified |
+| `0900691965` (or `+251900691965`) | `Password123!` | Rep ድሬ ዳዋ | ድሬ ዳዋ (Dire Dawa) | ✅ Active & Verified |
+| `0900268596` (or `+251900268596`) | `Password123!` | Rep ፌዴራል ተቋማት | ፌዴራል ተቋማት (Federal Inst.) | ✅ Active & Verified |
+| `0938560597` (or `+251938560597`) | `Password123!` | Alazar | ኦሮሚያ (Oromia) | ✅ Active & Verified |
+
+---
+
+## 📩 2. Complaints & Suggestions Management (የጥቆማ እና አቤቱታ ስርዓት)
 
 - **Login URL:** `/complaint/login` (or `/auth/login`)
-- **Portal Purpose:** Allows Committee Leaders and Complaints Officers to review submitted complaints & suggestions, assign handlers, change ticket statuses, attach decision files, and track SLAs.
 
 | Email | Password | Phone | Role | Module Access | Status |
 |---|---|---|---|---|---|
 | `leader@commission.gov` | `Password123!` | `0911223344` | Committee Leader (ኮሚቴ ሰብሳቢ) | Complaints, Abetuta, Tikoma | ✅ Active |
 | `leader2@commission.gov` | `Password123!` | `0911223345` | Committee Leader (ኮሚቴ ሰብሳቢ 2) | Complaints, Abetuta, Tikoma | ✅ Active |
 
-### 🧪 How to Test Complaints Management:
-1. Go to `/complaint/login` (or click "ለኮሚቴ አባላት / Committee Login").
-2. Enter email: `leader@commission.gov` and password: `Password123!`.
-3. You will be redirected to `/complaint/dashboard`.
-4. From here you can view all incoming complaints/suggestions, filter by region/status, update progress, upload resolution details, and respond to submitters.
-
 ---
 
-## ⚙️ 2. Admin Dashboard Credentials (የአስተዳዳሪ መግቢያ)
+## ⚙️ 3. Admin Dashboard Credentials (የአስተዳዳሪ መግቢያ)
 
 - **Login URL:** `/auth/login`
-- **Portal Purpose:** Full administrative oversight, user management, system audit logs, and module configurations.
 
 | Email | Password | Phone | System Role | Access Level |
 |---|---|---|---|---|
@@ -35,53 +52,13 @@ This document contains all pre-configured credentials and test accounts across a
 
 ---
 
-## 🏛️ 3. Institution Representative Accounts (የተቋም ተወካዮች)
-
-- **Login URL:** `/representative/login`
-- **Portal Purpose:** Regional & institutional representatives reporting data and managing local submissions.
-
-| Phone / Username | Password | Full Name | Region | System Role |
-|---|---|---|---|---|
-| `0911000001` (or `+251911000001`) | `Password123!` | Sample Representative | አዲስ አበባ (Addis Ababa) | Representative |
-
----
-
 ## 📊 4. Assessment Portal Credentials (ምዘና ፖርታል)
 
 - **Login URL:** `/assessment/login`
 - **Default Password:** `Password123!`
 
-### A. Tegemgami Accounts (ተመዛኞች / Regular Members — 10% Self Assessment)
-
-| Phone Number | Password | Full Name | Status / Action |
-|---|---|---|---|
-| `0911000101` | `Password123!` | አበበ ከበደ | ✅ Pre-filled & Completed |
-| `0911000102` | `Password123!` | ቻላ በቀለ | ✅ Pre-filled & Completed |
-| `0911000103` | `Password123!` | ሰለሞን ተስፋዬ | ✅ Pre-filled & Completed |
-| `0911000104` | `Password123!` | መሳይ ሀይሉ | ✅ Pre-filled & Completed |
-| `0911000105` | `Password123!` | **ትግስት አለሙ** | 📝 **PENDING (Fill Manually for Testing)** |
-
-### B. Gemgami Accounts (ገምጋሚዎች / Team Evaluators — 20% Peer Evaluation)
-
-| Phone Number | Password | Full Name | Status / Action |
-|---|---|---|---|
-| `0922000201` | `Password123!` | ዳዊት ገብሬ | ✅ Pre-filled & Completed |
-| `0922000202` | `Password123!` | ማርታ ታደሰ | ✅ Pre-filled & Completed |
-| `0922000203` | `Password123!` | **ዮናስ ታሪኩ** | 📝 **PENDING (Fill Manually for Testing)** |
-
-### C. Atsedaki Accounts (አጽዳቂዎች / Committee Leaders — 70% Approver Score & Finalization)
-
-| Phone Number | Password | Full Name | Status / Action |
-|---|---|---|---|
-| `0933000301` | `Password123!` | **ተክሌ ወልደጻድቅ** | 📝 **PENDING (Review & Finalize Manually)** |
-
----
-
-## 📌 Summary Quick Reference Table
-
-| Portal | Login Route | Primary Test Email / Phone | Password |
-|---|---|---|---|
-| **Complaints Portal** | `/complaint/login` | `leader@commission.gov` | `Password123!` |
-| **Admin Dashboard** | `/auth/login` | `superadmin@commission.gov` | `SuperAdmin#123` |
-| **Representative Portal** | `/representative/login` | `0911000001` | `Password123!` |
-| **Assessment Portal** | `/assessment/login` | `0911000105` | `Password123!` |
+| Role | Phone Number | Password | Full Name | Status |
+|---|---|---|---|---|
+| Tegemgami (Self 10%) | `0911000105` | `Password123!` | ትግስት አለሙ | 📝 Pending (Manual Test) |
+| Gemgami (Peer 20%) | `0922000203` | `Password123!` | ዮናስ ታሪኩ | 📝 Pending (Manual Test) |
+| Atsedaki (Approver 70%) | `0933000301` | `Password123!` | ተክሌ ወልደጻድቅ | 📝 Pending (Manual Test) |

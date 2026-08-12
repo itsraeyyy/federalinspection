@@ -101,8 +101,8 @@ export function AggregatedDataTab({ reports, schemas, year, period }: Aggregated
               </button>
 
               {isOpen && (
-                <div className="p-5 pt-0 border-t border-border-light bg-surface-secondary/10 overflow-x-auto">
-                  <table className="w-full text-left min-w-max mt-4 border-collapse">
+                <div className="p-3 sm:p-5 pt-0 border-t border-border-light bg-surface-secondary/10 overflow-x-auto max-w-full touch-pan-x scrollbar-thin">
+                  <table className="w-full text-left min-w-[750px] mt-4 border-collapse">
                     <thead className="bg-surface-secondary text-xs font-semibold text-text-secondary uppercase tracking-wider">
                       <tr>
                         <th className="px-4 py-3 border border-border-light text-center align-middle" rowSpan={2}>ክልል (Region)</th>

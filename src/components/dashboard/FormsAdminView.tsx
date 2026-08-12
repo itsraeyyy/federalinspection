@@ -42,7 +42,7 @@ export function FormsAdminView({ initialRepresentatives, initialReports, initial
         </div>
       </div>
 
-      <div className="bg-surface-primary rounded-2xl border border-border-light shadow-sm p-6 overflow-hidden relative">
+      <div className="bg-surface-primary rounded-2xl border border-border-light shadow-sm p-3 sm:p-6 overflow-hidden relative">
         {activeTab === 'reps' && <RepresentativesManager initialRepresentatives={initialRepresentatives} />}
         {activeTab === 'reports' && <AdminReportsTabsView initialReports={initialReports} initialSchemas={initialSchemas} />}
       </div>

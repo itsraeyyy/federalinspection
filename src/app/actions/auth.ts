@@ -168,7 +168,7 @@ export async function registerUserAction(formData: FormData) {
   }
 }
 
-export async function resolveLoginEmail(identifier: string) {
+export async function resolveLoginEmail(identifier: string, portalRole?: 'representative' | 'admin' | 'assessment') {
   const lowerId = identifier.trim().toLowerCase();
 
   if (lowerId === 'superadmin') {
@@ -187,6 +187,28 @@ export async function resolveLoginEmail(identifier: string) {
   const digitsOnly = rawPhone.replace(/\D/g, '');
   const e164Phone = rawPhone.startsWith('+') ? rawPhone : `+251${rawPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
   const localPhone = rawPhone.startsWith('0') ? rawPhone : `0${rawPhone.replace(/^\+?251/, '').replace(/\s+/g, '')}`;
+
+  // If logging in specifically from representative portal, check if user is a representative
+  if (portalRole === 'representative') {
+    const { data: userRec } = await supabaseAdmin
+      .from('users')
+      .select('id, phone_number')
+      .or(`phone_number.eq.${e164Phone},phone_number.eq.${localPhone},phone_number.eq.${rawPhone}`)
+      .maybeSingle();
+
+    if (userRec) {
+      const { data: prof } = await supabaseAdmin
+        .from('user_profiles')
+        .select('system_role')
+        .eq('user_id', userRec.id)
+        .maybeSingle();
+
+      if (prof?.system_role === 'representative') {
+        const cleanE164 = userRec.phone_number.startsWith('+') ? userRec.phone_number : `+251${userRec.phone_number.replace(/^0+/, '')}`;
+        return { email: `${cleanE164.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+      }
+    }
+  }
 
   // Check if it's an admin first
   const { data: adminData } = await supabaseAdmin

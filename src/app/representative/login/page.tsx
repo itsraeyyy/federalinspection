@@ -25,7 +25,7 @@ export default function FormsLoginPage() {
 
     try {
       await verifyLoginAttempt();
-      const { email: authEmail } = await resolveLoginEmail(phone);
+      const { email: authEmail } = await resolveLoginEmail(phone, 'representative');
 
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: authEmail,

@@ -51,7 +51,7 @@ export function AdminReportsTabsView({ initialReports, initialSchemas }: { initi
         </div>
       </div>
 
-      <div className="bg-surface-primary rounded-2xl border border-border-light shadow-sm p-6">
+      <div className="bg-surface-primary rounded-2xl border border-border-light shadow-sm p-3 sm:p-6">
         {activeTab === 'region' && (
           <RegionReportTab initialReports={reports} schemas={schemas} />
         )}

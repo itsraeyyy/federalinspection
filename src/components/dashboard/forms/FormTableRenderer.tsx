@@ -21,6 +21,21 @@ interface FormTableRendererProps {
   compact?: boolean;
 }
 
+function toPrimitiveString(val: any): string {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'object') {
+    if (val[''] !== undefined && val[''] !== null && typeof val[''] !== 'object') {
+      return String(val['']);
+    }
+    const keys = Object.keys(val);
+    if (keys.length > 0 && typeof val[keys[0]] !== 'object') {
+      return String(val[keys[0]]);
+    }
+    return '';
+  }
+  return String(val);
+}
+
 export function FormTableRenderer({ schema, initialData = {}, onChange, isCompleted, compact = false }: FormTableRendererProps) {
   const [isOpen, setIsOpen] = useState(compact ? true : false);
   
@@ -34,6 +49,9 @@ export function FormTableRenderer({ schema, initialData = {}, onChange, isComple
     }
     
     if (subKey) {
+      if (typeof newData[colKey] !== 'object' || newData[colKey] === null) {
+        newData[colKey] = {};
+      }
       newData[colKey][subKey] = value;
     } else {
       newData[colKey] = value;
@@ -45,90 +63,177 @@ export function FormTableRenderer({ schema, initialData = {}, onChange, isComple
   };
 
   const tableBody = (
-    <div className={`overflow-x-auto ${compact ? '' : 'pb-2'}`}>
-      <table className="w-full text-left min-w-[600px] md:min-w-full">
-        <thead className="bg-surface-secondary rounded-xl text-xs font-semibold text-text-secondary uppercase tracking-wider">
-          <tr>
-            <th className="px-4 py-3 rounded-tl-xl rounded-bl-xl w-1/3">ዝርዝር (Category)</th>
-            {schema.columns[0]?.subKeys.length > 0 ? (
-              <th className="px-4 py-3 text-center rounded-tr-xl rounded-br-xl" colSpan={schema.columns[0].subKeys.length}>
-                መረጃ (Data)
-              </th>
-            ) : (
-              <th className="px-4 py-3 rounded-tr-xl rounded-br-xl">መረጃ (Data)</th>
-            )}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border-light">
-          {schema.columns.map((col, idx) => (
-            <tr key={col.key} className="hover:bg-surface-secondary/30 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-text-primary w-1/3">
-                {col.key}
-              </td>
-              <td className="px-4 py-3">
-                {col.subKeys.length > 0 ? (
-                  <div className="flex gap-3">
-                    {col.subKeys.map(subKey => {
-                      const isComputed = isCalculatedField(col.key, subKey, col.subKeys, schema.columns);
-                      const displayVal = computedData[col.key]?.[subKey] ?? '';
-                      return (
-                        <div key={subKey} className="flex-1 space-y-1.5">
-                          <label className="text-xs text-text-muted block md:hidden">{subKey}</label>
-                          <div className="relative group">
-                            <span className="absolute -top-2.5 left-2 bg-surface-primary px-1 text-[10px] text-text-muted font-medium hidden md:block z-10">
-                              {subKey}
-                            </span>
-                            <input
-                              type={isComputed && (subKey.includes("%") || col.key === "ያዋቀሩ%") ? "text" : "number"}
-                              readOnly={isComputed}
-                              disabled={isComputed}
-                              value={displayVal}
-                              onChange={(e) => !isComputed && handleInputChange(col.key, subKey, e.target.value)}
-                              className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
-                                isComputed
-                                  ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
-                                  : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
-                              }`}
-                              placeholder={isComputed ? "0" : "0"}
-                            />
-                            {isComputed && (
-                              <span className="absolute right-2 top-2 text-[10px] font-bold text-brand-blue/70 pointer-events-none uppercase hidden group-hover:inline-block transition-opacity">
-                                አውቶ
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  (() => {
-                    const isComputed = isCalculatedField(col.key, "", [], schema.columns);
-                    const displayVal = computedData[col.key] ?? '';
+    <div className="w-full">
+      {/* Mobile Stacked View: Category Text AT ABOVE, Input Boxes AT BOTTOM */}
+      <div className="block md:hidden space-y-3.5">
+        {schema.columns.map((col, idx) => (
+          <div key={col.key} className="bg-surface-primary p-4 rounded-xl border border-border-light shadow-xs space-y-3">
+            {/* Category Text at ABOVE */}
+            <div className="text-sm font-bold text-text-primary leading-snug">
+              <span className="inline-block bg-brand-blue/10 text-brand-blue text-xs font-mono px-2 py-0.5 rounded-md mr-2">
+                #{idx + 1}
+              </span>
+              {col.key}
+            </div>
+
+            {/* Input Boxes at BOTTOM */}
+            <div className="pt-1">
+              {col.subKeys.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {col.subKeys.map(subKey => {
+                    const isComputed = isCalculatedField(col.key, subKey, col.subKeys, schema.columns);
+                    const displayVal = toPrimitiveString(computedData[col.key]?.[subKey]);
                     return (
-                      <div className="relative group">
-                        <input
-                          type={isComputed ? "text" : "text"}
-                          readOnly={isComputed}
-                          disabled={isComputed}
-                          value={displayVal}
-                          onChange={(e) => !isComputed && handleInputChange(col.key, '', e.target.value)}
-                          className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
-                            isComputed
-                              ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
-                              : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
-                          }`}
-                          placeholder={isComputed ? "0" : "-"}
-                        />
+                      <div key={subKey} className="space-y-1.5">
+                        <label className="text-xs font-semibold text-text-secondary block">
+                          {subKey}
+                        </label>
+                        <div className="relative group">
+                          <input
+                            type={isComputed && (subKey.includes("%") || col.key === "ያዋቀሩ%") ? "text" : "number"}
+                            readOnly={isComputed}
+                            disabled={isComputed}
+                            value={displayVal}
+                            onChange={(e) => !isComputed && handleInputChange(col.key, subKey, e.target.value)}
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-sm transition-all ${
+                              isComputed
+                                ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
+                                : 'bg-surface-secondary/40 border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20'
+                            }`}
+                            placeholder={isComputed ? "0" : "0"}
+                          />
+                          {isComputed && (
+                            <span className="absolute right-2.5 top-2.5 text-[10px] font-bold text-brand-blue uppercase pointer-events-none">
+                              አውቶ
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
-                  })()
-                )}
-              </td>
+                  })}
+                </div>
+              ) : (
+                (() => {
+                  const isComputed = isCalculatedField(col.key, "", [], schema.columns);
+                  const displayVal = toPrimitiveString(computedData[col.key]);
+                  return (
+                    <div className="relative group space-y-1.5">
+                      <label className="text-xs font-semibold text-text-secondary block">
+                        መረጃ (Data)
+                      </label>
+                      <input
+                        type="text"
+                        readOnly={isComputed}
+                        disabled={isComputed}
+                        value={displayVal}
+                        onChange={(e) => !isComputed && handleInputChange(col.key, '', e.target.value)}
+                        className={`w-full px-3.5 py-2.5 rounded-xl text-sm transition-all ${
+                          isComputed
+                            ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
+                            : 'bg-surface-secondary/40 border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20'
+                        }`}
+                        placeholder={isComputed ? "0" : "-"}
+                      />
+                      {isComputed && (
+                        <span className="absolute right-2.5 top-8 text-[10px] font-bold text-brand-blue uppercase pointer-events-none">
+                          አውቶ
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop / Horizontally Scrollable Table View */}
+      <div className="hidden md:block overflow-x-auto pb-2 scrollbar-thin">
+        <table className="w-full text-left min-w-[650px] md:min-w-full">
+          <thead className="bg-surface-secondary rounded-xl text-xs font-semibold text-text-secondary uppercase tracking-wider">
+            <tr>
+              <th className="px-4 py-3 rounded-tl-xl rounded-bl-xl w-1/3">ዝርዝር (Category)</th>
+              {schema.columns[0]?.subKeys.length > 0 ? (
+                <th className="px-4 py-3 text-center rounded-tr-xl rounded-br-xl" colSpan={schema.columns[0].subKeys.length}>
+                  መረጃ (Data)
+                </th>
+              ) : (
+                <th className="px-4 py-3 rounded-tr-xl rounded-br-xl">መረጃ (Data)</th>
+              )}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border-light">
+            {schema.columns.map((col, idx) => (
+              <tr key={col.key} className="hover:bg-surface-secondary/30 transition-colors">
+                <td className="px-4 py-4 text-sm font-medium text-text-primary w-1/3">
+                  {col.key}
+                </td>
+                <td className="px-4 py-3">
+                  {col.subKeys.length > 0 ? (
+                    <div className="flex gap-3">
+                      {col.subKeys.map(subKey => {
+                        const isComputed = isCalculatedField(col.key, subKey, col.subKeys, schema.columns);
+                        const displayVal = toPrimitiveString(computedData[col.key]?.[subKey]);
+                        return (
+                          <div key={subKey} className="flex-1 space-y-1.5">
+                            <label className="text-xs text-text-muted block md:hidden">{subKey}</label>
+                            <div className="relative group">
+                              <span className="absolute -top-2.5 left-2 bg-surface-primary px-1 text-[10px] text-text-muted font-medium hidden md:block z-10">
+                                {subKey}
+                              </span>
+                              <input
+                                type={isComputed && (subKey.includes("%") || col.key === "ያዋቀሩ%") ? "text" : "number"}
+                                readOnly={isComputed}
+                                disabled={isComputed}
+                                value={displayVal}
+                                onChange={(e) => !isComputed && handleInputChange(col.key, subKey, e.target.value)}
+                                className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
+                                  isComputed
+                                    ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
+                                    : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
+                                }`}
+                                placeholder={isComputed ? "0" : "0"}
+                              />
+                              {isComputed && (
+                                <span className="absolute right-2 top-2 text-[10px] font-bold text-brand-blue/70 pointer-events-none uppercase hidden group-hover:inline-block transition-opacity">
+                                  አውቶ
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    (() => {
+                      const isComputed = isCalculatedField(col.key, "", [], schema.columns);
+                      const displayVal = toPrimitiveString(computedData[col.key]);
+                      return (
+                        <div className="relative group">
+                          <input
+                            type={isComputed ? "text" : "text"}
+                            readOnly={isComputed}
+                            disabled={isComputed}
+                            value={displayVal}
+                            onChange={(e) => !isComputed && handleInputChange(col.key, '', e.target.value)}
+                            className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
+                              isComputed
+                                ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
+                                : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
+                            }`}
+                            placeholder={isComputed ? "0" : "-"}
+                          />
+                        </div>
+                      );
+                    })()
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
