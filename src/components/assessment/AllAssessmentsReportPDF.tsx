@@ -138,7 +138,7 @@ export function AllAssessmentsReportPDF({ user, profile, history = [] }: AllAsse
   const dateStr = new Date().toLocaleDateString('am-ET');
 
   return (
-    <Document title={`${user?.full_name || 'User'}_All_Assessments_Report`} author="Federal Inspection ICODS">
+    <Document title={`${user?.full_name || 'User'}_All_Assessments_Report`} author="Federal Inspection ICODiS">
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
@@ -206,7 +206,7 @@ export function AllAssessmentsReportPDF({ user, profile, history = [] }: AllAsse
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text>የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን | ICODS System — Generated Automatically</Text>
+          <Text>የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን | ICODiS System — Generated Automatically</Text>
         </View>
       </Page>
     </Document>

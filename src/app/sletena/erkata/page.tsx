@@ -70,7 +70,7 @@ function PublicSatisfactionFormContent() {
         {/* Google Form-style Public Header Banner (Identical to Need Form) */}
         <div className="bg-gradient-to-r from-brand-blue via-blue-600 to-indigo-700 rounded-2xl p-6 sm:p-8 text-white shadow-lg space-y-3 relative overflow-hidden">
           <div className="absolute right-[-20px] top-[-20px] opacity-10 text-9xl font-black select-none">
-            ICODS
+            ICODiS
           </div>
           <div className="flex items-center gap-3.5">
             <Image
