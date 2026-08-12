@@ -120,7 +120,7 @@ export async function GET(request: Request) {
               name: 'የኮሚቴ ሰብሳቢ (Committee Leader)',
               subject: `ICODiS አስቸኳይ፡ የ15 ቀናት የጊዜ ገደብ ያለቀበት ${typeLabel} (${ticket.tracking_code})`,
               message: escalationSms,
-              loginPath: '/dashboard/committee-leader',
+              loginPath: '/complaint/dashboard',
             });
           } catch (e) {
             console.error(`Failed sending escalation email to ${leader.email}:`, e);

@@ -72,7 +72,7 @@ export default function ComplaintLoginPage() {
           return;
         }
 
-        window.location.href = '/dashboard/committee-leader';
+        window.location.href = '/complaint/dashboard';
       }
     } catch (error: any) {
       setErrorMsg(maskSupabaseError(error));
@@ -113,7 +113,7 @@ export default function ComplaintLoginPage() {
           .eq('id', user.id)
           .single();
         if (profile?.role === 'committee_leader') {
-          targetUrl = '/dashboard/committee-leader';
+          targetUrl = '/complaint/dashboard';
         }
         await supabase
           .from('admin_profiles')

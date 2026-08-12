@@ -108,7 +108,7 @@ export default function LoginPage() {
           .eq('id', user.id)
           .single();
         if (profile?.role === 'committee_leader') {
-          targetUrl = '/dashboard/committee-leader';
+          targetUrl = '/complaint/dashboard';
         }
         await supabase
           .from('admin_profiles')

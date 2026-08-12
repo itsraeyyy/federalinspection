@@ -43,7 +43,7 @@ function mapRowToComplaint(item: any): Complaint {
     status: item.status,
     resolution: item.resolution,
     groupMembers: item.group_members || [],
-    assignedCommittee: (item.resolution as any)?.assignedCommittee || undefined,
+    assignedCommittee: item.assigned_committee || (item.resolution as any)?.assignedCommittee || undefined,
     serviceName: item.service_name,
     resolutionRating: item.resolution_rating,
     resolutionFeedback: item.resolution_feedback,
@@ -372,7 +372,7 @@ export const complaintService = {
                 name: 'የኮሚቴ ሰብሳቢ (Leader)',
                 subject: 'ICODiS — የውሳኔ ሀሳብ ለጽድቅ ቀርቧል (Pending Approval)',
                 message: `ለማጽደቅ የቀረበ አዲስ የውሳኔ ሀሳብ አለ። መከታተያ ኮድ፡ [${updatedComplaint?.tracking_code || id}]። እባክዎ በመግባት ውሳኔውን ያረጋግጡና ያጽድቁ።`,
-                loginPath: '/dashboard/committee-leader',
+                loginPath: '/complaint/dashboard',
               });
             } catch (e) {
               console.error('Failed notifying committee leader:', e);
@@ -429,7 +429,7 @@ export const complaintService = {
               name: 'የኮሚቴ ሰብሳቢ (Leader)',
               subject: 'ICODiS — አዲስ ጉዳይ ለኮሚቴ ምደባ (Awaiting Assignment)',
               message: msg,
-              loginPath: '/dashboard/committee-leader',
+              loginPath: '/complaint/dashboard',
             });
           } catch (e) {
             console.error('Failed notifying leader:', e);
@@ -448,6 +448,7 @@ export const complaintService = {
         status: 'Processing',
         processed_by: leaderName,
         processed_at: new Date().toISOString(),
+        assigned_committee: committeeName,
         resolution: {
           assignedCommittee: committeeName,
           slaDeadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
@@ -542,7 +543,7 @@ export const complaintService = {
               name: 'የኮሚቴ ሰብሳቢ (Leader)',
               subject: 'ICODiS — የውሳኔ ሀሳብ ለጽድቅ ቀርቧል (Pending Approval)',
               message: `ለማጽደቅ የቀረበ አዲስ የውሳኔ ሀሳብ አለ። እባክዎ በመግባት ውሳኔውን ያረጋግጡና ያጽድቁ።`,
-              loginPath: '/dashboard/committee-leader',
+              loginPath: '/complaint/dashboard',
             });
           } catch (e) {
             console.error('Failed notifying leader for approval:', e);

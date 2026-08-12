@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 const LINE_1 = "የተቀናጀ የኮሚሽን ሥራዎች";
-const LINE_2 = "ዲጂታል ስርዓት (ICODiS)";
+const LINE_2 = "ዲጂታል ሥርዓት (ICODiS)";
 const FULL_TEXT = LINE_1 + "\n" + LINE_2;
 const TYPING_SPEED = 80;
 
