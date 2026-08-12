@@ -6,11 +6,13 @@ import { IconDownload, IconLoader2 } from '@tabler/icons-react';
 interface PdfExportButtonProps {
   elementId?: string;
   reportTitle?: string;
+  filename?: string;
 }
 
 export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
   elementId = 'sletena-report-view',
   reportTitle = 'የስልጠና ፍላጎት እና ትንተና ሙሉ ሪፖርት',
+  filename,
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -35,11 +37,12 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
       const jsPDFModule = await import('jspdf');
       const jsPDF = jsPDFModule.jsPDF;
 
-      const safeTitle = reportTitle
-        ? reportTitle.toLowerCase().replace(/[^a-z0-9_á-źä-ወ]+/gi, '_').replace(/_+/g, '_')
-        : 'sletena_report';
-
-      const filename = `${safeTitle}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Construct clean, publication-ready filename preserving Amharic & English characters
+      const rawTitle = filename || reportTitle || `Training Needs Form - ${new Date().toISOString().split('T')[0]}`;
+      const sanitizedTitle = rawTitle.replace(/[/\\?%*:|"<>]/g, '').trim();
+      const pdfFilename = sanitizedTitle.toLowerCase().endsWith('.pdf')
+        ? sanitizedTitle
+        : `${sanitizedTitle}.pdf`;
 
       // Filter out action buttons during capture
       const filterNode = (node: HTMLElement) => {
@@ -141,7 +144,7 @@ export const PdfExportButton: React.FC<PdfExportButtonProps> = ({
       }
 
       // Save PDF file directly (downloads to user's computer)
-      pdf.save(filename);
+      pdf.save(pdfFilename);
     } catch (err) {
       console.error('[PDF Export Error]:', err);
     } finally {

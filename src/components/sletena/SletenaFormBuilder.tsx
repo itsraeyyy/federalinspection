@@ -218,10 +218,17 @@ export const SletenaFormBuilder: React.FC<SletenaFormBuilderProps> = ({
     setEditingQuestionId(null);
   };
 
-  // Main Form Submit
   const handleSaveForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) return;
+
+    // Filter questions array so only checkmarked/selected directives are saved
+    const activeQuestions =
+      selectedDirectiveIds.length > 0
+        ? questions.filter(
+            (q) => selectedDirectiveIds.includes(q.id) || selectedDirectiveIds.includes(q.code)
+          )
+        : questions;
 
     const finalCategory: TrainingCategory = {
       id: category?.id || `cat-${Date.now()}`,
@@ -232,7 +239,7 @@ export const SletenaFormBuilder: React.FC<SletenaFormBuilderProps> = ({
       isActive,
       shareableLink: category?.shareableLink || `https://icods.raey.work/sletena/submit?cat=${Date.now()}`,
       selectedDirectiveIds,
-      questions,
+      questions: activeQuestions,
       maxWoredas,
     };
 
@@ -257,16 +264,19 @@ export const SletenaFormBuilder: React.FC<SletenaFormBuilderProps> = ({
 
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-2 mr-2">
-            <input
-              type="checkbox"
-              id="formActiveCheck"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="rounded text-brand-blue focus:ring-brand-blue cursor-pointer"
-            />
-            <label htmlFor="formActiveCheck" className="text-xs font-bold text-text-primary cursor-pointer">
-              ቅጹ ንቁ (Active) ይሁን
-            </label>
+            <button
+              type="button"
+              onClick={() => setIsActive(!isActive)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer select-none ${
+                isActive
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20'
+                  : 'bg-rose-500/10 text-rose-600 border-rose-500/30 hover:bg-rose-500/20'
+              }`}
+              title="የቅጹን ሁኔታ ይቀይሩ (ON = ምላሽ ይቀበላል, OFF = ይዘጋል)"
+            >
+              <span className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              <span>{isActive ? 'ቅጹ ክፍት ነው (ON / Active)' : 'ቅጹ ተዘግቷል (OFF / Inactive)'}</span>
+            </button>
           </div>
 
           <button

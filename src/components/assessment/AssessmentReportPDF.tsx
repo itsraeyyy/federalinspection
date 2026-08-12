@@ -281,54 +281,56 @@ export function AssessmentReportPDF({
           </View>
         </View>
 
-        {/* 3. Overall Summary Score Block (Includes 70%, 100%, and Final Grade) */}
-        <View style={{ border: '1pt solid #000000', marginBottom: 8, backgroundColor: '#ffffff' }}>
-          <View style={{ backgroundColor: '#f3f4f6', padding: '3pt 6pt', borderBottom: '1pt solid #000000' }}>
-            <Text style={{ fontSize: 7.5, fontWeight: 700 }}>{'የአፈጻጸም ማጠቃለያ ውጤት (Overall Evaluation Score Summary)'}</Text>
+        {/* 3 & 4. Overall Summary Score Block & Grade Scale (Moved to Page 2 cleanly) */}
+        <View break wrap={false}>
+          <View wrap={false} style={{ border: '1pt solid #000000', marginBottom: 8, backgroundColor: '#ffffff' }}>
+            <View style={{ backgroundColor: '#f3f4f6', padding: '3pt 6pt', borderBottom: '1pt solid #000000' }}>
+              <Text style={{ fontSize: 7.5, fontWeight: 700 }}>{'የአፈጻጸም ማጠቃለያ ውጤት (Overall Evaluation Score Summary)'}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', borderBottom: '1pt solid #000000' }}>
+              <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የራስ ምዘና (10%)'}</Text>
+              <Text style={{ width: '11%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{self10.toFixed(1)}</Text>
+              
+              <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የአቻዎች ምዘና (20%)'}</Text>
+              <Text style={{ width: '12%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{peer20.toFixed(1)}</Text>
+              
+              <Text style={{ width: '21%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የ30% ድምር'}</Text>
+              <Text style={{ width: '14%', fontSize: 7, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', textAlign: 'center' }}>{sum30.toFixed(1)}</Text>
+            </View>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የአጽዳቂ/ኮሚቴ (70%)'}</Text>
+              <Text style={{ width: '11%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{appr70.toFixed(1)}</Text>
+              
+              <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የ100% አጠቃላይ ውጤት'}</Text>
+              <Text style={{ width: '12%', fontSize: 7.5, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{`${final100.toFixed(1)}%`}</Text>
+              
+              <Text style={{ width: '21%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የበላይ ደረጃ'}</Text>
+              <Text style={{ width: '14%', fontSize: 7.5, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', textAlign: 'center' }}>{grade}</Text>
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', borderBottom: '1pt solid #000000' }}>
-            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የራስ ምዘና (10%)'}</Text>
-            <Text style={{ width: '11%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{self10.toFixed(1)}</Text>
-            
-            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የአቻዎች ምዘና (20%)'}</Text>
-            <Text style={{ width: '12%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{peer20.toFixed(1)}</Text>
-            
-            <Text style={{ width: '21%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የ30% ድምር'}</Text>
-            <Text style={{ width: '14%', fontSize: 7, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', textAlign: 'center' }}>{sum30.toFixed(1)}</Text>
-          </View>
-          <View style={{ flexDirection: 'row' }}>
-            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የአጽዳቂ/ኮሚቴ (70%)'}</Text>
-            <Text style={{ width: '11%', fontSize: 7, padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{appr70.toFixed(1)}</Text>
-            
-            <Text style={{ width: '22%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የ100% አጠቃላይ ውጤት'}</Text>
-            <Text style={{ width: '12%', fontSize: 7.5, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', borderRight: '1pt solid #000000', textAlign: 'center' }}>{`${final100.toFixed(1)}%`}</Text>
-            
-            <Text style={{ width: '21%', fontSize: 7, fontWeight: 700, padding: '3pt 4pt', backgroundColor: '#f9fafb', borderRight: '1pt solid #000000' }}>{'የበላይ ደረጃ'}</Text>
-            <Text style={{ width: '14%', fontSize: 7.5, fontWeight: 700, color: '#0284c7', padding: '3pt 4pt', textAlign: 'center' }}>{grade}</Text>
-          </View>
-        </View>
 
-        {/* 4. Grade Scale */}
-        <View style={styles.bottomSection}>
-          <View style={[styles.gradeTable, { width: '100%' }]}>
-            <View style={[styles.gradeRow, { backgroundColor: '#f3f4f6' }]}>
-              <Text style={[styles.gradeLabel, { fontWeight: 700, width: '100%' }]}>{'የውጤት አሰጣጥ መመሪያ'}</Text>
-            </View>
-            <View style={styles.gradeRow}>
-              <Text style={styles.gradeLabel}>{'1. በጣም ከፍተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'ከ 90% እስከ 100%'}</Text>
-            </View>
-            <View style={styles.gradeRow}>
-              <Text style={styles.gradeLabel}>{'2. ከፍተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'ከ 80% እስከ 89%'}</Text>
-            </View>
-            <View style={styles.gradeRow}>
-              <Text style={styles.gradeLabel}>{'3. መካከለኛ'}</Text>
-              <Text style={styles.gradeValue}>{'ከ 70% እስከ 79%'}</Text>
-            </View>
-            <View style={[styles.gradeRow, { borderBottom: 'none' }]}>
-              <Text style={styles.gradeLabel}>{'4. ዝቅተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'ከ 70% በታች'}</Text>
+          {/* 4. Grade Scale */}
+          <View wrap={false} style={styles.bottomSection}>
+            <View style={[styles.gradeTable, { width: '100%' }]}>
+              <View style={[styles.gradeRow, { backgroundColor: '#f3f4f6' }]}>
+                <Text style={[styles.gradeLabel, { fontWeight: 700, width: '100%' }]}>{'የውጤት አሰጣጥ መመሪያ'}</Text>
+              </View>
+              <View style={styles.gradeRow}>
+                <Text style={styles.gradeLabel}>{'1. በጣም ከፍተኛ'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 90% እስከ 100%'}</Text>
+              </View>
+              <View style={styles.gradeRow}>
+                <Text style={styles.gradeLabel}>{'2. ከፍተኛ'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 80% እስከ 89%'}</Text>
+              </View>
+              <View style={styles.gradeRow}>
+                <Text style={styles.gradeLabel}>{'3. መካከለኛ'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 70% እስከ 79%'}</Text>
+              </View>
+              <View style={[styles.gradeRow, { borderBottom: 'none' }]}>
+                <Text style={styles.gradeLabel}>{'4. ዝቅተኛ'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 70% በታች'}</Text>
+              </View>
             </View>
           </View>
         </View>

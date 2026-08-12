@@ -207,16 +207,24 @@ export const DataManagementTable: React.FC<DataManagementTableProps> = ({
                     </p>
                   </div>
 
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onUpdateCategory) {
+                        onUpdateCategory({ ...cat, isActive: !cat.isActive });
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer select-none border ${
                       cat.isActive
-                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                        : 'bg-gray-500/10 text-gray-500 border border-gray-500/20'
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20'
+                        : 'bg-rose-500/10 text-rose-600 border-rose-500/30 hover:bg-rose-500/20'
                     }`}
+                    title="ቅጹን ለመክፈት ወይም ለመዝጋት ይጫኑ (Toggle ON/OFF)"
                   >
-                    <span className={`w-2 h-2 rounded-full ${cat.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                    {cat.isActive ? 'ንቁ' : 'ቦዝ'}
-                  </span>
+                    <span className={`w-2 h-2 rounded-full ${cat.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                    <span>{cat.isActive ? 'ክፍት (ON)' : 'የተዘጋ (OFF)'}</span>
+                  </button>
                 </div>
 
                 {/* Card Info & Action Footer */}

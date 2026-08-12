@@ -69,7 +69,8 @@ export default function YesltenaFlagotPage() {
     setCategories((prev) => [created, ...prev]);
   };
 
-  const handleUpdateCategory = (updatedCategory: TrainingCategory) => {
+  const handleUpdateCategory = async (updatedCategory: TrainingCategory) => {
+    await sletenaService.updateCategory(updatedCategory);
     setCategories((prev) => prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c)));
     if (selectedCategory?.id === updatedCategory.id) {
       setSelectedCategory(updatedCategory);

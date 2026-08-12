@@ -77,7 +77,8 @@ export const SingleFormDetailView: React.FC<SingleFormDetailViewProps> = ({
 
           <PdfExportButton
             elementId="single-form-detail-report-container"
-            reportTitle={`የቅጽ_ሪፖርት_${category.title.replace(/\s+/g, '_')}`}
+            reportTitle={`Training Needs Form - ${category.title}`}
+            filename={`${category.title} - Training Needs Form (${category.dateCreated || new Date().toISOString().split('T')[0]})`}
           />
         </div>
       </div>

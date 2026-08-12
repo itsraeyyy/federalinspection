@@ -385,7 +385,12 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
           )}
           <PdfExportButton
             elementId="satisfaction-report-container"
-            reportTitle={category ? `የዕርካታ_ሪፖርት_${category.title.replace(/\s+/g, '_')}` : 'የስልጠና_ዕርካታ_ሪፖርት'}
+            reportTitle={category ? `Training Satisfaction Form - ${category.title}` : 'Training Satisfaction Form'}
+            filename={
+              category
+                ? `${category.title} - Training Satisfaction Form (${category.dateCreated || new Date().toISOString().split('T')[0]})`
+                : `Training Satisfaction Form (${new Date().toISOString().split('T')[0]})`
+            }
           />
         </div>
       </div>

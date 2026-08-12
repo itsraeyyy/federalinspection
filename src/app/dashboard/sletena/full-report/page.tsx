@@ -60,7 +60,8 @@ export default function SletenaFullReportPage() {
           <div className="flex items-center gap-3 shrink-0">
             <PdfExportButton
               elementId="sletena-report-view"
-              reportTitle="የስልጠና_ፍላጎት_እና_ዕርካታ_ሙሉ_ሪፖርት"
+              reportTitle="Training Needs & Satisfaction Executive Report"
+              filename={`Training Needs & Satisfaction Executive Report (${new Date().toISOString().split('T')[0]})`}
             />
           </div>
         </div>

@@ -131,7 +131,16 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
 
     if (category) {
       if (category.questions && category.questions.length > 0) {
-        list = category.questions.map((q) => {
+        const rawQuestions =
+          category.selectedDirectiveIds && category.selectedDirectiveIds.length > 0
+            ? category.questions.filter(
+                (q) =>
+                  category.selectedDirectiveIds?.includes(q.id) ||
+                  category.selectedDirectiveIds?.includes(q.code)
+              )
+            : category.questions;
+
+        list = rawQuestions.map((q) => {
           let cleanTitle = q.title;
           let cleanDesc = q.description || '';
 
@@ -345,6 +354,9 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
     };
   }, [filteredSubmissions, feedbackSearch]);
 
+  const topCount5 = Math.min(5, Math.max(1, activeDirectives.length || 5));
+  const topCount3 = Math.min(3, Math.max(1, activeDirectives.length || 3));
+
   return (
     <div id="need-report-container" className="space-y-8">
       {/* Report Banner & Controls */}
@@ -387,7 +399,15 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
               </select>
             </div>
 
-            <PdfExportButton elementId="need-report-container" reportTitle="የስልጠና_ፍላጎት_አጠቃላይ_ሪፖርት" />
+            <PdfExportButton
+              elementId="need-report-container"
+              reportTitle={category ? `Training Needs Form - ${category.title}` : 'Training Needs Form'}
+              filename={
+                category
+                  ? `${category.title} - Training Needs Form (${category.dateCreated || new Date().toISOString().split('T')[0]})`
+                  : `Training Needs Form (${new Date().toISOString().split('T')[0]})`
+              }
+            />
           </div>
         </div>
       ) : (
@@ -418,7 +438,6 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
             <IconUsers size={20} className="text-brand-blue" />
           </div>
           <div className="text-3xl font-black text-brand-blue">{filteredSubmissions.length}</div>
-          <div className="text-[11px] text-text-secondary">የተሳተፉ አባላት/አመራሮች</div>
         </div>
 
         <div className="bg-surface-primary border border-border/50 rounded-xl p-5 shadow-sm space-y-1">
@@ -426,8 +445,8 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
             <span className="text-xs font-bold uppercase">ከፍተኛ የስልጠና ፍላጎቶች</span>
             <IconFlame size={20} className="text-rose-500" />
           </div>
-          <div className="text-3xl font-black text-rose-600">5</div>
-          <div className="text-[11px] text-text-secondary">አስቸኳይ ስልጠና የሚሹ ዋና ዋና መመሪያዎች (Top 5)</div>
+          <div className="text-3xl font-black text-rose-600">{topCount5}</div>
+          <div className="text-[11px] text-text-secondary">አስቸኳይ ስልጠና የሚሹ ዋና ዋና መመሪያዎች (Top {topCount5})</div>
         </div>
 
         <div className="bg-surface-primary border border-border/50 rounded-xl p-5 shadow-sm space-y-1">
@@ -463,7 +482,7 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
                 የስልጠና ትግበራ ውሳኔ እና የአሰልጣኝነት የውሳኔ ሃሳብ (Executive Training Action Plan & Recommendations)
               </h3>
               <p className="text-xs text-text-muted mt-0.5">
-                በአባላት የፍላጎት ምዘና እና በቅድሚያ ምርጫ ውጤት መሰረት ስልጠና ለመጀመር የተመረጡ ከፍተኛ 3 መመሪያዎች እና የትግበራ አቅጣጫ::
+                በአባላት የፍላጎት ምዘና እና በቅድሚያ ምርጫ ውጤት መሰረት ስልጠና ለመጀመር የተመረጡ ከፍተኛ {topCount3} መመሪያዎች እና የትግበራ አቅጣጫ::
               </p>
             </div>
           </div>
@@ -476,11 +495,11 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
         <div className="space-y-3">
           <h4 className="text-xs font-extrabold text-brand-blue uppercase tracking-wider flex items-center gap-1.5">
             <IconFlame className="text-rose-500" size={16} />
-            ለስልጠና አስቸኳይ ትግበራ የተመረጡ 3 ዋና ዋና መመሪያዎች (Top 3 Priority Directives to Start Training)
+            ለስልጠና አስቸኳይ ትግበራ የተመረጡ {topCount3} ዋና ዋና መመሪያዎች (Top {topCount3} Priority Directives to Start Training)
           </h4>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {sortedNeededTopics.slice(0, 3).map((topic, i) => {
+            {sortedNeededTopics.slice(0, topCount3).map((topic, i) => {
               const needPct = Math.round((topic.currentScore / 5.0) * 100);
               const votes = topPriorityVotesMap[topic.directiveId] || topPriorityVotesMap[topic.directiveCode] || 0;
               const totalSubs = filteredSubmissions.length;
@@ -718,16 +737,16 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
           <div className="flex items-center gap-2">
             <IconFlame className="text-rose-500" size={22} />
             <h3 className="text-base font-extrabold text-text-primary">
-              Section 2 Analytics: ከፍተኛ የስልጠና ፍላጎት ያላቸው 5 መመሪያዎች (Top 5 Training Needs)
+              Section 2 Analytics: ከፍተኛ የስልጠና ፍላጎት ያላቸው {topCount5} መመሪያዎች (Top {topCount5} Training Needs)
             </h3>
           </div>
           <span className="text-xs font-bold px-2.5 py-1 bg-rose-500/10 text-rose-600 rounded-lg">
-            ክፍል 2 (Top 5)
+            ክፍል 2 (Top {topCount5})
           </span>
         </div>
 
         <div className="space-y-3">
-          {sortedNeededTopics.slice(0, 5).map((topic, index) => {
+          {sortedNeededTopics.slice(0, topCount5).map((topic, index) => {
             const isHigh = topic.priorityFlag === 'HIGH';
             const isMedium = topic.priorityFlag === 'MEDIUM';
 

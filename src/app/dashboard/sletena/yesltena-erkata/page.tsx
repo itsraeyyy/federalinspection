@@ -70,6 +70,7 @@ export default function YesltenaErkataPage() {
   };
 
   const handleUpdateCategory = async (updatedCategory: TrainingCategory) => {
+    await sletenaService.updateCategory(updatedCategory);
     setCategories((prev) => prev.map((c) => (c.id === updatedCategory.id ? updatedCategory : c)));
   };
 
@@ -150,6 +151,7 @@ export default function YesltenaErkataPage() {
         ) : (
           <SatisfactionManagementTable
             categories={categories}
+            submissions={submissions}
             onSelectCategory={(cat) => setSelectedCategory(cat)}
             onCreateCategory={handleCreateCategory}
             onUpdateCategory={handleUpdateCategory}

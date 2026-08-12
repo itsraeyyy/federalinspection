@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Info, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SELF_ASSESSMENT_QUESTIONS } from '@/lib/assessment-data';
+import { downloadPDFDocument } from '@/lib/exportToPDF';
+import { SelfAssessmentReportPDF } from './SelfAssessmentReportPDF';
 
 export function SelfAssessmentView({
   periodId,
@@ -20,6 +22,7 @@ export function SelfAssessmentView({
   const router = useRouter();
   const [responses, setResponses] = useState<Record<string, number>>(existingData?.responses || {});
   const [loading, setLoading] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [isLockedLocally, setIsLockedLocally] = useState(false);
@@ -91,6 +94,45 @@ export function SelfAssessmentView({
       showToast(`ማስቀመጥ አልተሳካም: ${err.message || 'Unknown error'}`, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    setDownloadingPDF(true);
+    try {
+      const userRes = await supabase.auth.getUser();
+      const uId = userRes.data?.user?.id;
+      let uData = null;
+      let pData = null;
+      let periodData = null;
+
+      if (uId) {
+        const [uInfo, pInfo, perInfo] = await Promise.all([
+          supabase.from('users').select('*').eq('id', uId).maybeSingle(),
+          supabase.from('user_profiles').select('*').eq('user_id', uId).maybeSingle(),
+          periodId ? supabase.from('assessment_periods').select('*').eq('id', periodId).maybeSingle() : Promise.resolve({ data: null })
+        ]);
+        uData = uInfo.data || userRes.data?.user;
+        pData = pInfo.data;
+        periodData = perInfo.data;
+      }
+
+      const fileName = `${uData?.full_name?.replace(/\s+/g, '_') || 'Self_Assessment'}_10Percent_Report.pdf`;
+      const docElement = (
+        <SelfAssessmentReportPDF
+          user={uData}
+          profile={pData}
+          period={periodData}
+          responses={responses}
+          score10={parseFloat(displayScore)}
+        />
+      );
+      await downloadPDFDocument(docElement, fileName);
+    } catch (err) {
+      console.error('Error downloading 10% PDF:', err);
+      showToast('PDF ለማውረድ አልተቻለም', 'error');
+    } finally {
+      setDownloadingPDF(false);
     }
   };
 
@@ -253,11 +295,25 @@ export function SelfAssessmentView({
             </div>
           </div>
 
-          <div className="flex gap-2.5 sm:gap-4 max-w-3xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-4 max-w-3xl mx-auto">
             {isReadOnly ? (
-              <div className="flex-1 py-2.5 sm:py-3.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-secondary bg-surface-secondary border border-border flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-success" />
-                ይህ ምዘና ተቆልፏል (This assessment is locked)
+              <div className="flex-1 flex flex-col sm:flex-row gap-2.5 sm:gap-4">
+                <div className="flex-1 py-2.5 sm:py-3.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-text-secondary bg-surface-secondary border border-border flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-success" />
+                  ይህ ምዘና ተቆልፏል (This assessment is locked)
+                </div>
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={downloadingPDF}
+                  className="py-2.5 sm:py-3.5 px-5 rounded-xl font-bold text-xs sm:text-sm text-white bg-brand-blue hover:bg-brand-blue/90 transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 shrink-0"
+                >
+                  {downloadingPDF ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  የ 10% ውጤት አውርድ (Download 10%)
+                </button>
               </div>
             ) : (
               <>
@@ -311,12 +367,27 @@ export function SelfAssessmentView({
               </div>
             </div>
 
-            <button
-              onClick={() => setShowSuccessModal(false)}
-              className="w-full py-3.5 px-6 rounded-2xl bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-sm shadow-md transition-all active:scale-98"
-            >
-              እሺ (OK)
-            </button>
+            <div className="w-full flex flex-col gap-3">
+              <button
+                onClick={handleDownloadPDF}
+                disabled={downloadingPDF}
+                className="w-full py-3.5 px-6 rounded-2xl bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {downloadingPDF ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                የ 10% ውጤት አውርድ (Download 10%)
+              </button>
+
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-3 px-6 rounded-2xl bg-surface-secondary hover:bg-border text-text-primary font-semibold text-sm transition-all"
+              >
+                እሺ (OK)
+              </button>
+            </div>
           </div>
         </div>
       )}

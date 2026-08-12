@@ -7,6 +7,9 @@ import { INITIAL_TRAINING_CATEGORIES } from '@/data/sletenaDirectives';
 import { TrainingCategory, SletenaSubmission } from '@/types/sletena';
 import Image from 'next/image';
 
+import { sletenaService } from '@/services/sletena';
+import { IconLock, IconAlertTriangle } from '@tabler/icons-react';
+
 function PublicNeedFormContent() {
   const searchParams = useSearchParams();
   const catId = searchParams.get('cat');
@@ -14,19 +17,17 @@ function PublicNeedFormContent() {
   const [categories, setCategories] = useState<TrainingCategory[]>(INITIAL_TRAINING_CATEGORIES);
 
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sletena_categories_flagot');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setCategories(parsed);
-          }
-        } catch (e) {
-          console.error('Failed to parse sletena_categories_flagot:', e);
+    async function loadCategories() {
+      try {
+        const fetched = await sletenaService.getNeedCategories();
+        if (fetched && fetched.length > 0) {
+          setCategories(fetched);
         }
+      } catch (e) {
+        console.error('Failed to load sletena need categories:', e);
       }
     }
+    loadCategories();
   }, []);
 
   // Find requested category or default to first
@@ -35,6 +36,33 @@ function PublicNeedFormContent() {
   const handleSubmitted = (submission: SletenaSubmission) => {
     console.log('[Public Need Form Submitted]:', submission);
   };
+
+  // If form is closed/inactive, show official end notice
+  if (activeCategory && !activeCategory.isActive) {
+    return (
+      <div className="min-h-screen bg-surface-secondary/30 py-12 px-4 font-sans text-text-primary flex items-center justify-center">
+        <div className="max-w-md w-full bg-surface-primary border border-border/60 rounded-3xl p-8 shadow-xl text-center space-y-6">
+          <div className="w-16 h-16 bg-rose-500/10 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-500/20 shadow-sm">
+            <IconLock size={32} />
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 bg-rose-500/10 text-rose-600 border border-rose-500/20 rounded-full text-[11px] font-black uppercase tracking-wider">
+              ተዘግቷል (OFF / INACTIVE)
+            </span>
+            <h2 className="text-xl font-black text-text-primary pt-2">
+              የቅጽ መሙያ ጊዜው ተጠናቋል
+            </h2>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              ይህ የስልጠና ፍላጎት መሙያ ቅጽ (<strong>{activeCategory.title}</strong>) በአሁኑ ወቅት የተዘጋ (Inactive) በመሆኑ አዲስ ምላሽ መቀበል አቁሟል።
+            </p>
+          </div>
+          <footer className="text-[11px] text-text-muted pt-2 border-t border-border/30">
+            © 2018 ICODiS — የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን
+          </footer>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface-secondary/30 py-8 px-4 font-sans text-text-primary">
@@ -64,12 +92,13 @@ function PublicNeedFormContent() {
         {/* Public Submission Form */}
         <SubmissionForm
           category={activeCategory}
+          onBack={() => { window.location.href = '/'; }}
           onSubmitSuccess={handleSubmitted}
         />
 
         {/* Clean Footer */}
         <footer className="text-center text-[11px] text-text-muted py-4 space-y-1">
-          <p>© 2017 ICODiS</p>
+          <p>© 2018 ICODiS</p>
           <p>የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</p>
         </footer>
       </div>

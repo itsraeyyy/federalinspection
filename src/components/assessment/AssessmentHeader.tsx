@@ -46,7 +46,7 @@ export function AssessmentHeader() {
       
       <button 
         onClick={handleLogout}
-        className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-danger bg-surface-secondary hover:bg-danger/10 px-4 py-2 rounded-xl transition-all border border-border/50 hover:border-danger/20 active:scale-95"
+        className="flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-danger bg-surface-secondary hover:bg-danger/10 px-4 py-2 rounded-xl transition-all border border-border/50 hover:border-danger/20 active:scale-95 shadow-sm"
       >
         <LogOut className="w-4 h-4" />
         <span className="hidden sm:inline">ውጣ</span>

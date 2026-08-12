@@ -28,14 +28,25 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
   // Read active questions from category.questions or category.selectedDirectiveIds or default to all 27
   const activeDirectives: InspectionDirective[] = React.useMemo(() => {
     if (category.questions && category.questions.length > 0) {
-      return category.questions.map((q) => ({
-        id: q.id,
-        code: q.code || q.id,
-        title: q.title,
-        description: q.description,
-        category: q.category,
-        targetScore: q.targetScore,
-      }));
+      const filteredQuestions =
+        category.selectedDirectiveIds && category.selectedDirectiveIds.length > 0
+          ? category.questions.filter(
+              (q) =>
+                category.selectedDirectiveIds?.includes(q.id) ||
+                category.selectedDirectiveIds?.includes(q.code)
+            )
+          : category.questions;
+
+      if (filteredQuestions.length > 0) {
+        return filteredQuestions.map((q) => ({
+          id: q.id,
+          code: q.code || q.id,
+          title: q.title,
+          description: q.description,
+          category: q.category,
+          targetScore: q.targetScore,
+        }));
+      }
     }
     if (category.selectedDirectiveIds && category.selectedDirectiveIds.length > 0) {
       const selected = INSPECTION_DIRECTIVES.filter(
@@ -193,14 +204,18 @@ export const SubmissionForm: React.FC<SubmissionFormProps> = ({
         <p className="text-xs text-text-muted">
           የሰጡት የምዘና ነጥብ ሲስተሙ በራስ-ሰር ከፍተኛ የስልጠና ፍላጎቶችን ለመለየት (Training Needs Prioritization) ጥቅም ላይ ይውላል። እናመሰግናለን!
         </p>
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="mt-4 px-6 py-2.5 rounded-xl bg-brand-blue text-white font-bold text-xs shadow-md hover:bg-brand-blue/90 transition-all cursor-pointer"
-          >
-            ተመለስ
-          </button>
-        )}
+        <button
+          onClick={() => {
+            if (onBack) {
+              onBack();
+            } else {
+              window.location.href = '/';
+            }
+          }}
+          className="mt-4 px-6 py-2.5 rounded-xl bg-brand-blue text-white font-bold text-xs shadow-md hover:bg-brand-blue/90 transition-all cursor-pointer"
+        >
+          ወደ ዋናው ገጽ ተመለስ
+        </button>
       </div>
     );
   }

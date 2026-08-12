@@ -145,7 +145,39 @@ export const sletenaService = {
   },
 
   // ==========================================
-  // 4. DELETE CATEGORY
+  // 4. UPDATE CATEGORY
+  // ==========================================
+  updateCategory: async (updatedCategory: TrainingCategory): Promise<void> => {
+    try {
+      await supabase
+        .from('sletena_categories')
+        .upsert([
+          {
+            id: updatedCategory.id,
+            title: updatedCategory.title,
+            description: updatedCategory.description,
+            date_created: updatedCategory.dateCreated,
+            is_active: updatedCategory.isActive,
+            category_type: updatedCategory.categoryType || 'NEED',
+            submitters_count: updatedCategory.submittersCount || 0,
+            shareable_link: updatedCategory.shareableLink,
+            selected_directive_ids: updatedCategory.selectedDirectiveIds || [],
+            questions: updatedCategory.questions || [],
+            updated_at: new Date().toISOString(),
+          },
+        ]);
+    } catch (err) {
+      console.warn('Supabase update category error:', err);
+    }
+
+    const key = updatedCategory.categoryType === 'SATISFACTION' ? LOCAL_STORAGE_SAT_CATS_KEY : LOCAL_STORAGE_NEED_CATS_KEY;
+    const current = getLocalData<TrainingCategory[]>(key, []);
+    const updated = current.map((c) => (c.id === updatedCategory.id ? updatedCategory : c));
+    setLocalData(key, updated);
+  },
+
+  // ==========================================
+  // 5. DELETE CATEGORY
   // ==========================================
   deleteCategory: async (id: string, categoryType: 'NEED' | 'SATISFACTION'): Promise<void> => {
     try {
@@ -338,31 +370,43 @@ export const sletenaService = {
   // ==========================================
   saveSatisfactionSubmission: async (submission: SatisfactionSubmission): Promise<void> => {
     try {
+      // 1. Ensure category exists in Supabase to prevent foreign key violation
+      const { data: existingCat } = await supabase
+        .from('sletena_categories')
+        .select('id')
+        .eq('id', submission.categoryId)
+        .maybeSingle();
+
+      if (!existingCat) {
+        await supabase.from('sletena_categories').upsert([
+          {
+            id: submission.categoryId,
+            title: submission.categoryTitle || 'የድህረ-ስልጠና ዕርካታ ምዘና ቅጽ',
+            description: 'የስልጠና ዕርካታ ምዘና ቅጽ::',
+            date_created: new Date().toISOString().split('T')[0],
+            is_active: true,
+            category_type: 'SATISFACTION',
+            submitters_count: 1,
+            shareable_link: `https://icods.raey.work/sletena/erkata?cat=${submission.categoryId}`,
+          },
+        ]);
+      }
+
+      // 2. Insert into sletena_satisfaction_submissions table (exact matching Supabase schema columns)
       const { error: satErr } = await supabase.from('sletena_satisfaction_submissions').insert([
         {
           id: submission.id,
           category_id: submission.categoryId,
-          participant_name: submission.participantName,
-          participant_email: submission.participantEmail,
-          organization_unit: submission.organizationUnit,
-          region: submission.region,
-          prep_venue_rating: submission.prepVenueRating,
-          prep_doc_rating: submission.prepDocRating,
-          delivery_doc_trainer_rating: submission.deliveryDocTrainerRating,
-          delivery_doc_trainer_other: submission.deliveryDocTrainerOther,
-          delivery_participation_rating: submission.deliveryParticipationRating,
-          delivery_conclusions_rating: submission.deliveryConclusionsRating,
-          knowledge_gained_text: submission.knowledgeGainedText,
-          expected_results_text: submission.expectedResultsText,
-          general_improvement_text: submission.generalImprovementText,
-          trainer_rating: submission.trainerRating,
-          content_rating: submission.contentRating,
-          venue_logistics_rating: submission.venueLogisticsRating,
-          relevance_rating: submission.relevanceRating,
-          overall_rating: submission.overallRating,
-          recommend_score: submission.recommendScore,
-          positive_aspects: submission.positiveAspects,
-          improvement_suggestions: submission.improvementSuggestions,
+          participant_name: submission.participantName || 'ተሳታፊ / አኖኒመስ',
+          region: submission.region || 'አዲስ አበባ',
+          trainer_rating: submission.trainerRating || 5,
+          content_rating: submission.contentRating || 5,
+          venue_logistics_rating: submission.venueLogisticsRating || 5,
+          relevance_rating: submission.relevanceRating || 5,
+          overall_rating: submission.overallRating || 5,
+          recommend_score: submission.recommendScore || 10,
+          positive_aspects: submission.positiveAspects || submission.knowledgeGainedText || '',
+          improvement_suggestions: submission.improvementSuggestions || submission.generalImprovementText || '',
           created_at: submission.createdAt || submission.submittedAt || new Date().toISOString(),
         },
       ]);

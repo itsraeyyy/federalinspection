@@ -224,7 +224,11 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
     }
   });
 
-  const top3Recommended = sortedGaps.slice(0, 3).map((item) => {
+  const activeReportDirectivesCount = gapAnalysis.length || 5;
+  const topCount5 = Math.min(5, Math.max(1, activeReportDirectivesCount));
+  const topCount3 = Math.min(3, Math.max(1, activeReportDirectivesCount));
+
+  const top3Recommended = sortedGaps.slice(0, topCount3).map((item) => {
     let displayTitle = item.directiveTitle;
     if (!displayTitle || displayTitle.startsWith('መመሪያ / መጠይቅ')) {
       const match = INSPECTION_DIRECTIVES.find((d) => d.id === item.directiveId || d.code === item.directiveCode);
@@ -418,7 +422,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
                   <span>የስልጠና ትግበራ ውሳኔ እና የአሰልጣኝነት የውሳኔ ሃሳብ (Executive Action Plan)</span>
                 </h2>
                 <p className="text-[11px] text-slate-600">
-                  በአባላት የፍላጎት ምዘና ውጤት እና በቅድሚያ ምርጫ ተሳትፎ መሰረት ስልጠና ለመጀመር የተመረጡ 3 ዋና ዋና መመሪያዎች::
+                  በአባላት የፍላጎት ምዘና ውጤት እና በቅድሚያ ምርጫ ተሳትፎ መሰረት ስልጠና ለመጀመር የተመረጡ {topCount3} ዋና ዋና መመሪያዎች::
                 </p>
               </div>
               <span className="text-[10px] font-black px-3.5 py-1 bg-blue-950 text-white rounded-full uppercase tracking-wider">
@@ -428,9 +432,9 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
 
             <div className="space-y-3">
               <div className="text-[11px] font-black text-slate-950 uppercase tracking-wide">
-                ለስልጠና አስቸኳይ ትግበራ የተመረጡ 3 ዋና ዋና መመሪያዎች (TOP 3 PRIORITY TRAINING DIRECTIVES):
+                ለስልጠና አስቸኳይ ትግበራ የተመረጡ {topCount3} ዋና ዋና መመሪያዎች (TOP {topCount3} PRIORITY TRAINING DIRECTIVES):
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className={`grid grid-cols-1 md:grid-cols-${Math.min(topCount3, 3)} gap-4`}>
                 {top3Recommended.map((rec, idx) => (
                   <div key={rec.directiveId} className="border-2 border-blue-950/30 rounded-2xl p-4 bg-white space-y-3 shadow-2xs">
                     <div className="flex justify-between items-center border-b border-slate-200 pb-2">
@@ -569,10 +573,10 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
             <div className="bg-slate-900 text-white px-5 py-3 flex justify-between items-center">
               <h3 className="font-black text-xs tracking-wide flex items-center gap-2">
                 <span className="mr-1 inline-block">🔥</span>
-                <span>Section 2 Analytics: ከፍተኛ የስልጠና ፍላጎት ያላቸው 5 መመሪያዎች (Top 5 Training Needs)</span>
+                <span>Section 2 Analytics: ከፍተኛ የስልጠና ፍላጎት ያላቸው {topCount5} መመሪያዎች (Top {topCount5} Training Needs)</span>
               </h3>
               <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider font-mono">
-                ክፍል 2 (Top 5)
+                ክፍል 2 (Top {topCount5})
               </span>
             </div>
 
@@ -589,7 +593,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {sortedGaps.length > 0 ? (
-                  sortedGaps.slice(0, 5).map((item, index) => {
+                  sortedGaps.slice(0, topCount5).map((item, index) => {
                     let displayTitle = item.directiveTitle;
                     if (!displayTitle || displayTitle.startsWith('መመሪያ / መጠይቅ')) {
                       const match = INSPECTION_DIRECTIVES.find((d) => d.id === item.directiveId || d.code === item.directiveCode);

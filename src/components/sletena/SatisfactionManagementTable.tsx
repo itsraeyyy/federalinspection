@@ -20,6 +20,7 @@ import {
 
 interface SatisfactionManagementTableProps {
   categories: TrainingCategory[];
+  submissions?: SatisfactionSubmission[];
   onSelectCategory: (category: TrainingCategory) => void;
   onCreateCategory?: (newCategory: Omit<TrainingCategory, 'id' | 'submittersCount' | 'shareableLink'>) => void;
   onUpdateCategory?: (updatedCategory: TrainingCategory) => void;
@@ -28,6 +29,7 @@ interface SatisfactionManagementTableProps {
 
 export const SatisfactionManagementTable: React.FC<SatisfactionManagementTableProps> = ({
   categories,
+  submissions = [],
   onSelectCategory,
   onCreateCategory,
   onUpdateCategory,
@@ -184,10 +186,24 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
                   </p>
                 </div>
 
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shrink-0 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  ንቁ
-                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onUpdateCategory) {
+                      onUpdateCategory({ ...cat, isActive: !cat.isActive });
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer select-none border ${
+                    cat.isActive
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-600 border-rose-500/30 hover:bg-rose-500/20'
+                  }`}
+                  title="ቅጹን ለመክፈት ወይም ለመዝጋት ይጫኑ (Toggle ON/OFF)"
+                >
+                  <span className={`w-2 h-2 rounded-full ${cat.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                  <span>{cat.isActive ? 'ክፍት (ON)' : 'የተዘጋ (OFF)'}</span>
+                </button>
               </div>
 
               {/* Card Info & Action Footer */}
@@ -200,7 +216,11 @@ export const SatisfactionManagementTable: React.FC<SatisfactionManagementTablePr
                   </div>
                   <div className="flex items-center gap-1.5">
                     <IconUsers size={15} className="text-brand-blue" />
-                    <span>ምዘና የሰጡ፡ <strong className="text-brand-blue">{cat.submittersCount} ተሳታፊዎች</strong></span>
+                    {(() => {
+                      const liveCount = submissions.filter((s) => s.categoryId === cat.id).length;
+                      const count = liveCount > 0 ? liveCount : (cat.submittersCount || 0);
+                      return <span>ምዘና የሰጡ፡ <strong className="text-brand-blue">{count} ተሳታፊዎች</strong></span>;
+                    })()}
                   </div>
                 </div>
 

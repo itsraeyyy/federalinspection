@@ -83,9 +83,10 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!participantName.trim()) return;
+    
+    const finalName = participantName.trim() || 'ተሳታፊ / አኖኒመስ';
 
     const trainerScore = optionToScore(deliveryDocTrainerRating);
     const contentScore = optionToScore(prepDocRating);
@@ -97,7 +98,7 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
       id: `sat-sub-${Date.now()}`,
       categoryId: category.id,
       categoryTitle: category.title,
-      participantName: participantName.trim(),
+      participantName: finalName,
       memberId: memberId.trim(),
       contact: contact.trim(),
       membershipLevel,
@@ -129,7 +130,7 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
     };
 
     // Save to Supabase & LocalStorage
-    sletenaService.saveSatisfactionSubmission(newSubmission);
+    await sletenaService.saveSatisfactionSubmission(newSubmission);
 
     onSubmitSuccess(newSubmission);
     setIsSubmitted(true);
@@ -146,7 +147,13 @@ export const SatisfactionSubmissionForm: React.FC<SatisfactionSubmissionFormProp
           የሰጡት ድህረ-ስልጠና አስተያየት እና የዕርካታ ደረጃ የስልጠናችንን ጥራት ይበልጥ ለማሻሻል ይረዳናል። እናመሰግናለን!
         </p>
         <button
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) {
+              onBack();
+            } else {
+              window.location.href = '/';
+            }
+          }}
           className="mt-4 px-6 py-2.5 rounded-xl bg-brand-blue text-white font-bold text-xs shadow-md hover:bg-brand-blue/90 transition-all cursor-pointer"
         >
           ወደ ዋናው ገጽ ተመለስ

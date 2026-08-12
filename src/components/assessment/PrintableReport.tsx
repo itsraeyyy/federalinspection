@@ -151,45 +151,47 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
         </tbody>
       </table>
 
-      {/* 3. Overall Evaluation Score Summary Block */}
-      <div className="mb-6 border border-black" style={{ border: '1px solid black', marginBottom: '16px' }}>
-        <div style={{ backgroundColor: '#f3f4f6', padding: '6px', borderBottom: '1px solid black', fontWeight: 'bold', fontSize: '12px' }}>
-          የአፈጻጸም ማጠቃለያ ውጤት (Overall Evaluation Score Summary)
+      {/* 3 & 4. Overall Evaluation Score Summary Block & Grade Scale (Kept together cleanly on page 2) */}
+      <div style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+        <div className="mb-6 border border-black" style={{ border: '1px solid black', marginBottom: '16px' }}>
+          <div style={{ backgroundColor: '#f3f4f6', padding: '6px', borderBottom: '1px solid black', fontWeight: 'bold', fontSize: '12px' }}>
+            የአፈጻጸም ማጠቃለያ ውጤት (Overall Evaluation Score Summary)
+          </div>
+          <div style={{ display: 'flex', borderBottom: '1px solid black', fontSize: '11.5px' }}>
+            <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የራስ ምዘና (10%)</div>
+            <div style={{ width: '11%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{self10.toFixed(1)}</div>
+            <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የአቻዎች ምዘና (20%)</div>
+            <div style={{ width: '12%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{peer20.toFixed(1)}</div>
+            <div style={{ width: '21%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የ30% ድምር</div>
+            <div style={{ width: '14%', padding: '6px', fontWeight: 'bold', color: '#0284c7', textAlign: 'center' }}>{sum30.toFixed(1)}</div>
+          </div>
+          <div style={{ display: 'flex', fontSize: '11.5px' }}>
+            <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የአጽዳቂ/ኮሚቴ (70%)</div>
+            <div style={{ width: '11%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{appr70.toFixed(1)}</div>
+            <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የ100% አጠቃላይ ውጤት</div>
+            <div style={{ width: '12%', padding: '6px', fontWeight: 'bold', color: '#0284c7', borderRight: '1px solid black', textAlign: 'center' }}>{`${final100.toFixed(1)}%`}</div>
+            <div style={{ width: '21%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የበላይ ደረጃ</div>
+            <div style={{ width: '14%', padding: '6px', fontWeight: 'bold', color: '#0284c7', textAlign: 'center' }}>{grade}</div>
+          </div>
         </div>
-        <div style={{ display: 'flex', borderBottom: '1px solid black', fontSize: '11.5px' }}>
-          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የራስ ምዘና (10%)</div>
-          <div style={{ width: '11%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{self10.toFixed(1)}</div>
-          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የአቻዎች ምዘና (20%)</div>
-          <div style={{ width: '12%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{peer20.toFixed(1)}</div>
-          <div style={{ width: '21%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የ30% ድምር</div>
-          <div style={{ width: '14%', padding: '6px', fontWeight: 'bold', color: '#0284c7', textAlign: 'center' }}>{sum30.toFixed(1)}</div>
-        </div>
-        <div style={{ display: 'flex', fontSize: '11.5px' }}>
-          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የአጽዳቂ/ኮሚቴ (70%)</div>
-          <div style={{ width: '11%', padding: '6px', borderRight: '1px solid black', textAlign: 'center' }}>{appr70.toFixed(1)}</div>
-          <div style={{ width: '22%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የ100% አጠቃላይ ውጤት</div>
-          <div style={{ width: '12%', padding: '6px', fontWeight: 'bold', color: '#0284c7', borderRight: '1px solid black', textAlign: 'center' }}>{`${final100.toFixed(1)}%`}</div>
-          <div style={{ width: '21%', fontWeight: 'bold', padding: '6px', backgroundColor: '#f9fafb', borderRight: '1px solid black' }}>የበላይ ደረጃ</div>
-          <div style={{ width: '14%', padding: '6px', fontWeight: 'bold', color: '#0284c7', textAlign: 'center' }}>{grade}</div>
-        </div>
-      </div>
 
-      {/* 4. Grade Scale */}
-      <div style={{ marginTop: '16px' }}>
-        <div style={{ width: '100%' }}>
-          <table className="w-full text-xs border-collapse" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <th className="p-2 text-left" colSpan={2} style={{ border: '1px solid black', padding: '6px', textAlign: 'left' }}>የውጤት አሰጣጥ መመሪያ</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>1. በጣም ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 90% እስከ 100%</td></tr>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>2. ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 80% እስከ 89%</td></tr>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>3. መካከለኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% እስከ 79%</td></tr>
-              <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>4. ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% በታች</td></tr>
-            </tbody>
-          </table>
+        {/* 4. Grade Scale */}
+        <div style={{ marginTop: '16px' }}>
+          <div style={{ width: '100%' }}>
+            <table className="w-full text-xs border-collapse" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f3f4f6' }}>
+                  <th className="p-2 text-left" colSpan={2} style={{ border: '1px solid black', padding: '6px', textAlign: 'left' }}>የውጤት አሰጣጥ መመሪያ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>1. በጣም ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 90% እስከ 100%</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>2. ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 80% እስከ 89%</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>3. መካከለኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% እስከ 79%</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>4. ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% በታች</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
