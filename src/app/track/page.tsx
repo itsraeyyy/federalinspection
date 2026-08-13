@@ -226,10 +226,10 @@ function TrackingContent() {
           {complaint.resolution && (
             <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-sm ring-1 ring-slate-100">
               <h3 className="text-sm font-semibold text-slate-800 mb-4">
-                {complaint.status === 'Rejected' ? 'የውድቅ ምክንያት' : 'የተሰጠ መፍትሄ'}
+                {complaint.status === 'Rejected' ? 'የውድቅ ምክንያት' : 'የተሰጠ ውሳኔ'}
               </h3>
               <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 border border-slate-100">
-                {complaint.resolution.message}
+                {typeof complaint.resolution === 'string' ? complaint.resolution : (complaint.resolution.message || complaint.resolution.decisionIdeaSummary || complaint.decisionIdeaSummary || '')}
               </p>
 
               {complaint.resolution.attachments && complaint.resolution.attachments.length > 0 && (

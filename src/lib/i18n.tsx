@@ -53,7 +53,7 @@ const translations: Record<Language, Record<string, string>> = {
     published: 'ታተመ',
     drafts: 'ረቂቅ',
     new: 'አዲስ',
-    resolved: 'ተፈቷል',
+    resolved: 'ውሳኔ የተሰጣቸው',
     leave: 'በዕረፍት',
     toggleLanguage: 'ቋንቋ ቀይር',
     toggleTheme: 'ገጽታ ቀይር',

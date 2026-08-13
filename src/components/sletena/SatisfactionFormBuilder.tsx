@@ -214,11 +214,10 @@ export const SatisfactionFormBuilder: React.FC<SatisfactionFormBuilderProps> = (
           <div className="flex items-center bg-surface-secondary/60 p-1 rounded-xl border border-border/50">
             <button
               onClick={() => setActiveTab('editor')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'editor'
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'editor'
                   ? 'bg-brand-blue text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary'
-              }`}
+                }`}
             >
               <IconForms size={16} />
               <span>ቅጽ ማዘጋጃ</span>
@@ -226,11 +225,10 @@ export const SatisfactionFormBuilder: React.FC<SatisfactionFormBuilderProps> = (
 
             <button
               onClick={() => setActiveTab('preview')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'preview'
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'preview'
                   ? 'bg-brand-yellow text-slate-900 shadow-sm'
                   : 'text-text-secondary hover:text-text-primary'
-              }`}
+                }`}
             >
               <IconEye size={16} />
               <span>ቅድመ-ዕይታ</span>
@@ -263,7 +261,7 @@ export const SatisfactionFormBuilder: React.FC<SatisfactionFormBuilderProps> = (
           <SatisfactionSubmissionForm
             category={previewCategory}
             onBack={() => setActiveTab('editor')}
-            onSubmitSuccess={() => {}}
+            onSubmitSuccess={() => { }}
           />
         </div>
       ) : (
@@ -459,7 +457,7 @@ export const SatisfactionFormBuilder: React.FC<SatisfactionFormBuilderProps> = (
               <div>
                 <h3 className="text-sm font-extrabold text-text-primary flex items-center gap-2">
                   <IconListCheck size={18} className="text-brand-blue" />
-                  ተጨማሪ ብጁ መጠይቆች (Custom Questions)
+                  ተጨማሪ   መጠይቆች (Custom Questions)
                 </h3>
                 <p className="text-xs text-text-muted mt-0.5">
                   ለዚህ ስልጠና ተጨማሪ ጥያቄዎችን ማከል ወይም ማስወገድ ይችላሉ::

@@ -87,7 +87,7 @@ export default async function DashboardPage() {
         <StatCard
           label="የመፍትሔ አሰጣጥ ምጣኔ"
           value={`${resolutionRate}%`}
-          description={`${resolvedComplaints} የተፈቱ • ${newComplaints} በሂደት ላይ`}
+          description={`${resolvedComplaints} ውሳኔ የተሰጣቸው • ${newComplaints} በሂደት ላይ`}
           accentColor="green"
           icon={IconChartBar}
         />
@@ -99,9 +99,9 @@ export default async function DashboardPage() {
           icon={IconUsers}
         />
         <StatCard
-          label="የምዘና ወቅቶች"
+          label="የተካሄዱ ምዘናዎች"
           value={totalPeriods.toLocaleString()}
-          description={`${totalPeriods} active assessment cycles`}
+          description={`${totalPeriods} ንቁ የምዘనా ዙሮች`}
           accentColor="yellow"
           icon={IconFileText}
         />
@@ -152,8 +152,8 @@ export default async function DashboardPage() {
             {/* Card 3: Resolved */}
             <div className="p-4 rounded-2xl bg-surface-secondary/40 border border-border/30">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-text-muted">የተፈቱና መፍትሔ ያገኙ</span>
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600">ተፈቷል</span>
+                <span className="text-xs font-semibold text-text-muted">ውሳኔ ያገኙ</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600">ውሳኔ ያገኘ</span>
               </div>
               <div className="text-2xl font-bold text-text-primary">{resolvedComplaints}</div>
               <div className="w-full bg-border/30 h-1.5 rounded-full mt-3 overflow-hidden">

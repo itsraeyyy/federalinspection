@@ -70,7 +70,9 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
   const membershipLevelStats = useMemo(() => {
     const counts: Record<string, number> = {
       'አባል': 0,
-      'የቤተሰብ/የሕብረት አመራር': 0,
+      'የቤተሰብ አመራር': 0,
+      'የህብረት አመራር': 0,
+      'የበታች አመራር': 0,
       'መካከለኛ አመራር': 0,
       'ከፍተኛ አመራር': 0,
     };
@@ -78,7 +80,10 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
     filteredSubmissions.forEach((s) => {
       const lvl = s.membershipLevel;
       if (lvl === 'Abal') counts['አባል'] += 1;
-      else if (lvl === 'Yebeteseb_Yehbret_Amerar') counts['የቤተሰብ/የሕብረት አመራር'] += 1;
+      else if (lvl === 'Yebeteseb_Amerar') counts['የቤተሰብ አመራር'] += 1;
+      else if (lvl === 'Yehbret_Amerar') counts['የህብረት አመራር'] += 1;
+      else if (lvl === 'Yebatach_Amerar') counts['የበታች አመራር'] += 1;
+      else if (lvl === 'Yebeteseb_Yehbret_Amerar') counts['የህብረት አመራር'] += 1;
       else if (lvl === 'Mekakelegna_Amerar') counts['መካከለኛ አመራር'] += 1;
       else if (lvl === 'Keftegna_Amerar') counts['ከፍተኛ አመራር'] += 1;
       else counts['አባል'] += 1;
@@ -598,7 +603,7 @@ export const NeedReportView: React.FC<NeedReportViewProps> = ({
           {/* Membership Level Pie Chart */}
           <div className="bg-surface-secondary/30 border border-border/40 rounded-xl p-5 space-y-4">
             <h4 className="text-xs font-bold text-text-primary uppercase tracking-wide">
-              ሀ) የአባልነት / የሥራ ደረጃ ስርጭት (Membership Level Distribution)
+              ሀ) ሀላፊነት ደረጃ ስርጭት (Responsibility Level Distribution)
             </h4>
             <div className="h-56 w-full relative">
               <ResponsiveContainer width="100%" height="100%">

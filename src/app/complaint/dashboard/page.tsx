@@ -203,11 +203,10 @@ export default function CommitteeLeaderDashboard() {
     setFeedbackMsg(null);
     try {
       const resolutionMsg = editableDecision.trim() || ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚቴ ሰብሳቢ ተረጋግቶና ጸድቆ ተጠናቋል።';
-      const success = await complaintService.updateComplaintStatus(
+      const success = await complaintService.approveDecisionByLeader(
         ticket.id,
-        'Resolved',
         leaderName,
-        { message: resolutionMsg }
+        resolutionMsg
       );
       if (success) {
         setFeedbackMsg({ type: 'success', text: `የመከታተያ ኮድ ${ticket.trackingCode} ውሳኔ በተሳካ ሁኔታ ጸድቋል! ለአመልካቹ መልእክት ተልኳል።` });
@@ -762,6 +761,25 @@ export default function CommitteeLeaderDashboard() {
                   </div>
                 </div>
               </div>
+
+              {/* Group Members Section */}
+              {selectedTicket.submissionMode === 'በቡድን' && selectedTicket.groupMembers && selectedTicket.groupMembers.length > 0 && (
+                <div className="p-5 rounded-3xl bg-surface-secondary/40 border border-border/30 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <IconUser size={18} className="text-brand-blue" />
+                    <h4 className="text-xs font-extrabold text-text-primary uppercase tracking-wider">
+                      የቡድን አባላት ({selectedTicket.groupMembers.length})
+                    </h4>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {selectedTicket.groupMembers.map((m, idx) => (
+                      <span key={idx} className="px-3.5 py-1.5 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-xs">
+                        {idx + 1}. {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Message Body */}
               <div className="relative">

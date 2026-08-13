@@ -24,6 +24,7 @@ import {
   IconCalendar,
   IconPaperclip,
   IconExternalLink,
+  IconUsers,
 } from "@tabler/icons-react";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { complaintService } from "@/services/complaints";
@@ -41,7 +42,7 @@ const STATUS_CONFIG: Record<ComplaintStatus, { label: string; color: string; bgC
   Accepted: { label: 'የተቀበሉት', color: 'text-blue-700', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-500', iconColor: 'text-blue-500' },
   Processing: { label: 'በሂደት ላይ', color: 'text-amber-700', bgColor: 'bg-amber-500/10', dotColor: 'bg-amber-500', iconColor: 'text-amber-500' },
   PendingApproval: { label: 'ለማጽደቅ የቀረበ', color: 'text-sky-700', bgColor: 'bg-sky-500/10', dotColor: 'bg-sky-500', iconColor: 'text-sky-500' },
-  Resolved: { label: 'የተፈታ', color: 'text-green-700', bgColor: 'bg-green-500/10', dotColor: 'bg-green-500', iconColor: 'text-green-500' },
+  Resolved: { label: 'ውሳኔ የተሰጣቸው', color: 'text-green-700', bgColor: 'bg-green-500/10', dotColor: 'bg-green-500', iconColor: 'text-green-500' },
   Rejected: { label: 'ውድቅ', color: 'text-red-700', bgColor: 'bg-red-500/10', dotColor: 'bg-red-500', iconColor: 'text-red-500' },
   RevisionRequested: { label: 'ማስተካከያ የተጠየቀበት', color: 'text-amber-700', bgColor: 'bg-amber-500/15', dotColor: 'bg-amber-600', iconColor: 'text-amber-600' },
 };
@@ -62,7 +63,12 @@ export default function ComplaintsPage() {
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const resFileRef = useRef<HTMLInputElement>(null);
 
-  // Committee Modal State (Removed, now managed by Leader)
+  // Committee Group Creation Modal State
+  const [showCommitteeModal, setShowCommitteeModal] = useState(false);
+  const [committeeName, setCommitteeName] = useState('የኢንስፔክሽን አጣሪ ኮሚቴ');
+  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string }[]>([
+    { name: '', phone: '' }
+  ]);
 
   // Export Modal State
   const [showExportModal, setShowExportModal] = useState(false);
@@ -114,8 +120,10 @@ export default function ComplaintsPage() {
     if (resolvedTickets.length === 0) return 0;
     
     const totalDays = resolvedTickets.reduce((acc, t) => {
-      const resolved = new Date(t.resolvedAtRaw || t.resolvedAt).getTime();
-      const created = new Date(t.createdAtRaw || t.createdAt).getTime();
+      const resDateStr = t.resolvedAtRaw || t.resolvedAt || '';
+      const createDateStr = t.createdAtRaw || t.createdAt || '';
+      const resolved = resDateStr ? new Date(resDateStr).getTime() : Date.now();
+      const created = createDateStr ? new Date(createDateStr).getTime() : Date.now();
       return acc + (resolved - created) / (1000 * 60 * 60 * 24);
     }, 0);
     
@@ -208,6 +216,33 @@ export default function ComplaintsPage() {
         setFeedbackMsg({ type: 'success', text: 'ጉዳዩ በተሳካ ሁኔታ ተቀባይነት አግኝቷል።' });
       } else {
         setFeedbackMsg({ type: 'error', text: 'ተቀባይነት ማድረግ አልተሳካም። እባክዎ እንደገና ይሞክሩ።' });
+      }
+    } catch (e: any) {
+      setFeedbackMsg({ type: 'error', text: e.message || 'ስህተት አጋጥሟል' });
+    }
+    setActionLoading(false);
+  };
+
+  const handleConfirmCommitteeAssignment = async () => {
+    if (!selectedTicket || !committeeName.trim()) return;
+    setActionLoading(true);
+    setFeedbackMsg(null);
+    try {
+      const validMembers = committeeMembers.filter(m => m.name.trim());
+      const success = await complaintService.startProcessingByLeader(
+        selectedTicket.id,
+        adminName,
+        committeeName.trim(),
+        validMembers
+      );
+      if (success) {
+        setShowCommitteeModal(false);
+        await loadTickets();
+        const updated = await complaintService.getComplaintById(selectedTicket.id);
+        setSelectedTicket(updated);
+        setFeedbackMsg({ type: 'success', text: 'ጉዳዩ በተሳካ ሁኔታ ተቀባይነት አግኝቶ ኮሚቴ ተመድቦለታል።' });
+      } else {
+        setFeedbackMsg({ type: 'error', text: 'ኮሚቴ መመደብ አልተሳካም። እባክዎ እንደገና ይሞክሩ።' });
       }
     } catch (e: any) {
       setFeedbackMsg({ type: 'error', text: e.message || 'ስህተት አጋጥሟል' });
@@ -353,7 +388,7 @@ export default function ComplaintsPage() {
             { id: 'All', label: 'ጠቅላላ', value: counts.total, color: 'text-text-primary', activeStyle: 'bg-surface-primary shadow-sm border-border/40' },
             { id: 'New', label: 'አዲስ', value: counts.new, color: 'text-blue-600', activeStyle: 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-200/50' },
             { id: 'Processing', label: 'በሂደት ላይ', value: counts.processing, color: 'text-amber-600', activeStyle: 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-200/50' },
-            { id: 'Resolved', label: 'የተፈቱ', value: counts.resolved, color: 'text-green-600', activeStyle: 'bg-green-50/80 dark:bg-green-900/20 border-green-200/50' },
+            { id: 'Resolved', label: 'ውሳኔ የተሰጣቸው', value: counts.resolved, color: 'text-green-600', activeStyle: 'bg-green-50/80 dark:bg-green-900/20 border-green-200/50' },
             { id: 'Rejected', label: 'ውድቅ', value: counts.rejected, color: 'text-red-600', activeStyle: 'bg-red-50/80 dark:bg-red-900/20 border-red-200/50' },
           ].map(stat => {
             const isActive = activeStatusFilter === stat.id;
@@ -522,7 +557,41 @@ export default function ComplaintsPage() {
                   {selectedTicket.gender && <InfoRow icon={IconUser} label="ፆታ" value={selectedTicket.gender} />}
                   {selectedTicket.address && <InfoRow icon={IconMapPin} label="አድራሻ" value={selectedTicket.address} />}
                   {selectedTicket.institution && <InfoRow icon={IconBuilding} label="ተቋም / ክፍል" value={selectedTicket.institution} />}
-                  {selectedTicket.assignedCommittee && <InfoRow icon={IconUser} label="የተመደበለት ኮሚቴ" value={selectedTicket.assignedCommittee} />}
+                  <InfoRow icon={IconUser} label="የማቅረቢያ መንገድ" value={selectedTicket.submissionMode || 'በግል'} />
+                  {selectedTicket.submissionMode === 'በቡድን' && selectedTicket.groupMembers && selectedTicket.groupMembers.length > 0 && (
+                    <div className="col-span-2 space-y-1.5 pt-2 border-t border-border/20">
+                      <p className="text-xs text-text-muted font-medium">የቡድን አባላት ({selectedTicket.groupMembers.length}):</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTicket.groupMembers.map((m, idx) => (
+                          <span key={idx} className="px-3 py-1 bg-surface-secondary text-text-primary rounded-xl text-xs font-semibold border border-border/40">
+                            {idx + 1}. {m}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTicket.assignedCommittee && (
+                    <div className="col-span-2 p-4 bg-brand-blue/5 rounded-2xl border border-brand-blue/20 space-y-2 mt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-brand-blue uppercase tracking-wide flex items-center gap-1.5">
+                          <IconUsers size={16} /> የተመደበለት ኮሚቴ፦ {selectedTicket.assignedCommittee}
+                        </span>
+                      </div>
+                      {((selectedTicket.resolution as any)?.committeeMembers || (selectedTicket.groupMembers && selectedTicket.groupMembers.length > 0)) && (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {((selectedTicket.resolution as any)?.committeeMembers || selectedTicket.groupMembers || []).map((m: any, idx: number) => {
+                            const name = typeof m === 'string' ? m : `${m.name}${m.phone ? ` (${m.phone})` : ''}`;
+                            return (
+                              <span key={idx} className="px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
+                                • {name}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -578,35 +647,58 @@ export default function ComplaintsPage() {
               )}
 
               {/* Resolution Details */}
-              {selectedTicket.resolution && (
-                <div className={`rounded-3xl p-6 border shadow-sm relative overflow-hidden ${selectedTicket.status === 'Rejected' ? 'bg-red-50/50 border-red-200/50 dark:bg-red-950/20 dark:border-red-900/30' : 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-900/30'}`}>
-                  <div className={`absolute top-0 right-0 p-6 opacity-5 ${selectedTicket.status === 'Rejected' ? 'text-red-500' : 'text-green-500'}`}>
-                    {selectedTicket.status === 'Rejected' ? <IconBan size={100} /> : <IconCheck size={100} />}
-                  </div>
-                  <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${selectedTicket.status === 'Rejected' ? 'text-red-600' : 'text-green-600'}`}>
-                    {selectedTicket.status === 'Rejected' ? <><IconBan size={16}/> የውድቅ ምክንያት</> : <><IconCheck size={16}/> የተሰጠ መፍትሄ</>}
-                  </h4>
-                  <div className="relative z-10">
-                    <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap">{selectedTicket.resolution.message}</p>
-                    {selectedTicket.resolution.attachments && selectedTicket.resolution.attachments.length > 0 && (
-                      <div className="mt-5 space-y-2">
-                        <p className="text-xs font-semibold text-text-secondary mb-2">ተያያዥ ሰነዶች:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedTicket.resolution.attachments.map((att: any, i: number) => (
-                            <a key={i} href={att.url || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-surface-primary rounded-xl border border-border/30 text-xs font-medium text-brand-blue hover:border-brand-blue/30 transition-colors shadow-sm">
-                              <IconFileText size={14} /> {att.filename}
-                            </a>
-                          ))}
+              {(() => {
+                const resolutionText = typeof selectedTicket.resolution === 'string'
+                  ? selectedTicket.resolution
+                  : (selectedTicket.resolution?.message || selectedTicket.resolution?.decisionIdeaSummary || selectedTicket.decisionIdeaSummary || '');
+
+                const resolutionAttachments = selectedTicket.resolution?.attachments || selectedTicket.decisionIdeaFiles || [];
+
+                if (!selectedTicket.resolution && !selectedTicket.decisionIdeaSummary && !resolutionText) return null;
+
+                return (
+                  <div className={`rounded-3xl p-6 border shadow-sm relative overflow-hidden ${selectedTicket.status === 'Rejected' ? 'bg-red-50/50 border-red-200/50 dark:bg-red-950/20 dark:border-red-900/30' : selectedTicket.status === 'PendingApproval' ? 'bg-blue-50/50 border-blue-200/50 dark:bg-blue-950/20 dark:border-blue-900/30' : 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-900/30'}`}>
+                    <div className={`absolute top-0 right-0 p-6 opacity-5 ${selectedTicket.status === 'Rejected' ? 'text-red-500' : selectedTicket.status === 'PendingApproval' ? 'text-blue-500' : 'text-green-500'}`}>
+                      {selectedTicket.status === 'Rejected' ? <IconBan size={100} /> : <IconCheck size={100} />}
+                    </div>
+                    <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${selectedTicket.status === 'Rejected' ? 'text-red-600' : selectedTicket.status === 'PendingApproval' ? 'text-blue-600' : 'text-green-600'}`}>
+                      {selectedTicket.status === 'Rejected' ? (
+                        <><IconBan size={16}/> የውድቅ ምክንያት</>
+                      ) : selectedTicket.status === 'PendingApproval' ? (
+                        <><IconCheck size={16}/> የተሰጠ ውሳኔ (ለጽድቅ የቀረበ)</>
+                      ) : (
+                        <><IconCheck size={16}/> የተሰጠ ውሳኔ</>
+                      )}
+                    </h4>
+                    <div className="relative z-10">
+                      <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap">{resolutionText}</p>
+                      {resolutionAttachments && resolutionAttachments.length > 0 && (
+                        <div className="mt-5 space-y-2">
+                          <p className="text-xs font-semibold text-text-secondary mb-2">ተያያዥ ሰነዶች:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {resolutionAttachments.map((att: any, i: number) => (
+                              <a key={i} href={att.url || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-surface-primary rounded-xl border border-border/30 text-xs font-medium text-brand-blue hover:border-brand-blue/30 transition-colors shadow-sm">
+                                <IconFileText size={14} /> {att.filename}
+                              </a>
+                            ))}
+                          </div>
                         </div>
+                      )}
+                      <div className="mt-5 pt-4 border-t border-border/10 flex items-center gap-4 text-xs text-text-secondary font-medium">
+                        {(selectedTicket.resolvedBy || selectedTicket.processedBy) && <span className="flex items-center gap-1.5"><IconUser size={14} /> {selectedTicket.resolvedBy || selectedTicket.processedBy}</span>}
+                        {(() => {
+                          const dateVal = selectedTicket.resolvedAt || selectedTicket.processedAt;
+                          return dateVal ? (
+                            <span className="flex items-center gap-1.5">
+                              <IconClock size={14} /> {new Date(dateVal).toLocaleString('am-ET')}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
-                    )}
-                    <div className="mt-5 pt-4 border-t border-border/10 flex items-center gap-4 text-xs text-text-secondary font-medium">
-                      {selectedTicket.resolvedBy && <span className="flex items-center gap-1.5"><IconUser size={14} /> {selectedTicket.resolvedBy}</span>}
-                      {selectedTicket.resolvedAt && <span className="flex items-center gap-1.5"><IconClock size={14} /> {new Date(selectedTicket.resolvedAt).toLocaleString('am-ET')}</span>}
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* User Review Details */}
               {selectedTicket.resolutionRating && (
@@ -667,36 +759,41 @@ export default function ComplaintsPage() {
             {selectedTicket.status !== 'Resolved' && selectedTicket.status !== 'Rejected' && selectedTicket.status !== 'PendingApproval' && (
               <div className="sticky bottom-0 bg-surface-primary/90 backdrop-blur-xl border-t border-border/20 p-6">
                 <div className="flex gap-3">
-                  {selectedTicket.status === 'New' && (
+                  {(selectedTicket.status === 'New' || selectedTicket.status === 'Accepted') && (
                     <>
                       <button
-                        onClick={handleAcceptComplaint}
+                        onClick={() => {
+                          setCommitteeName('የኢንስፔክሽን አጣሪ ኮሚቴ');
+                          setCommitteeMembers([{ name: '', phone: '' }]);
+                          setShowCommitteeModal(true);
+                        }}
                         disabled={actionLoading}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
                       >
-                        <IconCheck size={18} />
-                        ተቀበል (Accept)
+                        <IconUsers size={18} />
+                        ተቀበል እና ኮሚቴ አዋቅር (Accept & Assign Committee)
                       </button>
                       <button
                         onClick={() => { setResolutionAction('Rejected'); setResolutionMessage(''); setResolutionFiles([]); setShowResolutionModal(true); }}
                         disabled={actionLoading}
-                        className="w-auto flex items-center justify-center gap-2 py-3.5 px-6 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                        className="w-auto flex items-center justify-center gap-2 py-3.5 px-6 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
                       >
                         <IconBan size={18} />
                         ውድቅ (Reject)
                       </button>
                     </>
                   )}
-                  {selectedTicket.status === 'Accepted' && (
-                    <div className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-surface-secondary text-text-muted rounded-2xl text-sm font-bold border border-border/50 cursor-not-allowed">
-                      <IconClock size={18} />
-                      በኮሚቴ ሰብሳቢ ምደባ በመጠባበቅ ላይ...
-                    </div>
-                  )}
                   {(selectedTicket.status === 'Processing' || selectedTicket.status === 'RevisionRequested') && (
                     <button
                       onClick={() => { setResolutionAction('PendingApproval' as any); setShowResolutionModal(true); }}
                       disabled={actionLoading}
+                      className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
+                    >
+                      <IconCheck size={18} />
+                      የውሳኔ ሀሳብ ለጽድቅ አቅርብ (Submit Decision Proposal)
+                    </button>
+                  )}
+                </div>
                       className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
                     >
                       <IconCheck size={18} />
@@ -727,21 +824,21 @@ export default function ComplaintsPage() {
               {resolutionAction === 'PendingApproval'
                 ? 'የተሰጠውን የውሳኔ ሀሳብ ማጠቃለያ ያስገቡ። ይህ ለኮሚቴ ሰብሳቢው ይላካል።'
                 : resolutionAction === 'Resolved'
-                  ? 'የተሰጠውን መፍትሄ ዝርዝር ያስገቡ። ይህ ለአቅራቢው ይላካል።'
+                  ? 'የተሰጠውን ውሳኔ ዝርዝር ያስገቡ። ይህ ለአቅራቢው ይላካል።'
                   : 'ውድቅ ለማድረግ ምክንያቱን ያስገቡ። ይህ ለአቅራቢው ይላካል።'}
             </p>
 
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-text-primary mb-2 block">
-                  {resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ማጠቃለያ *' : resolutionAction === 'Resolved' ? 'የመፍትሄ ዝርዝር *' : 'የውድቅ ምክንያት *'}
+                  {resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ማጠቃለያ *' : resolutionAction === 'Resolved' ? 'የተሰጠ ውሳኔ ዝርዝር *' : 'የውድቅ ምክንያት *'}
                 </label>
                 <textarea
                   value={resolutionMessage}
                   onChange={(e) => setResolutionMessage(e.target.value)}
                   rows={4}
                   className="block w-full resize-none rounded-xl border border-border/50 bg-surface-secondary/30 px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors"
-                  placeholder={resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ማጠቃለያዎን እዚህ ያስገቡ...' : resolutionAction === 'Resolved' ? 'የተሰጠውን መፍትሄ ያስገቡ...' : 'ውድቅ ያደረጉበትን ምክንያት ያስገቡ...'}
+                  placeholder={resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ማጠቃለያዎን እዚህ ያስገቡ...' : resolutionAction === 'Resolved' ? 'የተሰጠውን ውሳኔ ያስገቡ...' : 'ውድቅ ያደረጉበትን ምክንያት ያስገቡ...'}
                 />
               </div>
 
@@ -910,6 +1007,101 @@ export default function ComplaintsPage() {
               >
                 <IconDownload size={18} />
                 ኤክስፖርት አድርግ
+              </button>
+            </div>
+          </div>
+        </div>
+      {/* Committee Group Assignment Modal */}
+      {showCommitteeModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCommitteeModal(false)}>
+          <div className="bg-surface-primary rounded-2xl border border-border/30 p-6 max-w-lg w-full shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-border/30">
+              <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                <IconUsers size={20} className="text-brand-blue" />
+                አቤቱታውን ተቀበል እና ኮሚቴ አዋቅር
+              </h3>
+              <button onClick={() => setShowCommitteeModal(false)} className="p-1.5 hover:bg-surface-secondary rounded-xl transition-colors cursor-pointer">
+                <IconX size={20} className="text-text-muted" />
+              </button>
+            </div>
+
+            <p className="text-xs text-text-muted">
+              ጉዳዩን የሚከታተልና የሚያጣራ ኮሚቴ ስም እና አባላትን ያዋቅሩ::
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-text-primary mb-1 block">የኮሚቴ ስም *</label>
+                <input
+                  type="text"
+                  value={committeeName}
+                  onChange={(e) => setCommitteeName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue font-semibold"
+                  placeholder="ምሳሌ፦ የኢንስፔክሽን አጣሪ ኮሚቴ"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-text-primary mb-2 block">የኮሚቴ አባላት ዝርዝር *</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {committeeMembers.map((member, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder={`አባል ${index + 1} ስም`}
+                        value={member.name}
+                        onChange={(e) => {
+                          const updated = [...committeeMembers];
+                          updated[index].name = e.target.value;
+                          setCommitteeMembers(updated);
+                        }}
+                        className="flex-1 px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+                      />
+                      <input
+                        type="text"
+                        placeholder="ስልክ ቁጥር"
+                        value={member.phone}
+                        onChange={(e) => {
+                          const updated = [...committeeMembers];
+                          updated[index].phone = e.target.value;
+                          setCommitteeMembers(updated);
+                        }}
+                        className="w-28 px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+                      />
+                      {committeeMembers.length > 1 && (
+                        <button
+                          onClick={() => setCommitteeMembers(committeeMembers.filter((_, i) => i !== index))}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors shrink-0 cursor-pointer"
+                        >
+                          <IconX size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCommitteeMembers([...committeeMembers, { name: '', phone: '' }])}
+                  className="mt-2 text-xs font-bold text-brand-blue hover:underline inline-flex items-center gap-1 cursor-pointer"
+                >
+                  + አባል ጨምር
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-3 border-t border-border/20 justify-end">
+              <button
+                onClick={() => setShowCommitteeModal(false)}
+                className="px-4 py-2.5 rounded-xl border border-border/50 text-xs font-bold text-text-muted hover:bg-surface-secondary transition-colors cursor-pointer"
+              >
+                ሰርዝ
+              </button>
+              <button
+                onClick={handleConfirmCommitteeAssignment}
+                disabled={actionLoading || !committeeName.trim()}
+                className="px-6 py-2.5 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-xl text-xs font-bold shadow-md transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                {actionLoading ? 'በማስገባት ላይ...' : 'ተቀበልና ኮሚቴ አጽድቅ (Confirm)'}
               </button>
             </div>
           </div>

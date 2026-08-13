@@ -19,20 +19,6 @@ export async function createRepresentativeAction(formData: FormData) {
     const cleanPhone = rawPhone.trim();
     const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
 
-    // Check region limit
-    const { count: regionRepsCount, error: countError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('user_id', { count: 'exact', head: true })
-      .eq('system_role', 'representative')
-      .eq('region', region);
-
-    if (countError) {
-      return { error: 'Failed to verify region limit' };
-    }
-
-    if (regionRepsCount && regionRepsCount >= 2) {
-      return { error: `ከፍተኛው የክልል ተወካዮች ብዛት ተሞልቷል (Maximum 2 representatives allowed per region).` };
-    }
 
     const password = crypto.randomBytes(4).toString('hex'); // 8 characters
     const syntheticEmail = `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local`;

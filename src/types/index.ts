@@ -152,8 +152,9 @@ export interface ComplaintAttachment {
 export interface ComplaintResolution {
   message: string;
   attachments?: ComplaintAttachment[];
-  resolvedAt: string;
-  resolvedBy: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  decisionIdeaSummary?: string;
 }
 
 export type ComplaintStatus = 'New' | 'Accepted' | 'Processing' | 'PendingApproval' | 'Resolved' | 'Rejected' | 'RevisionRequested';

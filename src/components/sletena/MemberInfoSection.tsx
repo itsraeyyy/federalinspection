@@ -27,7 +27,9 @@ interface MemberInfoSectionProps {
 
 const MEMBERSHIP_LEVEL_OPTIONS: { label: string; value: MembershipLevel }[] = [
   { label: 'አባል', value: 'Abal' },
-  { label: 'የቤተሰብ/የሕብረት አመራር', value: 'Yebeteseb_Yehbret_Amerar' },
+  { label: 'የቤተሰብ አመራር', value: 'Yebeteseb_Amerar' },
+  { label: 'የህብረት አመራር', value: 'Yehbret_Amerar' },
+  { label: 'የበታች አመራር', value: 'Yebatach_Amerar' },
   { label: 'መካከለኛ አመራር', value: 'Mekakelegna_Amerar' },
   { label: 'ከፍተኛ አመራር', value: 'Keftegna_Amerar' },
 ];
@@ -112,7 +114,7 @@ export const MemberInfoSection: React.FC<MemberInfoSectionProps> = ({
         {/* Membership Level */}
         <div>
           <label className="block text-xs font-semibold text-text-secondary mb-1">
-            የአባልነት / የሥራ ደረጃ
+            ሀላፊነት ደረጃ
           </label>
           <select
             value={membershipLevel}

@@ -379,7 +379,7 @@ export function ComplaintsHeatmap({ initialData }: { initialData: GeoJSON.Featur
                 <span className="text-2xl font-bold text-slate-700 dark:text-white">{regionTotals.thisWeek}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] text-slate-400 dark:text-white/40 uppercase font-mono tracking-wider mb-1">የተፈቱ (Resolved)</span>
+                <span className="text-[10px] text-slate-400 dark:text-white/40 uppercase font-mono tracking-wider mb-1">ውሳኔ የተሰጣቸው (Resolved)</span>
                 <span className="text-2xl font-bold text-green-600 dark:text-green-400">{regionTotals.resolved}</span>
               </div>
             </div>
@@ -478,7 +478,7 @@ export function ComplaintsHeatmap({ initialData }: { initialData: GeoJSON.Featur
                   <div className="text-2xl font-bold text-slate-700 dark:text-white">{activePopupInfo.properties.this_week_count}</div>
                 </div>
                 <div className="flex flex-col">
-                  <div className="text-[10px] text-slate-400 dark:text-white/40 uppercase font-mono tracking-wider mb-1">የተፈቱ (Resolved)</div>
+                  <div className="text-[10px] text-slate-400 dark:text-white/40 uppercase font-mono tracking-wider mb-1">ውሳኔ የተሰጣቸው (Resolved)</div>
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">{activePopupInfo.properties.resolved_count}</div>
                 </div>
               </div>

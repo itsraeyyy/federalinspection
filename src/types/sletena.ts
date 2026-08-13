@@ -5,9 +5,12 @@
 
 export type MembershipLevel =
   | 'Abal'
-  | 'Yebeteseb_Yehbret_Amerar'
+  | 'Yebeteseb_Amerar'
+  | 'Yehbret_Amerar'
+  | 'Yebatach_Amerar'
   | 'Mekakelegna_Amerar'
   | 'Keftegna_Amerar'
+  | 'Yebeteseb_Yehbret_Amerar'
   | 'Level_1'
   | 'Level_2'
   | 'Level_3'

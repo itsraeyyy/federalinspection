@@ -293,7 +293,7 @@ export const complaintService = {
     if (newStatus === 'PendingApproval') {
       updates.processed_by = adminName;
       if (resolution?.message) {
-        updates.resolution = { ...(existing?.resolution as any || {}), decisionIdeaSummary: resolution.message };
+        updates.resolution = { ...(existing?.resolution as any || {}), decisionIdeaSummary: resolution.message, message: resolution.message };
       }
     }
 
@@ -441,7 +441,14 @@ export const complaintService = {
     return true;
   },
 
-  startProcessingByLeader: async (id: string, leaderName: string, committeeName: string): Promise<boolean> => {
+  startProcessingByLeader: async (id: string, leaderName: string, committeeName: string, members?: { name: string; phone: string }[]): Promise<boolean> => {
+    const { data: existing } = await supabase.from('complaints').select('resolution').eq('id', id).single();
+    const existingRes = (existing?.resolution as any) || {};
+
+    const formattedMembers = members && members.length > 0
+      ? members.filter(m => m.name.trim()).map(m => `${m.name.trim()}${m.phone?.trim() ? ` (${m.phone.trim()})` : ''}`)
+      : undefined;
+
     const { data: updatedComplaint, error } = await supabase
       .from('complaints')
       .update({
@@ -449,8 +456,11 @@ export const complaintService = {
         processed_by: leaderName,
         processed_at: new Date().toISOString(),
         assigned_committee: committeeName,
+        ...(formattedMembers ? { group_members: formattedMembers } : {}),
         resolution: {
+          ...existingRes,
           assignedCommittee: committeeName,
+          committeeMembers: members || [],
           slaDeadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
         }
       })
@@ -472,6 +482,73 @@ export const complaintService = {
           type: updatedComplaint.type,
           status: 'Processing',
           trackingCode: updatedComplaint.tracking_code || '',
+        });
+      } catch (notifyErr) {
+        console.error('Failed to send complaint status notification:', notifyErr);
+      }
+    }
+
+    return true;
+  },
+
+  approveDecisionByLeader: async (id: string, leaderName: string, confirmationMessage?: string, files?: File[]): Promise<boolean> => {
+    const { data: existing } = await supabase.from('complaints').select('resolution, name, phone, email, type, tracking_code').eq('id', id).single();
+    const existingRes = (existing?.resolution as any) || {};
+    const finalMsg = confirmationMessage?.trim() || existingRes.decisionIdeaSummary || existingRes.message || 'የውሳኔ ሀሳቡ በኮሚቴ ሰብሳቢ ተረጋግቶና ጸድቆ ተጠናቋል።';
+
+    let resolutionAttachments: any[] = existingRes.attachments || [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const fileExt = file.name.includes('.') ? file.name.split('.').pop() || '' : '';
+        const cleanExt = fileExt.replace(/[^a-zA-Z0-9]/g, '');
+        const safeExt = cleanExt ? `.${cleanExt}` : '';
+        const safeFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}${safeExt}`;
+        const filePath = `resolutions/${id}/${safeFileName}`;
+
+        const { error: uploadError } = await supabase.storage.from('complaints').upload(filePath, file);
+        if (!uploadError) {
+          const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
+          resolutionAttachments.push({
+            filename: file.name,
+            fileType: file.type,
+            fileSize: `${(file.size / 1024).toFixed(1)} KB`,
+            url: urlData?.signedUrl || '',
+            filePath
+          });
+        }
+      }
+    }
+
+    const { error } = await supabase
+      .from('complaints')
+      .update({
+        status: 'Resolved',
+        resolved_at: new Date().toISOString(),
+        resolved_by: leaderName,
+        resolution: {
+          ...existingRes,
+          message: finalMsg,
+          attachments: resolutionAttachments,
+          approvedByLeaderAt: new Date().toISOString(),
+          approvedByLeaderName: leaderName,
+        }
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error approving decision by leader:', error);
+      return false;
+    }
+
+    if (existing && (existing.phone || (existing as any).email)) {
+      try {
+        await notifyComplaintStatusUpdate({
+          phone: existing.phone,
+          email: (existing as any).email,
+          name: existing.name,
+          type: existing.type,
+          status: 'Resolved',
+          trackingCode: existing.tracking_code || '',
         });
       } catch (notifyErr) {
         console.error('Failed to send complaint status notification:', notifyErr);

@@ -25,7 +25,7 @@ export const NpsWidget: React.FC<NpsWidgetProps> = ({ nps }) => {
         <div>
           <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
             <IconHeartRateMonitor className="text-brand-blue" size={22} />
-            የአባላት እርካታ ደረጃ (Net Promoter Score - NPS)
+            የአባላት የመደገፍ ደረጃ መጠን (NPS)
           </h3>
           <p className="text-xs text-text-muted mt-1">
             የተወሰዱ ስልጠናዎች በአባላት የተሰጡ የደስታ እና የመደገፍ ደረጃዎች ስሌት::

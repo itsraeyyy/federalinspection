@@ -153,7 +153,9 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
   const membershipLevelStats = useMemo(() => {
     const counts: Record<string, number> = {
       'አባል': 0,
-      'የቤተሰብ/የሕብረት አመራር': 0,
+      'የቤተሰብ አመራር': 0,
+      'የህብረት አመራር': 0,
+      'የበታች አመራር': 0,
       'መካከለኛ አመራር': 0,
       'ከፍተኛ አመራር': 0,
     };
@@ -161,7 +163,10 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
     relevantSubmissions.forEach((s) => {
       const lvl = s.membershipLevel;
       if (lvl === 'Abal') counts['አባል'] += 1;
-      else if (lvl === 'Yebeteseb_Yehbret_Amerar') counts['የቤተሰብ/የሕብረት አመራር'] += 1;
+      else if (lvl === 'Yebeteseb_Amerar') counts['የቤተሰብ አመራር'] += 1;
+      else if (lvl === 'Yehbret_Amerar') counts['የህብረት አመራር'] += 1;
+      else if (lvl === 'Yebatach_Amerar') counts['የበታች አመራር'] += 1;
+      else if (lvl === 'Yebeteseb_Yehbret_Amerar') counts['የህብረት አመራር'] += 1;
       else if (lvl === 'Mekakelegna_Amerar') counts['መካከለኛ አመራር'] += 1;
       else if (lvl === 'Keftegna_Amerar') counts['ከፍተኛ አመራር'] += 1;
       else counts['አባል'] += 1;
@@ -431,7 +436,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
             <IconChartBar size={18} className="text-brand-blue" />
           </div>
           <div className="text-3xl font-extrabold text-brand-blue">+{npsScore}</div>
-          <div className="text-xs text-text-secondary mt-1">Net Promoter Score</div>
+          <div className="text-xs text-text-secondary mt-1">የተሳታፊዎች የመደገፍ ደረጃ መጠን</div>
         </div>
 
         <div className="bg-surface-primary border border-border/50 rounded-xl p-5 shadow-sm">
@@ -521,7 +526,7 @@ export const SatisfactionReportView: React.FC<SatisfactionReportViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Membership Level Distribution */}
           <div className="space-y-3 bg-surface-secondary/30 p-4 rounded-xl border border-border/40">
-            <h4 className="text-xs font-bold text-text-primary">የአባልነት / የሥራ ደረጃ ስርጭት</h4>
+            <h4 className="text-xs font-bold text-text-primary">ሀላፊነት ደረጃ ስርጭት</h4>
             <div className="space-y-2">
               {membershipLevelStats.map((item) => (
                 <div key={item.name} className="space-y-1">

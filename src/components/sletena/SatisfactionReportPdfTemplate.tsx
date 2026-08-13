@@ -217,8 +217,18 @@ export const SatisfactionReportPdfTemplate: React.FC<SatisfactionReportPdfTempla
     Yebeteseb_Yehbret_Amerar: '#7c3aed',
   };
 
+  const roleNames: Record<string, string> = {
+    Keftegna_Amerar: 'ከፍተኛ አመራር',
+    Mekakelegna_Amerar: 'መካከለኛ አመራር',
+    Yebatach_Amerar: 'የበታች አመራር',
+    Yehbret_Amerar: 'የህብረት አመራር',
+    Yebeteseb_Amerar: 'የቤተሰብ አመራር',
+    Yebeteseb_Yehbret_Amerar: 'የቤተሰብ/የሕብረት አመራር',
+    Abal: 'አባል',
+  };
+
   const membershipList = Object.entries(membershipMap).map(([role, count]) => ({
-    name: role === 'Keftegna_Amerar' ? 'ከፍተኛ አመራር' : role === 'Mekakelegna_Amerar' ? 'መካከለኛ አመራር' : role === 'Yebeteseb_Yehbret_Amerar' ? 'የቤተሰብ/የሕብረት አመራር' : 'አባል',
+    name: roleNames[role] || role || 'አባል',
     value: count,
     pct: Math.round((count / safeCount) * 100),
     color: roleColors[role] || '#2563eb',
@@ -364,7 +374,7 @@ export const SatisfactionReportPdfTemplate: React.FC<SatisfactionReportPdfTempla
             <div className="border-2 border-amber-600/30 rounded-2xl p-5 bg-gradient-to-br from-amber-50/60 to-white space-y-1 shadow-2xs">
               <div className="text-[10px] text-amber-950 font-black uppercase tracking-wider">የመደገፍ ደረጃ (NPS)</div>
               <div className="text-3xl font-black text-amber-900 font-mono">+{npsScore}</div>
-              <div className="text-[10px] text-amber-900 font-bold">Net Promoter Score</div>
+              <div className="text-[10px] text-amber-900 font-bold">የተሳታፊዎች የመደገፍ ደረጃ መጠን</div>
             </div>
 
             <div className="border-2 border-purple-600/30 rounded-2xl p-5 bg-gradient-to-br from-purple-50/60 to-white space-y-1 shadow-2xs">
@@ -457,7 +467,7 @@ export const SatisfactionReportPdfTemplate: React.FC<SatisfactionReportPdfTempla
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
               <h3 className="font-black text-slate-950 text-xs flex items-center gap-2">
                 <span className="mr-1 inline-block">📊</span>
-                <span>ሀ) የተሳታፊዎች የአባልነት / የሥራ ደረጃ ስርጭት (Membership Distribution)</span>
+                <span>ሀ) የተሳታፊዎች ሀላፊነት ደረጃ ስርጭት (Responsibility Level Distribution)</span>
               </h3>
               <span className="text-[10px] font-bold text-slate-500">Demographics Analytics</span>
             </div>
@@ -703,7 +713,7 @@ export const SatisfactionReportPdfTemplate: React.FC<SatisfactionReportPdfTempla
             <span className="font-extrabold text-slate-900">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
           <div className="text-right">
-            <span>በሲስተሙ በራስ-ሰር የተመረተ ህጋዊ የዕርካታ ሰነድ | <strong className="font-mono text-blue-950">ገፅ 5 ከ 5</strong></span>
+            <strong className="font-mono text-blue-950">ገፅ 5 ከ 5</strong>
           </div>
         </div>
       </div>

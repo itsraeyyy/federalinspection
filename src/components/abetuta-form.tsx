@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileText, Send, UploadCloud, CheckCircle2, Copy, ArrowRight, ArrowLeft, X, FileIcon, Search, ShieldCheck } from "lucide-react";
+import { FileText, Send, UploadCloud, CheckCircle2, Copy, ArrowRight, ArrowLeft, X, FileIcon, Search, ShieldCheck, PlusCircle, MinusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { complaintService } from "@/services/complaints";
 import { regionsData } from "@/lib/regions-data";
@@ -50,6 +50,7 @@ export function AbetutaForm() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [submissionType, setSubmissionType] = useState<'በግል' | 'በቡድን'>('በግል');
+  const [groupMembers, setGroupMembers] = useState<string[]>(['', '']);
   const [memberCount, setMemberCount] = useState('');
   const [institution, setInstitution] = useState('');
   const [targetRegion, setTargetRegion] = useState('');
@@ -67,6 +68,20 @@ export function AbetutaForm() {
   // Validation
   const [personalErrors, setPersonalErrors] = useState<Record<string, string>>({});
   const [detailErrors, setDetailErrors] = useState<Record<string, string>>({});
+
+  const handleGroupMemberChange = (index: number, value: string) => {
+    const newMembers = [...groupMembers];
+    newMembers[index] = value;
+    setGroupMembers(newMembers);
+  };
+
+  const addGroupMember = () => {
+    setGroupMembers(prev => [...prev, '']);
+  };
+
+  const removeGroupMember = (index: number) => {
+    setGroupMembers(prev => prev.filter((_, i) => i !== index));
+  };
 
   const validatePersonal = (): boolean => {
     const errs: Record<string, string> = {};
@@ -88,6 +103,9 @@ export function AbetutaForm() {
     if (!mainSubject.trim()) errs.mainSubject = 'ዝርዝር ሁኔታውን ያስገቡ (ግዴታ)';
     if (!requestedResolution.trim()) errs.requestedResolution = 'የሚፈልጉትን መፍትሄ ያስገቡ (ግዴታ)';
     if (files.length === 0) errs.files = 'እባክዎ ማስረጃዎችን (ፋይል) አያይዙ። ይህ ማስታወሻ ግዴታ ነው';
+    if (submissionType === 'በቡድን' && groupMembers.filter(m => m.trim()).length < 2) {
+      errs.groupMembers = 'እባክዎ ቢያንስ ሁለት የቡድን አባላት ስም ያስገቡ';
+    }
     setDetailErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -117,7 +135,8 @@ export function AbetutaForm() {
         gender: gender || undefined,
         address: address || undefined,
         submissionMode: submissionType,
-        memberCount: submissionType === 'በቡድን' && memberCount ? parseInt(memberCount) : undefined,
+        groupMembers: submissionType === 'በቡድን' ? groupMembers.filter(m => m.trim()) : undefined,
+        memberCount: submissionType === 'በቡድን' ? (groupMembers.filter(m => m.trim()).length || (memberCount ? parseInt(memberCount) : undefined)) : undefined,
         institution,
         targetRegion,
         targetZone,
@@ -592,7 +611,7 @@ export function AbetutaForm() {
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     )}
                   >
-                    <input type="radio" name="subType" value={val} className="hidden" checked={submissionType === val} onChange={() => setSubmissionType(val)} />
+                    <input type="radio" name="subType" value={val} className="hidden" checked={submissionType === val} onChange={() => { setSubmissionType(val); setDetailErrors(p => ({ ...p, groupMembers: '' })); }} />
                     {val}
                   </label>
                 ))}
@@ -600,18 +619,33 @@ export function AbetutaForm() {
             </div>
 
             {submissionType === 'በቡድን' && (
-              <div className="space-y-2">
-                <label htmlFor="memberCount" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  የአባላት ብዛት <span className="text-red-500">*</span>
+              <div className="space-y-3 p-5 rounded-2xl border border-slate-200 bg-slate-50">
+                <label className="text-sm font-semibold text-slate-800 flex items-center justify-between">
+                  <span>የቡድን አባላት ስም <span className="text-red-500">*</span></span>
                 </label>
-                <input
-                  type="number"
-                  id="memberCount"
-                  value={memberCount}
-                  onChange={(e) => setMemberCount(e.target.value)}
-                  className="block w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3.5 text-sm focus:border-[#B45309] focus:ring-[#B45309] focus:bg-white transition-colors"
-                  placeholder="ብዛት ያስገቡ"
-                />
+                {groupMembers.map((member, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={member}
+                      onChange={(e) => handleGroupMemberChange(index, e.target.value)}
+                      className={cn(
+                        "block flex-1 rounded-xl border px-4 py-3 text-sm transition-colors border-slate-200 bg-white focus:border-[#B45309] focus:ring-[#B45309]"
+                      )}
+                      placeholder={`የአባል ${index + 1} ስም`}
+                    />
+                    {groupMembers.length > 2 && (
+                      <button type="button" onClick={() => removeGroupMember(index)} className="text-slate-400 hover:text-red-500 p-2">
+                        <MinusCircle className="size-5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {detailErrors.groupMembers && <p className="text-xs text-red-500">{detailErrors.groupMembers}</p>}
+
+                <button type="button" onClick={addGroupMember} className="flex items-center gap-2 text-sm text-[#B45309] font-semibold hover:underline mt-2">
+                  <PlusCircle className="size-4" /> ተጨማሪ አባል አክል
+                </button>
               </div>
             )}
 

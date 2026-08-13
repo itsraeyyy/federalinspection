@@ -3,7 +3,7 @@ import { Complaint } from '@/types';
 const STATUS_AM: Record<string, string> = {
   New: 'አዲስ',
   Processing: 'በሂደት ላይ',
-  Resolved: 'የተፈታ',
+  Resolved: 'ውሳኔ የተሰጣቸው',
   Rejected: 'ውድቅ የሆነ',
 };
 
@@ -55,8 +55,8 @@ export function exportComplaintsToExcel(complaints: Complaint[], filename?: stri
     'የተጠየቀ መፍትሄ',
     'የቀረበበት ቀን',
     'ወደ ሂደት የገባበት',
-    'የተፈታበት ቀን',
-    'ያስፈታው',
+    'ውሳኔ የተሰጠበት ቀን',
+    'ውሳኔ የሰጠው አካል',
     'የመፍትሄ ጊዜ',
     'የመፍትሄ መልዕክት',
     'ያያዥ ማስረጃዎች ብዛት',

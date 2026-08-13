@@ -31,8 +31,8 @@ const RATING_LABELS: Record<string, string> = {
   "very-good": "በጣም ጥሩ",
   "good": "ጥሩ",
   "needs-improvement": "መስተካከል አለበት (*)",
-  "bad": "መጥፎ (ድሮ)",
-  "very-bad": "በጣም መጥፎ (ድሮ)",
+  "bad": "ውስንነት (ድሮ)",
+  "very-bad": "ከፍተኛ ውስንነት (ድሮ)",
 };
 
 const RATING_COLORS: Record<string, string> = {
@@ -300,7 +300,7 @@ export default function FeedbackPage() {
                             />
                             <Bar dataKey="positive" name="ጥሩ (Positive)" fill="#10b981" radius={[0, 4, 4, 0]} barSize={8} />
                             <Bar dataKey="neutral" name="መካከለኛ (Neutral)" fill="#64748b" radius={[0, 4, 4, 0]} barSize={8} />
-                            <Bar dataKey="negative" name="መጥፎ (Negative)" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={8} />
+                            <Bar dataKey="negative" name="ውስንነት (Negative)" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={8} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>

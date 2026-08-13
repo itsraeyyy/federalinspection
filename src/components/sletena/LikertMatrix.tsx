@@ -31,7 +31,7 @@ export const LikertMatrix: React.FC<LikertMatrixProps> = ({ directives, ratings,
           <div className="flex items-center gap-2">
             <IconListCheck className="text-brand-blue" size={22} />
             <h3 className="text-sm font-bold text-text-primary uppercase tracking-wide">
-              2. ዋና ዋና መጠይቆች
+              2. የስልጠና ፍላጎትና ደረጃዎን ይምረጡ
             </h3>
           </div>
         </div>

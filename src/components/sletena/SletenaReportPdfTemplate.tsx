@@ -272,8 +272,18 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
     'Yebeteseb_Yehbret_Amerar': '#7c3aed',
   };
 
+  const roleNames: Record<string, string> = {
+    Keftegna_Amerar: 'ከፍተኛ አመራር',
+    Mekakelegna_Amerar: 'መካከለኛ አመራር',
+    Yebatach_Amerar: 'የበታች አመራር',
+    Yehbret_Amerar: 'የህብረት አመራር',
+    Yebeteseb_Amerar: 'የቤተሰብ አመራር',
+    Yebeteseb_Yehbret_Amerar: 'የቤተሰብ/የሕብረት አመራር',
+    Abal: 'አባል',
+  };
+
   const membershipList = Object.entries(membershipMap).map(([role, count]) => ({
-    name: role,
+    name: roleNames[role] || role || 'አባል',
     value: count,
     pct: Math.round((count / Math.max(needSubs.length, 1)) * 100),
     color: roleColors[role] || '#2563eb',
@@ -524,7 +534,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
             <div className="flex justify-between items-center border-b border-slate-200 pb-2">
               <h3 className="font-black text-slate-950 text-xs flex items-center gap-2">
                 <span className="mr-1 inline-block">📊</span>
-                <span>ሀ) የአባላት / የሥራ ደረጃ ስርጭት (Membership Distribution)</span>
+                <span>ሀ) ሀላፊነት ደረጃ ስርጭት (Responsibility Level Distribution)</span>
               </h3>
               <span className="text-[10px] font-bold text-slate-500">Donut Analytics</span>
             </div>
@@ -844,7 +854,7 @@ export const SletenaReportPdfTemplate: React.FC<SletenaReportPdfTemplateProps> =
             <span className="font-extrabold text-slate-900">የብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ዋና ጽ/ቤት</span>
           </div>
           <div className="text-right">
-            <span>በሲስተሙ በራስ-ሰር የተመረተ ህጋዊ ሰነድ | <strong className="font-mono text-blue-950">ገጽ 6 ከ 6</strong></span>
+            <strong className="font-mono text-blue-950">ገጽ 6 ከ 6</strong>
           </div>
         </div>
       </div>

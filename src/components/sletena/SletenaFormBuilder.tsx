@@ -49,7 +49,7 @@ export const SletenaFormBuilder: React.FC<SletenaFormBuilderProps> = ({
 
   // Section Header Titles
   const [sec1Title, setSec1Title] = useState('1. ጥሬ ሃቅ');
-  const [sec2Title, setSec2Title] = useState('2. ዋና ዋና መጠይቆች');
+  const [sec2Title, setSec2Title] = useState('2. የስልጠና ፍላጎትና ደረጃዎን ይምረጡ');
   const [sec3Title, setSec3Title] = useState('3. ተጨማሪ የሚያስፈልጉ የስልጠና መመሪያዎች');
   const [sec4Title, setSec4Title] = useState('4. ተመራጭ የስልጠና መንገድና የስልጠና ቁሳቁስ/ማኑዋል ፍላጎት');
   const [sec5Title, setSec5Title] = useState('5. የስልጠናው ሂደት ውጤታማ እንዲሆን እንዲካተት የሚፈልጉት ተጨማሪ ነገሮች');
@@ -58,7 +58,7 @@ export const SletenaFormBuilder: React.FC<SletenaFormBuilderProps> = ({
   const [labelMemberId, setLabelMemberId] = useState('የአባልነት ቁጥር (Member ID)');
   const [labelMemberName, setLabelMemberName] = useState('ሙሉ ስም');
   const [labelContact, setLabelContact] = useState('ስልክ ቁጥር');
-  const [labelMembershipLevel, setLabelMembershipLevel] = useState('የአባልነት / የሥራ ደረጃ');
+  const [labelMembershipLevel, setLabelMembershipLevel] = useState('ሀላፊነት ደረጃ');
   const [labelRegion, setLabelRegion] = useState('ክልል / ከተማ');
   const [labelZone, setLabelZone] = useState('ዞን / ክፍለ ከተማ');
   const [labelWoreda, setLabelWoreda] = useState('ወረዳ');
@@ -460,7 +460,9 @@ export const SletenaFormBuilder: React.FC<SletenaFormBuilderProps> = ({
               <div className="relative">
                 <select disabled className="w-full px-3 py-2 text-xs bg-surface-secondary/40 border border-border/40 rounded-xl text-text-muted appearance-none cursor-not-allowed">
                   <option>አባል</option>
-                  <option>የቤተሰብ/የሕብረት አመራር</option>
+                  <option>የቤተሰብ አመራር</option>
+                  <option>የህብረት አመራር</option>
+                  <option>የበታች አመራር</option>
                   <option>መካከለኛ አመራር</option>
                   <option>ከፍተኛ አመራር</option>
                 </select>
