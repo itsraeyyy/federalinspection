@@ -31,11 +31,12 @@ import { complaintService } from "@/services/complaints";
 import { Complaint, ComplaintStatus } from "@/types";
 import { exportComplaintsToExcel, getResolutionTime } from "@/lib/exportExcel";
 import { useAdmin } from "@/lib/hooks/useAdmin";
+import { formatECDateTime, convertToEthiopianTimeStr } from "@/lib/date-formatter";
 
 type TicketType = 'Complaint' | 'Suggestion';
 type StatusFilter = 'All' | ComplaintStatus;
 
-const STATUS_ORDER: ComplaintStatus[] = ['New', 'Processing', 'Resolved', 'Rejected'];
+const STATUS_ORDER: ComplaintStatus[] = ['New', 'Processing', 'PendingApproval', 'Resolved', 'Rejected'];
 
 const STATUS_CONFIG: Record<ComplaintStatus, { label: string; color: string; bgColor: string; dotColor: string; iconColor: string }> = {
   New: { label: 'አዲስ', color: 'text-blue-700', bgColor: 'bg-blue-500/10', dotColor: 'bg-blue-500', iconColor: 'text-blue-500' },
@@ -73,7 +74,7 @@ export default function ComplaintsPage() {
   // Export Modal State
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportTypes, setExportTypes] = useState<TicketType[]>(['Complaint', 'Suggestion']);
-  const [exportCategories, setExportCategories] = useState<ComplaintStatus[]>(['New', 'Processing', 'Resolved', 'Rejected']);
+  const [exportCategories, setExportCategories] = useState<ComplaintStatus[]>(['New', 'Processing', 'PendingApproval', 'Resolved', 'Rejected']);
   const [exportTimeframe, setExportTimeframe] = useState<'all' | '1m' | '3m' | '6m' | '1y' | 'custom'>('all');
   const [exportStartDate, setExportStartDate] = useState('');
   const [exportEndDate, setExportEndDate] = useState('');
@@ -105,8 +106,9 @@ export default function ComplaintsPage() {
   const typeTickets = tickets.filter(t => t.type === activeTab);
   const counts = {
     total: typeTickets.length,
-    new: typeTickets.filter(t => t.status === 'New').length,
-    processing: typeTickets.filter(t => t.status === 'Processing').length,
+    new: typeTickets.filter(t => t.status === 'New' || t.status === 'Accepted').length,
+    processing: typeTickets.filter(t => t.status === 'Processing' || t.status === 'RevisionRequested').length,
+    pendingApproval: typeTickets.filter(t => t.status === 'PendingApproval').length,
     resolved: typeTickets.filter(t => t.status === 'Resolved').length,
     rejected: typeTickets.filter(t => t.status === 'Rejected').length,
   };
@@ -383,11 +385,12 @@ export default function ComplaintsPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
           {[
             { id: 'All', label: 'ጠቅላላ', value: counts.total, color: 'text-text-primary', activeStyle: 'bg-surface-primary shadow-sm border-border/40' },
             { id: 'New', label: 'አዲስ', value: counts.new, color: 'text-blue-600', activeStyle: 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-200/50' },
             { id: 'Processing', label: 'በሂደት ላይ', value: counts.processing, color: 'text-amber-600', activeStyle: 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-200/50' },
+            { id: 'PendingApproval', label: 'ለማጽደቅ የቀረበ', value: counts.pendingApproval, color: 'text-sky-600', activeStyle: 'bg-sky-50/80 dark:bg-sky-900/20 border-sky-200/50' },
             { id: 'Resolved', label: 'ውሳኔ የተሰጣቸው', value: counts.resolved, color: 'text-green-600', activeStyle: 'bg-green-50/80 dark:bg-green-900/20 border-green-200/50' },
             { id: 'Rejected', label: 'ውድቅ', value: counts.rejected, color: 'text-red-600', activeStyle: 'bg-red-50/80 dark:bg-red-900/20 border-red-200/50' },
           ].map(stat => {
@@ -654,7 +657,10 @@ export default function ComplaintsPage() {
 
                 const resolutionAttachments = selectedTicket.resolution?.attachments || selectedTicket.decisionIdeaFiles || [];
 
-                if (!selectedTicket.resolution && !selectedTicket.decisionIdeaSummary && !resolutionText) return null;
+                if (!resolutionText?.trim() && (!resolutionAttachments || resolutionAttachments.length === 0)) return null;
+
+                const dateVal = selectedTicket.resolvedAt || selectedTicket.processedAt || selectedTicket.resolvedAtRaw;
+                const displayDate = dateVal ? (dateVal.includes('T') || dateVal.includes('-') ? formatECDateTime(dateVal) : convertToEthiopianTimeStr(dateVal)) : null;
 
                 return (
                   <div className={`rounded-3xl p-6 border shadow-sm relative overflow-hidden ${selectedTicket.status === 'Rejected' ? 'bg-red-50/50 border-red-200/50 dark:bg-red-950/20 dark:border-red-900/30' : selectedTicket.status === 'PendingApproval' ? 'bg-blue-50/50 border-blue-200/50 dark:bg-blue-950/20 dark:border-blue-900/30' : 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-900/30'}`}>
@@ -686,14 +692,11 @@ export default function ComplaintsPage() {
                       )}
                       <div className="mt-5 pt-4 border-t border-border/10 flex items-center gap-4 text-xs text-text-secondary font-medium">
                         {(selectedTicket.resolvedBy || selectedTicket.processedBy) && <span className="flex items-center gap-1.5"><IconUser size={14} /> {selectedTicket.resolvedBy || selectedTicket.processedBy}</span>}
-                        {(() => {
-                          const dateVal = selectedTicket.resolvedAt || selectedTicket.processedAt;
-                          return dateVal ? (
-                            <span className="flex items-center gap-1.5">
-                              <IconClock size={14} /> {new Date(dateVal).toLocaleString('am-ET')}
-                            </span>
-                          ) : null;
-                        })()}
+                        {displayDate && (
+                          <span className="flex items-center gap-1.5">
+                            <IconClock size={14} /> {displayDate}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -726,9 +729,9 @@ export default function ComplaintsPage() {
                 </h4>
                 <div className="space-y-0 pl-2">
                   {[
-                    { label: 'ተቀብለናል', date: selectedTicket.createdAt, active: true },
-                    { label: 'ወደ ሂደት ገብቷል', date: selectedTicket.processedAt, active: !!selectedTicket.processedAt },
-                    { label: selectedTicket.status === 'Rejected' ? 'ውድቅ ሆኗል' : 'ተፈቷል', date: selectedTicket.resolvedAt, active: !!selectedTicket.resolvedAt },
+                    { label: 'ተቀብለናል', date: convertToEthiopianTimeStr(selectedTicket.createdAt), active: true },
+                    { label: 'ወደ ሂደት ገብቷል', date: convertToEthiopianTimeStr(selectedTicket.processedAt), active: !!selectedTicket.processedAt },
+                    { label: selectedTicket.status === 'Rejected' ? 'ውድቅ ሆኗል' : 'ተፈቷል', date: convertToEthiopianTimeStr(selectedTicket.resolvedAt), active: !!selectedTicket.resolvedAt },
                   ].map((step, i, arr) => (
                     <div key={step.label} className="flex gap-4">
                       <div className="flex flex-col items-center">
@@ -791,13 +794,6 @@ export default function ComplaintsPage() {
                     >
                       <IconCheck size={18} />
                       የውሳኔ ሀሳብ ለጽድቅ አቅርብ (Submit Decision Proposal)
-                    </button>
-                  )}
-                </div>
-                      className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                    >
-                      <IconCheck size={18} />
-                      የውሳኔ ሀሳብ ለጽድቅ አቅርብ (Submit for Approval)
                     </button>
                   )}
                 </div>
@@ -1011,6 +1007,7 @@ export default function ComplaintsPage() {
             </div>
           </div>
         </div>
+      )}
       {/* Committee Group Assignment Modal */}
       {showCommitteeModal && selectedTicket && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCommitteeModal(false)}>

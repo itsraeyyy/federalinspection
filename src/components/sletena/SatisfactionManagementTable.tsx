@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TrainingCategory } from '@/types/sletena';
+import { TrainingCategory, SatisfactionSubmission } from '@/types/sletena';
 import { formatECDate } from '@/lib/date-formatter';
 import { SatisfactionFormBuilder } from './SatisfactionFormBuilder';
 import {

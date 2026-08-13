@@ -16,6 +16,7 @@ import {
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from "@/lib/supabaseClient";
+import { formatECDateTime } from "@/lib/date-formatter";
 
 type QRCategory = 'public_hq' | 'confidential_docs';
 
@@ -283,7 +284,7 @@ export default function QRAccessPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-text-primary truncate">{req.requester_device || 'Unknown Device'}</span>
-                          <span className="text-[10px] text-text-muted shrink-0">• {new Date(req.created_at).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[10px] text-text-muted shrink-0">• {formatECDateTime(req.created_at)}</span>
                         </div>
                         <div className="flex items-center gap-1.5 mt-1">
                           <IconFileText size={12} className="text-text-muted shrink-0" />

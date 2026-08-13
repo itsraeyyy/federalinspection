@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 
 import { SletenaNavGroup } from '@/components/layout/SletenaNavGroup';
+import { formatECDateTime } from '@/lib/date-formatter';
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const { t, language, setLanguage } = useI18n();
@@ -38,10 +39,14 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTime(now.toLocaleString(language === 'en' ? 'en-US' : 'am-ET', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      }));
+      if (language === 'en') {
+        setCurrentTime(now.toLocaleString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        }));
+      } else {
+        setCurrentTime(formatECDateTime(now));
+      }
     };
     updateTime();
     const timer = setInterval(updateTime, 60000);

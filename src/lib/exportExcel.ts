@@ -1,4 +1,5 @@
 import { Complaint } from '@/types';
+import { formatECDateTime, convertToEthiopianTimeStr } from '@/lib/date-formatter';
 
 const STATUS_AM: Record<string, string> = {
   New: 'አዲስ',
@@ -103,7 +104,7 @@ export function exportComplaintsToExcel(complaints: Complaint[], filename?: stri
 
   // Data rows
   complaints.forEach(c => {
-    const formatDate = (d?: string) => d ? new Date(d).toLocaleString('am-ET') : '-';
+    const formatDate = (d?: string) => d ? (d.includes('T') || d.includes('-') ? formatECDateTime(d) : convertToEthiopianTimeStr(d)) : '-';
     const row = [
       c.id.split('-')[0],
       c.trackingCode || '-',
