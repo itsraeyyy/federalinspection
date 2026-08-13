@@ -1,12 +1,12 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { StatCard } from "@/components/ui/stat-card";
 import { Greeting } from "@/components/ui/greeting";
-import { 
-  IconNews, 
-  IconFileText, 
-  IconUsers, 
-  IconMessage2, 
-  IconChartBar, 
+import {
+  IconNews,
+  IconFileText,
+  IconUsers,
+  IconMessage2,
+  IconChartBar,
   IconBuilding,
   IconArrowUpRight
 } from '@tabler/icons-react';
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
   const totalPeriods = totalPeriodsCount ?? 0;
 
   // Resolution Rate %
-  const resolutionRate = totalComplaints > 0 
+  const resolutionRate = totalComplaints > 0
     ? ((resolvedComplaints / totalComplaints) * 100).toFixed(1)
     : '0.0';
 
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
         <StatCard
           label="የተካሄዱ ምዘናዎች"
           value={totalPeriods.toLocaleString()}
-          description={`${totalPeriods} ንቁ የምዘనా ዙሮች`}
+          description={`${totalPeriods} ንቁ ምዘናዎች`}
           accentColor="yellow"
           icon={IconFileText}
         />
