@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { newsService } from "@/services/news";
 import { NewsArticle } from "@/types";
-import Image from "next/image";
+import { getYouTubeThumbnail } from "@/lib/youtube";
 
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -144,21 +144,23 @@ export default function NewsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredArticles.map((article) => (
-              <div key={article.id} className="group bg-surface-primary/30 rounded-2xl border border-border/20 backdrop-blur-md overflow-hidden hover:border-brand-blue/30 hover:shadow-lg transition-all duration-300">
-                <div className="relative h-48 overflow-hidden">
-                  {article.image ? (
-                    <Image
-                      src={article.image}
-                      alt={article.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-surface-secondary/50 flex items-center justify-center">
-                      <span className="text-text-muted text-sm">ምንም ምስል የለም</span>
-                    </div>
-                  )}
+            {filteredArticles.map((article) => {
+              const cardImage = article.image || getYouTubeThumbnail(article.videoUrl);
+
+              return (
+                <div key={article.id} className="group bg-surface-primary/30 rounded-2xl border border-border/20 backdrop-blur-md overflow-hidden hover:border-brand-blue/30 hover:shadow-lg transition-all duration-300">
+                  <div className="relative h-48 overflow-hidden">
+                    {cardImage ? (
+                      <img
+                        src={cardImage}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-surface-secondary/50 flex items-center justify-center">
+                        <span className="text-text-muted text-sm">ምንም ምስል የለም</span>
+                      </div>
+                    )}
 
                   {article.videoUrl && (
                     <div className="absolute top-3 right-3 bg-danger/90 text-white px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-bold">
@@ -239,7 +241,8 @@ export default function NewsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>

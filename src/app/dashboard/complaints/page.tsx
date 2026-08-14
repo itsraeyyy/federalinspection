@@ -92,8 +92,8 @@ export default function ComplaintsPage() {
   // Committee Group Creation Modal State
   const [showCommitteeModal, setShowCommitteeModal] = useState(false);
   const [committeeName, setCommitteeName] = useState('የኢንስፔክሽን አጣሪ ኮሚቴ');
-  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string }[]>([
-    { name: '', phone: '' }
+  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string; email?: string }[]>([
+    { name: '', phone: '', email: '' }
   ]);
 
   // Export Modal State
@@ -618,7 +618,7 @@ export default function ComplaintsPage() {
                       {((selectedTicket.resolution as any)?.committeeMembers || (selectedTicket.groupMembers && selectedTicket.groupMembers.length > 0)) && (
                         <div className="flex flex-wrap gap-2 pt-1">
                           {((selectedTicket.resolution as any)?.committeeMembers || selectedTicket.groupMembers || []).map((m: any, idx: number) => {
-                            const name = typeof m === 'string' ? m : `${m.name}${m.phone ? ` (${m.phone})` : ''}`;
+                            const name = typeof m === 'string' ? m : `${m.name}${m.phone || m.email ? ` (${[m.phone, m.email].filter(Boolean).join(', ')})` : ''}`;
                             return (
                               <span key={idx} className="px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
                                 • {name}
@@ -856,7 +856,7 @@ export default function ComplaintsPage() {
                       <button
                         onClick={() => {
                           setCommitteeName('የኢንስፔክሽን አጣሪ ኮሚቴ');
-                          setCommitteeMembers([{ name: '', phone: '' }]);
+                          setCommitteeMembers([{ name: '', phone: '', email: '' }]);
                           setShowCommitteeModal(true);
                         }}
                         disabled={actionLoading}
@@ -1129,9 +1129,9 @@ export default function ComplaintsPage() {
 
               <div>
                 <label className="text-xs font-bold text-text-primary mb-2 block">የኮሚቴ አባላት ዝርዝር *</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {committeeMembers.map((member, index) => (
-                    <div key={index} className="flex gap-2 items-center">
+                    <div key={index} className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
                       <input
                         type="text"
                         placeholder={`አባል ${index + 1} ስም`}
@@ -1141,7 +1141,7 @@ export default function ComplaintsPage() {
                           updated[index].name = e.target.value;
                           setCommitteeMembers(updated);
                         }}
-                        className="flex-1 px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+                        className="flex-1 min-w-[120px] px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
                       />
                       <input
                         type="text"
@@ -1153,6 +1153,17 @@ export default function ComplaintsPage() {
                           setCommitteeMembers(updated);
                         }}
                         className="w-28 px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+                      />
+                      <input
+                        type="email"
+                        placeholder="ኢሜይል (Email)"
+                        value={member.email || ''}
+                        onChange={(e) => {
+                          const updated = [...committeeMembers];
+                          updated[index].email = e.target.value;
+                          setCommitteeMembers(updated);
+                        }}
+                        className="flex-1 min-w-[130px] px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
                       />
                       {committeeMembers.length > 1 && (
                         <button
@@ -1167,7 +1178,7 @@ export default function ComplaintsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setCommitteeMembers([...committeeMembers, { name: '', phone: '' }])}
+                  onClick={() => setCommitteeMembers([...committeeMembers, { name: '', phone: '', email: '' }])}
                   className="mt-2 text-xs font-bold text-brand-blue hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   + አባል ጨምር

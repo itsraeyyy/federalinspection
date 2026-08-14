@@ -23,6 +23,8 @@ import * as z from "zod";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
+import { getYouTubeThumbnail } from "@/lib/youtube";
+
 type NewsFormValues = z.infer<typeof newsSchema>;
 
 export default function CreateNewsPage() {
@@ -31,8 +33,6 @@ export default function CreateNewsPage() {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [featuredImage, setFeaturedImage] = useState<string>('');
   const [uploading, setUploading] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
-  const [showUrlModal, setShowUrlModal] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<NewsFormValues>({
     resolver: zodResolver(newsSchema),
@@ -81,17 +81,6 @@ export default function CreateNewsPage() {
     }
   };
 
-  const handleAddUrlImage = () => {
-    if (!urlInput.trim()) return;
-    const cleanUrl = urlInput.trim();
-    setGalleryImages(prev => [...prev, cleanUrl]);
-    if (!featuredImage) {
-      setFeaturedImage(cleanUrl);
-    }
-    setUrlInput('');
-    setShowUrlModal(false);
-  };
-
   const removeGalleryImage = (index: number) => {
     const targetUrl = galleryImages[index];
     const updated = galleryImages.filter((_, i) => i !== index);
@@ -107,6 +96,10 @@ export default function CreateNewsPage() {
 
   const onSubmit = async (data: NewsFormValues) => {
     try {
+      const videoUrl = (data as any).videoUrl || undefined;
+      const ytThumbnail = getYouTubeThumbnail(videoUrl);
+      const chosenImage = featuredImage || galleryImages[0] || ytThumbnail || undefined;
+
       const payload = {
         title: data.title,
         lang: data.language,
@@ -114,9 +107,9 @@ export default function CreateNewsPage() {
         content: data.body,
         article_type: data.article_type,
         author: 'ኢሥኮዋጽ',
-        image: featuredImage || (galleryImages[0] || undefined),
-        images: galleryImages.length > 0 ? galleryImages : undefined,
-        videoUrl: (data as any).videoUrl || undefined,
+        image: chosenImage,
+        images: galleryImages.length > 0 ? galleryImages : (ytThumbnail ? [ytThumbnail] : undefined),
+        videoUrl: videoUrl,
         excerpt: data.body?.substring(0, 150) + '...',
         published: new Date().toISOString()
       };
@@ -220,16 +213,9 @@ export default function CreateNewsPage() {
                 <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest flex items-center gap-2">
                   <IconPhoto size={16} className="text-brand-blue" /> ፎቶዎች (Images CRUD)
                 </label>
-                <p className="text-xs text-text-muted mt-0.5">ፎቶዎችን ይስቀሉ ወይም በሊንክ ያስገቡ።</p>
+                <p className="text-xs text-text-muted mt-0.5">ፎቶዎችን ከመሣሪያዎ ይስቀሉ።</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowUrlModal(true)}
-                  className="flex items-center gap-1 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary px-3 py-1.5 rounded-lg text-xs font-semibold border border-border/40"
-                >
-                  <IconLink size={14} /> በሊንክ ጨምር
-                </button>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -239,32 +225,6 @@ export default function CreateNewsPage() {
                 </button>
               </div>
             </div>
-
-            {showUrlModal && (
-              <div className="bg-surface-secondary/60 border border-border/50 rounded-xl p-3 flex items-center gap-2 animate-in fade-in">
-                <input
-                  type="url"
-                  value={urlInput}
-                  onChange={e => setUrlInput(e.target.value)}
-                  placeholder="የምስል ሊንክ (URL) ያስገቡ..."
-                  className="flex-1 bg-surface-primary border border-border/40 rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddUrlImage}
-                  className="bg-brand-blue text-white px-3 py-2 rounded-lg text-xs font-bold"
-                >
-                  ጨምር
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowUrlModal(false)}
-                  className="bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold"
-                >
-                  ተው
-                </button>
-              </div>
-            )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {galleryImages.map((img, idx) => {

@@ -4,6 +4,7 @@ import { Menubar } from "@/components/menubar";
 import { Footer } from "@/components/footer";
 import { ChevronRight, CalendarDays, ArrowLeft, Share2, Clock, Bookmark } from "lucide-react";
 import { newsService } from "@/services/news";
+import { getYouTubeThumbnail } from "@/lib/youtube";
 
 export default async function MessageDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,8 +55,8 @@ export default async function MessageDetailPage({ params }: { params: Promise<{ 
           <div className="mx-auto max-w-7xl">
             <article className="overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_64px_-24px_rgba(1,75,170,0.10)] ring-1 ring-slate-100/80">
               <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
-                {item.image ? (
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                {item.image || getYouTubeThumbnail(item.videoUrl) ? (
+                  <img src={item.image || getYouTubeThumbnail(item.videoUrl)!} alt={item.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#014BAA]/5 to-[#FFB800]/5">
                     <div className="flex flex-col items-center gap-3">

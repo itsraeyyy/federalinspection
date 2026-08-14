@@ -18,6 +18,8 @@ import { newsService } from "@/services/news";
 import { NewsArticle } from "@/types";
 import { useRouter } from "next/navigation";
 
+import { getYouTubeThumbnail } from "@/lib/youtube";
+
 export default function EditNewsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [article, setArticle] = useState<NewsArticle | null>(null);
@@ -36,8 +38,6 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
   // Image CRUD state
   const [featuredImage, setFeaturedImage] = useState<string>('');
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
-  const [urlInput, setUrlInput] = useState('');
-  const [showUrlModal, setShowUrlModal] = useState(false);
 
   const router = useRouter();
 
@@ -86,17 +86,6 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
     }
   };
 
-  const handleAddUrlImage = () => {
-    if (!urlInput.trim()) return;
-    const cleanUrl = urlInput.trim();
-    setGalleryImages(prev => [...prev, cleanUrl]);
-    if (!featuredImage) {
-      setFeaturedImage(cleanUrl);
-    }
-    setUrlInput('');
-    setShowUrlModal(false);
-  };
-
   const handleRemoveImage = (urlToRemove: string) => {
     const updated = galleryImages.filter(url => url !== urlToRemove);
     setGalleryImages(updated);
@@ -113,6 +102,9 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
     if (!article) return;
     setSaving(true);
     try {
+      const ytThumb = getYouTubeThumbnail(article.videoUrl);
+      const chosenImg = featuredImage || galleryImages[0] || ytThumb || '';
+
       await newsService.updateArticle(id, {
         title,
         lang,
@@ -122,8 +114,8 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
         article_type: articleType,
         content: body,
         excerpt: body.slice(0, 160),
-        image: featuredImage || (galleryImages[0] || ''),
-        images: galleryImages,
+        image: chosenImg,
+        images: galleryImages.length > 0 ? galleryImages : (ytThumb ? [ytThumb] : []),
       });
       router.push(`/dashboard/news/${id}`);
     } catch (error) {
@@ -218,19 +210,10 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                   <IconPhoto size={18} className="text-brand-blue" />
                   የዜናው ፎቶዎች አስተዳደር (News Images Management)
                 </h3>
-                <p className="text-xs text-text-muted mt-1">ፎቶዎችን ይስቀሉ፣ ያስወግዱ ወይም ዋና ፎቶ (Featured Image) ይምረጡ።</p>
+                <p className="text-xs text-text-muted mt-1">ፎቶዎችን ከመሣሪያዎ ይስቀሉ፣ ያስወግዱ ወይም ዋና ፎቶ (Featured Image) ይምረጡ።</p>
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowUrlModal(true)}
-                  className="flex items-center gap-1.5 bg-surface-secondary hover:bg-surface-secondary/80 text-text-primary px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border border-border/40"
-                >
-                  <IconLink size={15} />
-                  በሊንክ ጨምር
-                </button>
-
                 <label className="flex items-center gap-1.5 bg-brand-blue hover:bg-brand-blue/90 text-white px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all shadow-sm">
                   <IconUpload size={15} />
                   {uploading ? 'በመጫን ላይ...' : 'ፎቶ ስቀል'}
@@ -245,33 +228,6 @@ export default function EditNewsPage({ params }: { params: Promise<{ id: string 
                 </label>
               </div>
             </div>
-
-            {/* URL Modal Input */}
-            {showUrlModal && (
-              <div className="bg-surface-secondary/60 border border-border/50 rounded-2xl p-4 flex items-center gap-3 animate-in fade-in">
-                <input
-                  type="url"
-                  value={urlInput}
-                  onChange={e => setUrlInput(e.target.value)}
-                  placeholder="የምስል ሊንክ (URL) ያስገቡ፦ https://example.com/photo.jpg"
-                  className="flex-1 bg-surface-primary border border-border/40 rounded-xl px-4 py-2.5 text-xs text-text-primary focus:outline-none focus:border-brand-blue"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddUrlImage}
-                  className="bg-brand-blue text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-brand-blue/90"
-                >
-                  ጨምር
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowUrlModal(false)}
-                  className="bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl text-xs font-bold"
-                >
-                  ተው
-                </button>
-              </div>
-            )}
 
             {/* Gallery Grid */}
             {galleryImages.length > 0 ? (

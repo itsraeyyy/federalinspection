@@ -104,7 +104,7 @@ export default function CommitteeLeaderDashboard() {
 
   // Committee Modal State
   const [showCommitteeModal, setShowCommitteeModal] = useState(false);
-  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string }[]>([{ name: '', phone: '' }]);
+  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string; email?: string }[]>([{ name: '', phone: '', email: '' }]);
 
   // Editable Decision State
   const [editableDecision, setEditableDecision] = useState('');
@@ -162,14 +162,17 @@ export default function CommitteeLeaderDashboard() {
     if (!selectedTicket || validMembers.length === 0) return;
     setActionLoading(true);
     
-    const assignedStr = validMembers.map(m => m.phone.trim() ? `${m.name.trim()} (${m.phone.trim()})` : m.name.trim()).join('፣ ');
-    const assigned = await complaintService.startProcessingByLeader(selectedTicket.id, leaderName, assignedStr);
+    const assignedStr = validMembers.map(m => {
+      const info = [m.phone?.trim(), m.email?.trim()].filter(Boolean).join(', ');
+      return `${m.name.trim()}${info ? ` (${info})` : ''}`;
+    }).join('፣ ');
+    const assigned = await complaintService.startProcessingByLeader(selectedTicket.id, leaderName, assignedStr, validMembers);
     if (assigned) {
       await fetchTickets();
       const updated = await complaintService.getComplaintById(selectedTicket.id);
       setSelectedTicket(updated);
       setShowCommitteeModal(false);
-      setCommitteeMembers([{ name: '', phone: '' }]);
+      setCommitteeMembers([{ name: '', phone: '', email: '' }]);
       setFeedbackMsg({ type: 'success', text: 'ኮሚቴው በተሳካ ሁኔታ ተመድቧል፣ እና የ15 ቀናት ጊዜ ገደብ ጀምሯል።' });
       setTimeout(() => setFeedbackMsg(null), 5000);
     } else {
@@ -752,10 +755,10 @@ export default function CommitteeLeaderDashboard() {
                           <IconUser size={14} className="text-sky-500" /> የኮሚቴ አባላት ({members.length}):
                         </span>
                         {members.map((m: any, idx: number) => {
-                          const nameStr = typeof m === 'string' ? m : `${m.name}${m.phone ? ` (${m.phone})` : ''}`;
+                          const contact = typeof m === 'string' ? m : `${m.name}${m.phone || m.email ? ` (${[m.phone, m.email].filter(Boolean).join(', ')})` : ''}`;
                           return (
                             <span key={idx} className="font-extrabold px-2.5 py-1 bg-surface-secondary text-text-primary rounded-lg border border-border/30 text-[11px]">
-                              {nameStr}
+                              {contact}
                             </span>
                           );
                         })}

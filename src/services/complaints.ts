@@ -500,12 +500,15 @@ export const complaintService = {
     return true;
   },
 
-  startProcessingByLeader: async (id: string, leaderName: string, committeeName: string, members?: { name: string; phone: string }[]): Promise<boolean> => {
+  startProcessingByLeader: async (id: string, leaderName: string, committeeName: string, members?: { name: string; phone: string; email?: string }[]): Promise<boolean> => {
     const { data: existing } = await supabase.from('complaints').select('resolution').eq('id', id).single();
     const existingRes = (existing?.resolution as any) || {};
 
     const formattedMembers = members && members.length > 0
-      ? members.filter(m => m.name.trim()).map(m => `${m.name.trim()}${m.phone?.trim() ? ` (${m.phone.trim()})` : ''}`)
+      ? members.filter(m => m.name.trim()).map(m => {
+          const contact = [m.phone?.trim(), m.email?.trim()].filter(Boolean).join(', ');
+          return `${m.name.trim()}${contact ? ` (${contact})` : ''}`;
+        })
       : undefined;
 
     const { data: updatedComplaint, error } = await supabase
@@ -550,12 +553,12 @@ export const complaintService = {
     // Notify assigned committee group members (without link)
     if (updatedComplaint && members && members.length > 0) {
       for (const m of members) {
-        if (m.name && (m.phone || (m as any).email)) {
+        if (m.name && (m.phone || m.email)) {
           try {
             await notifyCommitteeAssigned({
               name: m.name.trim(),
               phone: m.phone ? m.phone.trim() : undefined,
-              email: (m as any).email ? (m as any).email.trim() : undefined,
+              email: m.email ? m.email.trim() : undefined,
               committeeName,
               trackingCode: updatedComplaint.tracking_code || '',
               slaDeadline: '15 ቀናት',

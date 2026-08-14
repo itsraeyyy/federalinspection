@@ -8,18 +8,7 @@ import { ShareButton } from "@/components/ShareButton";
 
 import { createNewsSlug } from "@/lib/slug";
 
-function getYouTubeEmbedUrl(url?: string): string | null {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  if (match && match[2] && match[2].length === 11) {
-    return `https://www.youtube.com/embed/${match[2]}`;
-  }
-  if (url.includes('youtube.com/embed/')) {
-    return url;
-  }
-  return null;
-}
+import { getYouTubeEmbedUrl, getYouTubeThumbnail } from "@/lib/youtube";
 
 import type { Metadata } from "next";
 
@@ -70,7 +59,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
     ? item.images 
     : (item.image ? [item.image] : []);
 
-  const mainImage = item.image || (allImages.length > 0 ? allImages[0] : null);
+  const mainImage = item.image || (allImages.length > 0 ? allImages[0] : getYouTubeThumbnail(item.videoUrl));
   const galleryImages = allImages;
 
   return (
@@ -208,8 +197,8 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
                         className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:ring-[#014BAA]/20"
                       >
                         <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
-                          {news.image ? (
-                            <img src={news.image} alt={news.title} className="w-full h-full object-cover" />
+                          {news.image || getYouTubeThumbnail(news.videoUrl) ? (
+                            <img src={news.image || getYouTubeThumbnail(news.videoUrl)!} alt={news.title} className="w-full h-full object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50">
                               <svg className="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

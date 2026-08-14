@@ -293,10 +293,10 @@ function TrackingContent() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[11px] font-bold text-slate-500">አባላት ({members.length}):</span>
                         {members.map((m: any, idx: number) => {
-                          const nameStr = typeof m === 'string' ? m : `${m.name}${m.phone ? ` (${m.phone})` : ''}`;
+                          const contact = typeof m === 'string' ? m : `${m.name}${m.phone || m.email ? ` (${[m.phone, m.email].filter(Boolean).join(', ')})` : ''}`;
                           return (
                             <span key={idx} className="text-[11px] font-bold px-2.5 py-0.5 bg-white text-slate-700 rounded-md border border-slate-200">
-                              {nameStr}
+                              {contact}
                             </span>
                           );
                         })}

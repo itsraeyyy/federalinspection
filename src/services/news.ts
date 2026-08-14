@@ -128,26 +128,64 @@ export const newsService = {
   },
 
   uploadImage: async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
+    const fileExt = file.name.split('.').pop() || 'jpg';
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = `news/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('personnel-photos')
-      .upload(filePath, file);
+    const buckets = ['personnel_photos', 'report_attachments', 'documents', 'public_files'];
+    for (const bucket of buckets) {
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(filePath, file, { upsert: true });
 
-    if (uploadError) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
+        if (!uploadError) {
+          const { data } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(filePath);
+          if (data?.publicUrl) {
+            return data.publicUrl;
+          }
+        }
+      } catch (err) {
+        console.warn(`Storage upload to ${bucket} failed:`, err);
+      }
     }
 
-    const { data } = supabase.storage
-      .from('personnel-photos')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    // Fallback: Return a compressed Data URL (max 800px) so database payload remains lightweight
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 800;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.75));
+          } else {
+            resolve(e.target?.result as string);
+          }
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
   }
 };
