@@ -1,8 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { Complaint, ComplaintStatus } from '../types';
 import { formatECDate, formatECDateTime } from '../lib/date-formatter';
-import { smsService } from './sms';
-import { notifyComplaintSubmitted, notifyComplaintStatusUpdate, notifyReportUpdate } from '../lib/notify';
+import { notifyComplaintSubmitted, notifyComplaintStatusUpdate, notifyReportUpdate, notifyDecisionProposalSubmitted, notifyCommitteeAssigned, notifyNewComplaintAdminAlert, notifyDecisionApprovedAdminAlert } from '@/notifications';
 
 function generateTrackingCode(): string {
   const prefix = 'TRK';
@@ -296,21 +295,18 @@ export const complaintService = {
       );
 
       const typeLabel = formData.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const adminMessage = `አዲስ ${typeLabel} ተመዝግቧል። መከታተያ ኮድ፡ ${trackingCode}`;
-
       for (const admin of targetAdmins) {
         if (admin.phone || admin.email) {
           try {
-            await notifyReportUpdate({
+            await notifyNewComplaintAdminAlert({
               phone: admin.phone || undefined,
               email: admin.email || undefined,
-              name: 'አስተዳዳሪ (Admin)',
-              subject: `ICODiS — አዲስ ${typeLabel}`,
-              message: adminMessage,
-              loginPath: '/dashboard',
+              trackingCode,
+              type: formData.type,
+              institution: formData.institution,
             });
-          } catch (notifyErr) {
-            console.error('Failed to notify admin of new complaint:', notifyErr);
+          } catch (adminErr) {
+            console.error('Failed to notify admin of new complaint:', adminErr);
           }
         }
       }
@@ -447,13 +443,32 @@ export const complaintService = {
   },
 
   acceptComplaintByAdmin: async (id: string, adminName: string): Promise<boolean> => {
-    const { error } = await supabase
+    const { data: updatedComplaint, error } = await supabase
       .from('complaints')
       .update({ status: 'Accepted', processed_by: adminName })
-      .eq('id', id);
+      .eq('id', id)
+      .select('name, phone, email, type, tracking_code')
+      .single();
+
     if (error) {
       console.error('Error accepting complaint by admin:', error);
       return false;
+    }
+
+    // Notify submitter that complaint has been accepted
+    if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
+      try {
+        await notifyComplaintStatusUpdate({
+          phone: updatedComplaint.phone,
+          email: (updatedComplaint as any).email,
+          name: updatedComplaint.name,
+          type: updatedComplaint.type,
+          status: 'Accepted',
+          trackingCode: updatedComplaint.tracking_code || '',
+        });
+      } catch (e) {
+        console.error('Failed to notify submitter of acceptance:', e);
+      }
     }
 
     // Notify Committee Leaders via sms/notify
@@ -532,6 +547,26 @@ export const complaintService = {
       }
     }
 
+    // Notify assigned committee group members (without link)
+    if (updatedComplaint && members && members.length > 0) {
+      for (const m of members) {
+        if (m.name && (m.phone || (m as any).email)) {
+          try {
+            await notifyCommitteeAssigned({
+              name: m.name.trim(),
+              phone: m.phone ? m.phone.trim() : undefined,
+              email: (m as any).email ? (m as any).email.trim() : undefined,
+              committeeName,
+              trackingCode: updatedComplaint.tracking_code || '',
+              slaDeadline: '15 ቀናት',
+            });
+          } catch (e) {
+            console.error('Failed to notify committee member of assignment:', e);
+          }
+        }
+      }
+    }
+
     return true;
   },
 
@@ -599,10 +634,33 @@ export const complaintService = {
       }
     }
 
+    // Also notify Complaint Receivers / Admins that decision was approved
+    const { data: admins } = await supabase.from('admin_profiles').select('phone, email, modules, role').eq('status', 'Active');
+    if (admins && existing?.tracking_code) {
+      const targetAdmins = admins.filter(a =>
+        a.role === 'super_admin' ||
+        (a.modules && (a.modules.includes('complaints') || a.modules.includes('abetuta') || a.modules.includes('tikoma')))
+      );
+      for (const admin of targetAdmins) {
+        if (admin.phone || admin.email) {
+          try {
+            await notifyDecisionApprovedAdminAlert({
+              phone: admin.phone || undefined,
+              email: admin.email || undefined,
+              trackingCode: existing.tracking_code,
+            });
+          } catch (adminErr) {
+            console.error('Failed to notify admin of approved decision:', adminErr);
+          }
+        }
+      }
+    }
+
     return true;
   },
 
   submitDecisionIdea: async (id: string, summary: string, files?: File[], leaderName?: string): Promise<boolean> => {
+    const { data: existing } = await supabase.from('complaints').select('tracking_code').eq('id', id).maybeSingle();
     let decisionAttachments: any[] = [];
     if (files && files.length > 0) {
       for (const file of files) {
@@ -658,13 +716,12 @@ export const complaintService = {
       for (const l of leaders) {
         if (l.phone || l.email) {
           try {
-            await notifyReportUpdate({
+            await notifyDecisionProposalSubmitted({
               phone: l.phone || undefined,
               email: l.email || undefined,
-              name: 'የኮሚቴ ሰብሳቢ (Leader)',
-              subject: 'ICODiS — የውሳኔ ሀሳብ ለጽድቅ ቀርቧል (Pending Approval)',
-              message: `ለማጽደቅ የቀረበ አዲስ የውሳኔ ሀሳብ አለ። እባክዎ በመግባት ውሳኔውን ያረጋግጡና ያጽድቁ።`,
-              loginPath: '/complaint/dashboard',
+              committeeLeaderName: 'የኮሚቴ ሰብሳቢ (Leader)',
+              trackingCode: existing?.tracking_code || id,
+              proposalSummary: summary,
             });
           } catch (e) {
             console.error('Failed notifying leader for approval:', e);

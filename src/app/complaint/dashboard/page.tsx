@@ -38,7 +38,18 @@ import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
 
-type StatusTab = 'All' | 'Accepted' | 'PendingApproval' | 'Processing' | 'Resolved';
+type StatusTab = 'All' | 'NeedsAttention' | 'Accepted' | 'PendingApproval' | 'Processing' | 'Resolved';
+
+function getDaysLeft(ticket: Complaint): number {
+  if (ticket.status === 'Resolved' || ticket.status === 'Rejected') return 999;
+  const slaDeadline = (ticket.resolution as any)?.slaDeadline;
+  const deadlineMs = slaDeadline 
+    ? new Date(slaDeadline).getTime() 
+    : new Date(ticket.createdAt).getTime() + 15 * 24 * 60 * 60 * 1000;
+  
+  const diffMs = deadlineMs - Date.now();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
 
 const STATUS_BADGES: Record<string, { label: string; bg: string; text: string; border: string }> = {
   New: { label: 'አዲስ የተመዘገበ', bg: 'bg-blue-500/10 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300 font-semibold', border: 'border-blue-500/20' },
@@ -185,6 +196,7 @@ export default function CommitteeLeaderDashboard() {
 
     if (!matchesSearch) return false;
 
+    if (activeTab === 'NeedsAttention') return t.status !== 'Resolved' && t.status !== 'Rejected' && getDaysLeft(t) <= 5;
     if (activeTab === 'Accepted') return t.status === 'Accepted';
     if (activeTab === 'PendingApproval') return t.status === 'PendingApproval';
     if (activeTab === 'Processing') return t.status === 'Processing' || t.status === 'RevisionRequested';
@@ -194,6 +206,7 @@ export default function CommitteeLeaderDashboard() {
 
   const stats = {
     total: tickets.filter(t => t.status !== 'New').length,
+    needsAttention: tickets.filter(t => t.status !== 'Resolved' && t.status !== 'Rejected' && getDaysLeft(t) <= 5).length,
     accepted: tickets.filter(t => t.status === 'Accepted').length,
     pendingApproval: tickets.filter(t => t.status === 'PendingApproval').length,
     processing: tickets.filter(t => t.status === 'Processing' || t.status === 'RevisionRequested').length,
@@ -464,9 +477,10 @@ export default function CommitteeLeaderDashboard() {
         {/* Filter Bar & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-primary p-4 rounded-3xl border border-border shadow-sm">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
-            {(['All', 'Accepted', 'PendingApproval', 'Processing', 'Resolved'] as StatusTab[]).map(tab => {
+            {(['All', 'NeedsAttention', 'Accepted', 'PendingApproval', 'Processing', 'Resolved'] as StatusTab[]).map(tab => {
               const labels: Record<StatusTab, string> = {
                 All: 'ሁሉም',
+                NeedsAttention: '🔴 ትኩረት የሚሹ',
                 Accepted: 'አዲስ (ምደባ)',
                 PendingApproval: 'ለማጽደቅ',
                 Processing: 'በማጣራት ላይ',
@@ -479,11 +493,16 @@ export default function CommitteeLeaderDashboard() {
                   onClick={() => setActiveTab(tab)}
                   className={`min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
                     isActive 
-                      ? 'bg-brand-blue text-white shadow-sm'
-                      : 'bg-surface-secondary/80 text-text-secondary hover:text-text-primary hover:bg-surface-secondary border border-border/30'
+                      ? tab === 'NeedsAttention' ? 'bg-red-600 text-white shadow-sm' : 'bg-brand-blue text-white shadow-sm'
+                      : tab === 'NeedsAttention' ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' : 'bg-surface-secondary/80 text-text-secondary hover:text-text-primary hover:bg-surface-secondary border border-border/30'
                   }`}
                 >
                   {labels[tab]}
+                  {tab === 'NeedsAttention' && stats.needsAttention > 0 && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isActive ? 'bg-white text-red-700' : 'bg-red-600 text-white'}`}>
+                      {stats.needsAttention}
+                    </span>
+                  )}
                   {tab === 'PendingApproval' && stats.pendingApproval > 0 && (
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isActive ? 'bg-white text-brand-blue' : 'bg-brand-yellow text-zinc-900'}`}>
                       {stats.pendingApproval}
@@ -546,6 +565,14 @@ export default function CommitteeLeaderDashboard() {
                         <span className={`px-2.5 py-1 rounded-full text-[11px] border ${badge.bg} ${badge.text} ${badge.border}`}>
                           {badge.label}
                         </span>
+                        {(() => {
+                          const daysLeft = getDaysLeft(ticket);
+                          if (daysLeft > 5 || ticket.status === 'Resolved' || ticket.status === 'Rejected') return null;
+                          if (daysLeft <= 0) return <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-red-600 text-white animate-pulse border border-red-700">🔥 ጊዜው ያለፈበት!</span>;
+                          if (daysLeft <= 1) return <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-red-100 text-red-700 border border-red-300">🚨 1 ቀን ብቻ ቀረው!</span>;
+                          if (daysLeft <= 3) return <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300">⚠️ 3 ቀናት ቀሩ!</span>;
+                          return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⏰ 5 ቀናት ቀሩ!</span>;
+                        })()}
                       </div>
                       <span className="font-mono text-xs font-bold text-text-secondary bg-surface-secondary px-2.5 py-1 rounded-full border border-border/20">
                         #{ticket.trackingCode}

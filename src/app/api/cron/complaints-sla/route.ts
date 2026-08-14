@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendSMS } from "@/lib/textbee";
-import { notifyReportUpdate } from "@/lib/notify";
+import { sendEmail } from "@/notifications/email-service";
+import { buildSlaReminderTemplates } from "@/notifications/templates";
 
 export async function GET(request: Request) {
   try {
     // 1. Fetch active complaints/suggestions that haven't been resolved or rejected
     const { data: tickets, error: ticketsError } = await supabaseAdmin
       .from('complaints')
-      .select('id, tracking_code, type, subject, created_at, resolution, sla_notified, reminder_notified, status')
+      .select('id, tracking_code, type, subject, created_at, resolution, assigned_committee, group_members, status')
       .not('status', 'in', '("Resolved","Rejected")');
 
     if (ticketsError || !tickets) {
@@ -16,33 +17,7 @@ export async function GET(request: Request) {
     }
 
     const now = Date.now();
-    const reminderTickets: typeof tickets = [];
-    const escalationTickets: typeof tickets = [];
-
-    for (const ticket of tickets) {
-      const slaDeadline = (ticket.resolution as any)?.slaDeadline;
-      if (!slaDeadline) continue; // Skip tickets that haven't started processing yet
-
-      const deadlineMs = new Date(slaDeadline).getTime();
-      const remainingDays = (deadlineMs - now) / (1000 * 60 * 60 * 24);
-
-      // Check if deadline has passed (Escalation to Committee Leader)
-      if (remainingDays <= 0) {
-        if (!ticket.sla_notified) {
-          escalationTickets.push(ticket);
-        }
-      } 
-      // Otherwise check Day 12-14 reminder (3 days or less remaining, but not overdue yet)
-      else if (remainingDays <= 3 && remainingDays > 0) {
-        if (!ticket.reminder_notified && !ticket.sla_notified) {
-          reminderTickets.push(ticket);
-        }
-      }
-    }
-
-    if (reminderTickets.length === 0 && escalationTickets.length === 0) {
-      return NextResponse.json({ success: true, message: "No timeline alerts or overdue tickets found.", count: 0 });
-    }
+    let remindersSentCount = 0;
 
     // 2. Fetch Admins and Committee Leaders for alerting
     const { data: admins, error: adminsError } = await supabaseAdmin
@@ -65,94 +40,79 @@ export async function GET(request: Request) {
       a.role === 'super_admin'
     );
 
-    const notifiedReminderIds: string[] = [];
-    const notifiedEscalationIds: string[] = [];
+    for (const ticket of tickets) {
+      const slaDeadline = (ticket.resolution as any)?.slaDeadline;
+      const deadlineMs = slaDeadline
+        ? new Date(slaDeadline).getTime()
+        : new Date(ticket.created_at).getTime() + 15 * 24 * 60 * 60 * 1000;
 
-    // Process 3-Day Reminders to Admins
-    for (const ticket of reminderTickets) {
-      const typeLabel = ticket.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const reminderSms = `ማሳሰቢያ፡ የ${typeLabel} መከታተያ ኮድ [${ticket.tracking_code}] የተሰጠው የ15 ቀናት የጊዜ ገደብ ለማለቅ 3 ቀናት ብቻ ይቀሩታል። እባክዎ አስፈላጊውን ማጣራት በአስቸኳይ ያጠናቅቁ።`;
+      const remainingMs = deadlineMs - now;
+      const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
 
-      for (const admin of complaintsAdmins) {
-        if (admin.phone) {
-          try {
-            await sendSMS(admin.phone, reminderSms);
-          } catch (e) {
-            console.error(`Failed sending reminder SMS to ${admin.phone}:`, e);
+      // Trigger reminders at 5 days, 3 days, 1 day left, or overdue (remainingDays <= 0)
+      if (remainingDays === 5 || remainingDays === 3 || remainingDays === 1 || remainingDays <= 0) {
+        remindersSentCount++;
+
+        // A. Notify Complaint Accepters / Admins (WITH LINK)
+        const adminTpl = buildSlaReminderTemplates({
+          trackingCode: ticket.tracking_code,
+          daysLeft: remainingDays,
+          role: 'admin',
+        });
+        for (const admin of complaintsAdmins) {
+          if (admin.phone) {
+            try { await sendSMS(admin.phone, adminTpl.sms); } catch (e) {}
+          }
+          if (admin.email) {
+            try { await sendEmail(admin.email, `ICODiS ማሳሰቢያ፡ በአቤቱታ ${ticket.tracking_code} ላይ ውሳኔ ለመስጠት ${remainingDays} ቀናት ቀሩ`, adminTpl.html, adminTpl.text); } catch (e) {}
           }
         }
-        if (admin.email) {
-          try {
-            await notifyReportUpdate({
-              phone: undefined,
-              email: admin.email,
-              name: 'አስተዳዳሪ (Admin)',
-              subject: `ICODiS ማሳሰቢያ፡ የ15 ቀናት የጊዜ ገደብ ለማለቅ 3 ቀናት የቀረው ${typeLabel} (${ticket.tracking_code})`,
-              message: reminderSms,
-              loginPath: '/dashboard/complaints',
-            });
-          } catch (e) {
-            console.error(`Failed sending reminder email to ${admin.email}:`, e);
+
+        // B. Notify Committee Leaders (WITH LINK)
+        const leaderTpl = buildSlaReminderTemplates({
+          trackingCode: ticket.tracking_code,
+          daysLeft: remainingDays,
+          role: 'leader',
+        });
+        for (const leader of committeeLeaders) {
+          if (leader.phone) {
+            try { await sendSMS(leader.phone, leaderTpl.sms); } catch (e) {}
+          }
+          if (leader.email) {
+            try { await sendEmail(leader.email, `ICODiS ማሳሰቢያ፡ በአቤቱታ ${ticket.tracking_code} ላይ ውሳኔ ለማጽደቅ ${remainingDays} ቀናት ቀሩ`, leaderTpl.html, leaderTpl.text); } catch (e) {}
+          }
+        }
+
+        // C. Notify Committee Group Members (WITHOUT LINK)
+        const memberTpl = buildSlaReminderTemplates({
+          trackingCode: ticket.tracking_code,
+          daysLeft: remainingDays,
+          role: 'member',
+          committeeName: ticket.assigned_committee || undefined,
+        });
+
+        const membersList: any[] = (ticket.resolution as any)?.committeeMembers || ticket.group_members || [];
+        for (const member of membersList) {
+          const memberPhone = typeof member === 'object' ? member.phone : (member.includes('(') ? member.split('(')[1]?.replace(')', '').trim() : undefined);
+          const memberEmail = typeof member === 'object' ? member.email : undefined;
+
+          if (memberPhone) {
+            try { await sendSMS(memberPhone, memberTpl.sms); } catch (e) {}
+          }
+          if (memberEmail) {
+            try { await sendEmail(memberEmail, `ICODiS ማሳሰቢያ፡ በኮሚቴዎ አቤቱታ ${ticket.tracking_code} ላይ ${remainingDays} ቀናት ቀሩ`, memberTpl.html, memberTpl.text); } catch (e) {}
           }
         }
       }
-      notifiedReminderIds.push(ticket.id);
-    }
-
-    // Process Day 15 Escalation Alerts to Committee Leaders
-    for (const ticket of escalationTickets) {
-      const typeLabel = ticket.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ';
-      const escalationSms = `አስቸኳይ ማሳሰቢያ፡ የ${typeLabel} መከታተያ ኮድ [${ticket.tracking_code}] የ15 ቀናት የመፍትሄ የጊዜ ገደብ ተጠናቋል! ጉዳዩ አሁንም ውሳኔ ስላላግኘ እባክዎ አስቸኳይ ክትትል ያድርጉበት።`;
-
-      for (const leader of committeeLeaders) {
-        if (leader.phone) {
-          try {
-            await sendSMS(leader.phone, escalationSms);
-          } catch (e) {
-            console.error(`Failed sending escalation SMS to ${leader.phone}:`, e);
-          }
-        }
-        if (leader.email) {
-          try {
-            await notifyReportUpdate({
-              phone: undefined,
-              email: leader.email,
-              name: 'የኮሚቴ ሰብሳቢ (Committee Leader)',
-              subject: `ICODiS አስቸኳይ፡ የ15 ቀናት የጊዜ ገደብ ያለቀበት ${typeLabel} (${ticket.tracking_code})`,
-              message: escalationSms,
-              loginPath: '/complaint/dashboard',
-            });
-          } catch (e) {
-            console.error(`Failed sending escalation email to ${leader.email}:`, e);
-          }
-        }
-      }
-      notifiedEscalationIds.push(ticket.id);
-    }
-
-    // 3. Persist notification flags to database
-    if (notifiedReminderIds.length > 0) {
-      await supabaseAdmin
-        .from('complaints')
-        .update({ reminder_notified: true })
-        .in('id', notifiedReminderIds);
-    }
-
-    if (notifiedEscalationIds.length > 0) {
-      await supabaseAdmin
-        .from('complaints')
-        .update({ sla_notified: true })
-        .in('id', notifiedEscalationIds);
     }
 
     return NextResponse.json({
       success: true,
-      message: `Processed timeline alerts: ${notifiedReminderIds.length} reminders sent, ${notifiedEscalationIds.length} escalations sent.`,
-      remindersSent: notifiedReminderIds.length,
-      escalationsSent: notifiedEscalationIds.length,
+      message: `Processed SLA reminders. Sent notifications for ${remindersSentCount} tickets.`,
+      remindersSentCount,
     });
   } catch (error: any) {
-    console.error('Error executing timeline check cron:', error);
+    console.error('Error executing SLA check cron:', error);
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }

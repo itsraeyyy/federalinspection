@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Menubar } from "@/components/menubar";
 import { complaintService } from "@/services/complaints";
 import { Complaint } from "@/types";
-import { Search, Clock, CheckCircle2, XCircle, Loader2, ArrowRight, FileText, Download } from "lucide-react";
+import { Search, Clock, CheckCircle2, XCircle, Loader2, ArrowRight, FileText, Download, Users, ExternalLink } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -12,19 +12,25 @@ import { Star } from "lucide-react";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
   New: {
-    label: 'አዲስ — ገና አልተመረመረም',
+    label: 'ደርሷል (Submitted)',
     color: 'text-blue-700',
     bgColor: 'bg-blue-50 border-blue-200',
     icon: Clock,
   },
   Accepted: {
-    label: 'ተቀብለናል — ለኮሚቴ በምደባ ላይ (Accepted)',
+    label: 'ተቀብሏል (Accepted)',
     color: 'text-indigo-700',
     bgColor: 'bg-indigo-50 border-indigo-200',
     icon: Clock,
   },
   Processing: {
-    label: 'በሂደት ላይ — በኮሚቴ እየተመረመረ ነው',
+    label: 'በማጣራት ላይ (In Process)',
+    color: 'text-amber-700',
+    bgColor: 'bg-amber-50 border-amber-200',
+    icon: Loader2,
+  },
+  UnderInvestigation: {
+    label: 'በማጣራት ላይ (In Process)',
     color: 'text-amber-700',
     bgColor: 'bg-amber-50 border-amber-200',
     icon: Loader2,
@@ -114,11 +120,28 @@ function TrackingContent() {
   const statusConfig = complaint ? STATUS_CONFIG[complaint.status] : null;
   const StatusIcon = statusConfig?.icon;
 
-  // Timeline steps
+  // 4 Process History Steps for Submitters
   const steps = [
-    { key: 'New', label: 'ተቀብለናል', date: complaint?.createdAt },
-    { key: 'Processing', label: 'በመመርመር ላይ', date: complaint?.processedAt },
-    { key: 'Resolved', label: complaint?.status === 'Rejected' ? 'ውድቅ ሆኗል' : 'ተፈቷል', date: complaint?.resolvedAt },
+    { 
+      key: 'New', 
+      label: '1. ደርሷል (Submitted)', 
+      date: complaint?.createdAt 
+    },
+    { 
+      key: 'Accepted', 
+      label: '2. ተቀብሏል (Accepted)', 
+      date: (complaint?.status === 'Accepted' || complaint?.status === 'Processing' || (complaint as any)?.status === 'UnderInvestigation' || complaint?.status === 'PendingApproval' || complaint?.status === 'Resolved' || complaint?.status === 'Rejected') ? (complaint?.processedAt || complaint?.createdAt) : undefined 
+    },
+    { 
+      key: 'Processing', 
+      label: '3. ኮሚቴ ተመድቦ በማጣራት ላይ (In Process)', 
+      date: (complaint?.status === 'Processing' || (complaint as any)?.status === 'UnderInvestigation' || complaint?.status === 'PendingApproval' || complaint?.status === 'Resolved' || complaint?.status === 'Rejected') ? (complaint?.processedAt || complaint?.createdAt) : undefined 
+    },
+    { 
+      key: 'Resolved', 
+      label: complaint?.status === 'Rejected' ? '4. ውድቅ ሆኗል (Rejected)' : '4. ውሳኔ ተሰጥቶበታል (Decision Made)', 
+      date: complaint?.resolvedAt 
+    },
   ];
 
   return (
@@ -194,62 +217,183 @@ function TrackingContent() {
 
           {/* Timeline */}
           <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-sm ring-1 ring-slate-100">
-            <h3 className="text-sm font-semibold text-slate-800 mb-6">የሂደት ታሪክ</h3>
+            <h3 className="text-sm font-semibold text-slate-800 mb-6">የሂደት ታሪክ (Process History)</h3>
             <div className="space-y-0">
-              {steps.map((s, i) => {
-                const isActive = s.key === complaint.status || (complaint.status === 'Rejected' && s.key === 'Resolved');
-                const isPast = s.date != null;
-                const isFuture = !isPast && !isActive;
-                return (
-                  <div key={s.key} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-4 h-4 rounded-full border-2 ${isPast ? 'bg-green-500 border-green-500' : isActive ? 'bg-[#014BAA] border-[#014BAA]' : 'bg-white border-slate-300'}`} />
-                      {i < steps.length - 1 && (
-                        <div className={`w-0.5 h-12 ${isPast ? 'bg-green-300' : 'bg-slate-200'}`} />
-                      )}
+              {(() => {
+                const statusOrderMap: Record<string, number> = {
+                  New: 1,
+                  Accepted: 2,
+                  Processing: 3,
+                  UnderInvestigation: 3,
+                  RevisionRequested: 3,
+                  PendingApproval: 3,
+                  Resolved: 4,
+                  Rejected: 4,
+                };
+                const stepOrderMap: Record<string, number> = {
+                  New: 1,
+                  Accepted: 2,
+                  Processing: 3,
+                  Resolved: 4,
+                };
+                const currentOrder = statusOrderMap[complaint.status] || 1;
+
+                return steps.map((s, i) => {
+                  const stepOrder = stepOrderMap[s.key] || 1;
+                  const isPast = stepOrder < currentOrder;
+                  const isActive = stepOrder === currentOrder;
+                  const isFuture = stepOrder > currentOrder;
+
+                  return (
+                    <div key={s.key} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold ${isPast ? 'bg-green-500 border-green-500 text-white' : isActive ? 'bg-[#014BAA] border-[#014BAA] text-white' : 'bg-white border-slate-300 text-slate-400'}`}>
+                          {isPast ? '✓' : i + 1}
+                        </div>
+                        {i < steps.length - 1 && (
+                          <div className={`w-0.5 h-12 ${isPast ? 'bg-green-500' : isActive ? 'bg-[#014BAA]' : 'bg-slate-200'}`} />
+                        )}
+                      </div>
+                      <div className="pb-8">
+                        <p className={`text-sm font-bold ${isActive ? 'text-[#014BAA]' : isPast ? 'text-slate-800' : 'text-slate-400'}`}>{s.label}</p>
+                        {s.date && (
+                          <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                            {s.date}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="pb-8">
-                      <p className={`text-sm font-semibold ${isFuture ? 'text-slate-400' : 'text-slate-800'}`}>{s.label}</p>
-                      {s.date && (
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {s.date}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
 
           {/* Resolution Details (if resolved/rejected) */}
-          {complaint.resolution && (
+          {(complaint.resolution || complaint.assignedCommittee || (complaint as any).decisionIdeaFiles) && (
             <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-sm ring-1 ring-slate-100">
               <h3 className="text-sm font-semibold text-slate-800 mb-4">
                 {complaint.status === 'Rejected' ? 'የውድቅ ምክንያት' : 'የተሰጠ ውሳኔ'}
               </h3>
-              <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 border border-slate-100">
-                {typeof complaint.resolution === 'string' ? complaint.resolution : (complaint.resolution.message || complaint.resolution.decisionIdeaSummary || complaint.decisionIdeaSummary || '')}
-              </p>
 
-              {complaint.resolution.attachments && complaint.resolution.attachments.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">ተያያዥ ሰነዶች</p>
-                  {complaint.resolution.attachments.map((att: any, i: number) => (
-                    <a
-                      key={i}
-                      href={att.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#014BAA]/30 transition-colors"
-                    >
-                      <FileText className="size-4 text-slate-400 shrink-0" />
-                      <span className="text-sm text-slate-700 truncate flex-1">{att.filename}</span>
-                      <Download className="size-4 text-[#014BAA]" />
-                    </a>
-                  ))}
+              {/* Committee Group & Members Header */}
+              {(complaint.assignedCommittee || (complaint.resolution as any)?.assignedCommittee) && (
+                <div className="mb-4 p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                    <Users className="size-4 text-[#014BAA] shrink-0" />
+                    <span>የተመደበ አጣሪ ኮሚቴ፡</span>
+                    <span className="font-extrabold text-[#014BAA] bg-blue-100/60 px-2.5 py-1 rounded-lg border border-blue-200/60">
+                      {complaint.assignedCommittee || (complaint.resolution as any)?.assignedCommittee}
+                    </span>
+                  </div>
+                  {(() => {
+                    const members: any[] = (complaint.resolution as any)?.committeeMembers || complaint.groupMembers || [];
+                    if (!members || members.length === 0) return null;
+                    return (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-bold text-slate-500">አባላት ({members.length}):</span>
+                        {members.map((m: any, idx: number) => {
+                          const nameStr = typeof m === 'string' ? m : `${m.name}${m.phone ? ` (${m.phone})` : ''}`;
+                          return (
+                            <span key={idx} className="text-[11px] font-bold px-2.5 py-0.5 bg-white text-slate-700 rounded-md border border-slate-200">
+                              {nameStr}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
+
+              {/* Resolution Message */}
+              {complaint.resolution && (
+                <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  {typeof complaint.resolution === 'string' ? complaint.resolution : (complaint.resolution.message || complaint.resolution.decisionIdeaSummary || complaint.decisionIdeaSummary || '')}
+                </p>
+              )}
+
+              {/* Decision Files Grid */}
+              {(() => {
+                const resolutionFiles: any[] = 
+                  (complaint.resolution as any)?.attachments ||
+                  (complaint.resolution as any)?.decisionIdeaFiles ||
+                  (complaint.resolution as any)?.files ||
+                  complaint.decisionIdeaFiles ||
+                  [];
+
+                if (resolutionFiles.length === 0) return null;
+
+                return (
+                  <div className="mt-5 space-y-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="size-4 text-[#014BAA]" /> ተያያዥ ውሳኔ ሰነዶች ({resolutionFiles.length})
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      {resolutionFiles.map((file: any, idx: number) => {
+                        const fileUrl = complaintService.resolveFileUrl(file, complaint.trackingCode);
+                        const fileName = file.filename || file.name || `ውሳኔ ሰነድ ${idx + 1}`;
+                        return (
+                          <div
+                            key={file.id || idx}
+                            className="flex items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 text-xs font-bold transition-all"
+                          >
+                            <FileText className="size-4 text-[#014BAA] shrink-0" />
+                            <span className="truncate flex-1 text-slate-800" title={fileName}>
+                              {fileName}
+                            </span>
+                            {file.fileSize && <span className="text-[10px] text-slate-400">({file.fileSize})</span>}
+                            
+                            <div className="flex items-center gap-1 ml-1 border-l border-slate-200 pl-1.5">
+                              {/* Open in Browser */}
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  window.open(fileUrl, '_blank');
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-[#014BAA] transition-colors"
+                                title="ክፈት (Open)"
+                              >
+                                <ExternalLink className="size-3.5" />
+                              </a>
+                              
+                              {/* Download file */}
+                              <a
+                                href={fileUrl}
+                                download={fileName}
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  try {
+                                    const res = await fetch(fileUrl);
+                                    const blob = await res.blob();
+                                    const blobUrl = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = blobUrl;
+                                    a.download = fileName;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    a.remove();
+                                    URL.revokeObjectURL(blobUrl);
+                                  } catch {
+                                    window.open(fileUrl, '_blank');
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-green-600 transition-colors"
+                                title="አውርድ (Download)"
+                              >
+                                <Download className="size-3.5" />
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               
               {/* Review Section */}
               <div className="mt-8 pt-6 border-t border-slate-100">

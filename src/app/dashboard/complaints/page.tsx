@@ -34,7 +34,18 @@ import { useAdmin } from "@/lib/hooks/useAdmin";
 import { formatECDateTime, convertToEthiopianTimeStr } from "@/lib/date-formatter";
 
 type TicketType = 'Complaint' | 'Suggestion';
-type StatusFilter = 'All' | ComplaintStatus;
+type StatusFilter = 'All' | 'NeedsAttention' | ComplaintStatus;
+
+function getDaysLeft(ticket: Complaint): number {
+  if (ticket.status === 'Resolved' || ticket.status === 'Rejected') return 999;
+  const slaDeadline = (ticket.resolution as any)?.slaDeadline;
+  const deadlineMs = slaDeadline 
+    ? new Date(slaDeadline).getTime() 
+    : new Date(ticket.createdAt).getTime() + 15 * 24 * 60 * 60 * 1000;
+  
+  const diffMs = deadlineMs - Date.now();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
 
 const STATUS_ORDER: ComplaintStatus[] = ['New', 'Processing', 'PendingApproval', 'Resolved', 'Rejected'];
 
@@ -106,6 +117,7 @@ export default function ComplaintsPage() {
   const typeTickets = tickets.filter(t => t.type === activeTab);
   const counts = {
     total: typeTickets.length,
+    needsAttention: typeTickets.filter(t => t.status !== 'Resolved' && t.status !== 'Rejected' && getDaysLeft(t) <= 5).length,
     new: typeTickets.filter(t => t.status === 'New' || t.status === 'Accepted').length,
     processing: typeTickets.filter(t => t.status === 'Processing' || t.status === 'RevisionRequested').length,
     pendingApproval: typeTickets.filter(t => t.status === 'PendingApproval').length,
@@ -299,7 +311,12 @@ export default function ComplaintsPage() {
 
   // Table Data based on filter
   const tableTickets = filteredTickets
-    .filter(t => activeStatusFilter === 'All' || t.status === activeStatusFilter)
+    .filter(t => {
+      if (activeStatusFilter === 'NeedsAttention') {
+        return t.status !== 'Resolved' && t.status !== 'Rejected' && getDaysLeft(t) <= 5;
+      }
+      return activeStatusFilter === 'All' || t.status === activeStatusFilter;
+    })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
@@ -385,9 +402,10 @@ export default function ComplaintsPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
           {[
             { id: 'All', label: 'ጠቅላላ', value: counts.total, color: 'text-text-primary', activeStyle: 'bg-surface-primary shadow-sm border-border/40' },
+            { id: 'NeedsAttention', label: '🔴 ትኩረት የሚሹ', value: counts.needsAttention, color: 'text-red-600 font-black', activeStyle: 'bg-red-50/90 dark:bg-red-950/40 border-red-300 ring-1 ring-red-400' },
             { id: 'New', label: 'አዲስ', value: counts.new, color: 'text-blue-600', activeStyle: 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-200/50' },
             { id: 'Processing', label: 'በሂደት ላይ', value: counts.processing, color: 'text-amber-600', activeStyle: 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-200/50' },
             { id: 'PendingApproval', label: 'ለማጽደቅ የቀረበ', value: counts.pendingApproval, color: 'text-sky-600', activeStyle: 'bg-sky-50/80 dark:bg-sky-900/20 border-sky-200/50' },
@@ -464,12 +482,14 @@ export default function ComplaintsPage() {
                               <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[ticket.status].dotColor}`}></span>
                               {STATUS_CONFIG[ticket.status].label}
                             </span>
-                            {getSlaIndicator(ticket) && (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getSlaIndicator(ticket)?.color}`}>
-                                <IconClock size={10} />
-                                {getSlaIndicator(ticket)?.label}
-                              </span>
-                            )}
+                            {(() => {
+                              const daysLeft = getDaysLeft(ticket);
+                              if (daysLeft > 5 || ticket.status === 'Resolved' || ticket.status === 'Rejected') return null;
+                              if (daysLeft <= 0) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white animate-pulse">🔥 ጊዜው ያለፈበት!</span>;
+                              if (daysLeft <= 1) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700 border border-red-300">🚨 1 ቀን ብቻ!</span>;
+                              if (daysLeft <= 3) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300">⚠️ 3 ቀናት ቀሩ!</span>;
+                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⏰ 5 ቀናት ቀሩ!</span>;
+                            })()}
                           </div>
                         </td>
                         <td className="px-4 py-4 align-middle">
