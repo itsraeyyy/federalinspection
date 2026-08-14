@@ -38,13 +38,27 @@ type StatusFilter = 'All' | 'NeedsAttention' | ComplaintStatus;
 
 function getDaysLeft(ticket: Complaint): number {
   if (ticket.status === 'Resolved' || ticket.status === 'Rejected') return 999;
-  const slaDeadline = (ticket.resolution as any)?.slaDeadline;
-  const deadlineMs = slaDeadline 
-    ? new Date(slaDeadline).getTime() 
-    : new Date(ticket.createdAt).getTime() + 15 * 24 * 60 * 60 * 1000;
   
-  const diffMs = deadlineMs - Date.now();
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const rawDeadline = ticket.slaDeadlineRaw || (ticket.resolution as any)?.slaDeadline;
+  if (rawDeadline) {
+    const deadlineTime = new Date(rawDeadline).getTime();
+    if (!isNaN(deadlineTime)) {
+      const diffMs = deadlineTime - Date.now();
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  const rawCreated = ticket.createdAtRaw;
+  if (rawCreated) {
+    const createdTime = new Date(rawCreated).getTime();
+    if (!isNaN(createdTime)) {
+      const deadlineMs = createdTime + 15 * 24 * 60 * 60 * 1000;
+      const diffMs = deadlineMs - Date.now();
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  return 15;
 }
 
 const STATUS_ORDER: ComplaintStatus[] = ['New', 'Processing', 'PendingApproval', 'Resolved', 'Rejected'];
@@ -486,9 +500,9 @@ export default function ComplaintsPage() {
                               const daysLeft = getDaysLeft(ticket);
                               if (daysLeft > 5 || ticket.status === 'Resolved' || ticket.status === 'Rejected') return null;
                               if (daysLeft <= 0) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white animate-pulse">🔥 ጊዜው ያለፈበት!</span>;
-                              if (daysLeft <= 1) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700 border border-red-300">🚨 1 ቀን ብቻ!</span>;
-                              if (daysLeft <= 3) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300">⚠️ 3 ቀናት ቀሩ!</span>;
-                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⏰ 5 ቀናት ቀሩ!</span>;
+                              if (daysLeft === 1) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700 border border-red-300">🚨 1 ቀን ብቻ!</span>;
+                              if (daysLeft <= 3) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300">⚠️ {daysLeft} ቀናት ቀሩ!</span>;
+                              return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⏰ {daysLeft} ቀናት ቀሩ!</span>;
                             })()}
                           </div>
                         </td>

@@ -42,13 +42,27 @@ type StatusTab = 'All' | 'NeedsAttention' | 'Accepted' | 'PendingApproval' | 'Pr
 
 function getDaysLeft(ticket: Complaint): number {
   if (ticket.status === 'Resolved' || ticket.status === 'Rejected') return 999;
-  const slaDeadline = (ticket.resolution as any)?.slaDeadline;
-  const deadlineMs = slaDeadline 
-    ? new Date(slaDeadline).getTime() 
-    : new Date(ticket.createdAt).getTime() + 15 * 24 * 60 * 60 * 1000;
   
-  const diffMs = deadlineMs - Date.now();
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const rawDeadline = ticket.slaDeadlineRaw || (ticket.resolution as any)?.slaDeadline;
+  if (rawDeadline) {
+    const deadlineTime = new Date(rawDeadline).getTime();
+    if (!isNaN(deadlineTime)) {
+      const diffMs = deadlineTime - Date.now();
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  const rawCreated = ticket.createdAtRaw;
+  if (rawCreated) {
+    const createdTime = new Date(rawCreated).getTime();
+    if (!isNaN(createdTime)) {
+      const deadlineMs = createdTime + 15 * 24 * 60 * 60 * 1000;
+      const diffMs = deadlineMs - Date.now();
+      return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    }
+  }
+
+  return 15;
 }
 
 const STATUS_BADGES: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -169,14 +183,7 @@ export default function CommitteeLeaderDashboard() {
     if (ticket.status === 'Resolved' || ticket.status === 'Rejected') {
       return { label: 'ውሳኔ የተሰጠበት እና የተጠናቀቀ', isOverdue: false, isWarning: false, daysLeft: 0 };
     }
-    const dateStr = ticket.processedAt || ticket.createdAtRaw || ticket.createdAt;
-    let startTime = dateStr ? new Date(dateStr).getTime() : Date.now();
-    if (isNaN(startTime)) {
-      startTime = Date.now();
-    }
-    const now = Date.now();
-    const elapsedDays = Math.max(0, Math.floor((now - startTime) / (1000 * 60 * 60 * 24)));
-    const remainingDays = Math.max(0, 15 - elapsedDays);
+    const remainingDays = getDaysLeft(ticket);
 
     if (remainingDays <= 0) {
       return { label: 'የ15 ቀናት የጊዜ ገደብ ተጠናቋል! (አስቸኳይ ትኩረት የሚሻ)', isOverdue: true, isWarning: false, daysLeft: 0 };
@@ -569,9 +576,9 @@ export default function CommitteeLeaderDashboard() {
                           const daysLeft = getDaysLeft(ticket);
                           if (daysLeft > 5 || ticket.status === 'Resolved' || ticket.status === 'Rejected') return null;
                           if (daysLeft <= 0) return <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-red-600 text-white animate-pulse border border-red-700">🔥 ጊዜው ያለፈበት!</span>;
-                          if (daysLeft <= 1) return <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-red-100 text-red-700 border border-red-300">🚨 1 ቀን ብቻ ቀረው!</span>;
-                          if (daysLeft <= 3) return <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300">⚠️ 3 ቀናት ቀሩ!</span>;
-                          return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⏰ 5 ቀናት ቀሩ!</span>;
+                          if (daysLeft === 1) return <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-red-100 text-red-700 border border-red-300">🚨 1 ቀን ብቻ ቀረው!</span>;
+                          if (daysLeft <= 3) return <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300">⚠️ {daysLeft} ቀናት ቀሩ!</span>;
+                          return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⏰ {daysLeft} ቀናት ቀሩ!</span>;
                         })()}
                       </div>
                       <span className="font-mono text-xs font-bold text-text-secondary bg-surface-secondary px-2.5 py-1 rounded-full border border-border/20">

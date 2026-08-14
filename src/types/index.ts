@@ -15,7 +15,7 @@ export type PermissionGroupId = 'content' | 'communications' | 'management' | 's
 export const PERMISSION_GROUPS: Record<PermissionGroupId, { label: string; labelAm: string; modules: string[] }> = {
   content: { label: 'Content Management', labelAm: 'ይዘት አስተዳደር', modules: ['news', 'documents'] },
   communications: { label: 'Communications', labelAm: 'ኮሙኒኬሽን', modules: ['complaints', 'feedback', 'map'] },
-  management: { label: 'Management', labelAm: 'ማኔጅመንት', modules: ['personnel', 'qr-access', 'statistics', 'assessment', 'forms', 'admin_forms'] },
+  management: { label: 'Management', labelAm: 'ማኔጅመንት', modules: ['personnel', 'sletena', 'qr-access', 'statistics', 'assessment', 'forms', 'admin_forms'] },
   system: { label: 'System', labelAm: 'ሲስተም', modules: ['dashboard', 'analytics', 'admins', 'settings'] },
 };
 
@@ -25,6 +25,7 @@ export const ALL_MODULES = [
   { id: 'documents', label: 'Documents', labelAm: 'ሰነዶች' },
   { id: 'personnel', label: 'Personnel', labelAm: 'የአመራር አካላት' },
   { id: 'complaints', label: 'Complaints', labelAm: 'ጥቆማ እና አቤቱታ' },
+  { id: 'sletena', label: 'Training', labelAm: 'ሥልጠና' },
   { id: 'map', label: 'Map', labelAm: 'ካርታ' },
   { id: 'assessment', label: 'Assessment', labelAm: 'ምዘና' },
   { id: 'feedback', label: 'Feedback', labelAm: 'አስተያየት' },

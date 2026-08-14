@@ -5,7 +5,8 @@ import { useI18n } from '@/lib/i18n';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconSun, IconMoon, IconClipboardCheck, IconChartBar, IconMessageStar, IconLogout, IconShieldCheck, IconChartDots, IconFileDescription, IconMenu2, IconX, IconMapPin, IconHistory, IconQrcode } from '@tabler/icons-react';
+import { IconDashboard, IconNews, IconFileText, IconUsers, IconMessage2, IconSettings, IconSun, IconMoon, IconClipboardCheck, IconChartBar, IconMessageStar, IconLogout, IconShieldCheck, IconChartDots, IconFileDescription, IconMenu2, IconX, IconMapPin, IconHistory, IconQrcode, IconBooks } from '@tabler/icons-react';
+
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useAdmin } from '@/lib/hooks/useAdmin';
@@ -82,6 +83,7 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     { label: 'ሰነዶች', icon: IconFileText, href: '/dashboard/documents', id: 'documents' },
     { label: 'የአመራር አካላት', icon: IconUsers, href: '/dashboard/personnel', id: 'personnel' },
     { label: 'ጥቆማ እና አቤቱታ', icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
+    { label: 'ሥልጠና', icon: IconBooks, href: '/dashboard/sletena/yesltena-flagot', id: 'sletena' },
     { label: 'ምዘና', icon: IconClipboardCheck, href: '/dashboard/assessment', id: 'assessment' },
     { label: 'አስተያየት', icon: IconMessageStar, href: '/dashboard/feedback', id: 'feedback' },
     { label: 'ሪፖርት', icon: IconFileDescription, href: '/dashboard/forms', id: 'forms' },
@@ -165,12 +167,16 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
             </div>
           )}
 
-          {/* Sletena Training & Analytics Submenu */}
-          <SletenaNavGroup isCollapsed={isCollapsed} onItemClick={() => setMobileMenuOpen(false)} />
-
-          <div className="my-2 border-t border-border/40" />
-
           {allowedNavItems.map((item) => {
+            if (item.id === 'sletena') {
+              return (
+                <SletenaNavGroup
+                  key="sletena"
+                  isCollapsed={isCollapsed}
+                  onItemClick={() => setMobileMenuOpen(false)}
+                />
+              );
+            }
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
