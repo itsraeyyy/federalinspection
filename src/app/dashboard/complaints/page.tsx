@@ -655,7 +655,13 @@ export default function ComplaintsPage() {
                   ? selectedTicket.resolution
                   : (selectedTicket.resolution?.message || selectedTicket.resolution?.decisionIdeaSummary || selectedTicket.decisionIdeaSummary || '');
 
-                const resolutionAttachments = selectedTicket.resolution?.attachments || selectedTicket.decisionIdeaFiles || [];
+                const resolutionAttachments = 
+                  (selectedTicket.resolution as any)?.decisionIdeaFiles ||
+                  (selectedTicket.resolution as any)?.attachments ||
+                  (selectedTicket.resolution as any)?.files ||
+                  selectedTicket.decisionIdeaFiles ||
+                  selectedTicket.resolution?.attachments ||
+                  [];
 
                 if (!resolutionText?.trim() && (!resolutionAttachments || resolutionAttachments.length === 0)) return null;
 
@@ -682,11 +688,60 @@ export default function ComplaintsPage() {
                         <div className="mt-5 space-y-2">
                           <p className="text-xs font-semibold text-text-secondary mb-2">ተያያዥ ሰነዶች:</p>
                           <div className="flex flex-wrap gap-2">
-                            {resolutionAttachments.map((att: any, i: number) => (
-                              <a key={i} href={att.url || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-surface-primary rounded-xl border border-border/30 text-xs font-medium text-brand-blue hover:border-brand-blue/30 transition-colors shadow-sm">
-                                <IconFileText size={14} /> {att.filename}
-                              </a>
-                            ))}
+                            {resolutionAttachments.map((att: any, i: number) => {
+                              const fileUrl = complaintService.resolveFileUrl(att);
+                              const nameStr = att.filename || att.name || `ሰነድ ${i + 1}`;
+                              return (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-surface-primary rounded-xl border border-border/30 text-xs font-medium text-brand-blue shadow-sm"
+                                >
+                                  <IconFileText size={14} className="text-brand-blue shrink-0" />
+                                  <span className="truncate max-w-[160px]" title={nameStr}>{nameStr}</span>
+                                  
+                                  <div className="flex items-center gap-1 ml-1 border-l border-border/20 pl-1.5">
+                                    <a
+                                      href={fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        window.open(fileUrl, '_blank');
+                                      }}
+                                      className="p-1 rounded hover:bg-surface-secondary text-text-muted hover:text-brand-blue transition-colors"
+                                      title="ክፈት (Open)"
+                                    >
+                                      <IconExternalLink size={13} />
+                                    </a>
+                                    <a
+                                      href={fileUrl}
+                                      download={nameStr}
+                                      onClick={async (e) => {
+                                        e.preventDefault();
+                                        try {
+                                          const res = await fetch(fileUrl);
+                                          const blob = await res.blob();
+                                          const blobUrl = URL.createObjectURL(blob);
+                                          const a = document.createElement('a');
+                                          a.href = blobUrl;
+                                          a.download = nameStr;
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          a.remove();
+                                          URL.revokeObjectURL(blobUrl);
+                                        } catch {
+                                          window.open(fileUrl, '_blank');
+                                        }
+                                      }}
+                                      className="p-1 rounded hover:bg-surface-secondary text-text-muted hover:text-green-600 transition-colors"
+                                      title="አውርድ (Download)"
+                                    >
+                                      <IconDownload size={13} />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

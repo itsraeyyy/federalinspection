@@ -11,10 +11,62 @@ function generateTrackingCode(): string {
   return `${prefix}-${timestamp}-${random}`;
 }
 
+export function resolveFileUrl(file: any, trackingCode?: string): string {
+  if (!file) return '#';
+  let rawUrl = typeof file === 'string' ? file : (file.url || file.filePath || '#');
+  let filePath = typeof file === 'object' ? file.filePath : undefined;
+
+  if (!filePath && rawUrl && rawUrl.includes('/complaints/')) {
+    const parts = rawUrl.split('/complaints/');
+    if (parts.length > 1) {
+      filePath = parts[1].split('?')[0];
+    }
+  } else if (!filePath && rawUrl && !rawUrl.startsWith('http') && !rawUrl.startsWith('/') && !rawUrl.startsWith('#')) {
+    filePath = rawUrl;
+  }
+
+  if (filePath) {
+    const cleanPath = filePath.split('?')[0];
+    let secureEndpoint = `/api/complaints/attachment?filePath=${encodeURIComponent(cleanPath)}&redirect=true`;
+    if (trackingCode) {
+      secureEndpoint += `&trackingCode=${encodeURIComponent(trackingCode)}`;
+    }
+    return secureEndpoint;
+  }
+
+  return rawUrl || '#';
+}
+
+function cleanFileAttachment(att: any, trackingCode?: string): any {
+  if (!att) return att;
+  const resolvedUrl = resolveFileUrl(att, trackingCode);
+  const path = typeof att === 'string' ? att : (att.filePath || att.path || att.url || '');
+  if (typeof att === 'string') return { url: resolvedUrl, filename: 'ሰነድ', filePath: path };
+  return {
+    ...att,
+    url: resolvedUrl || att.url
+  };
+}
+
 function mapRowToComplaint(item: any): Complaint {
+  const code = item.tracking_code || '';
+  const rawAttachments = (item.attachments || []).map((att: any) => cleanFileAttachment(att, code));
+  const rawResolution = item.resolution ? {
+    ...item.resolution,
+    attachments: (item.resolution.attachments || []).map((att: any) => cleanFileAttachment(att, code)),
+    decisionIdeaFiles: (item.resolution.decisionIdeaFiles || []).map((att: any) => cleanFileAttachment(att, code)),
+    files: (item.resolution.files || []).map((att: any) => cleanFileAttachment(att, code)),
+  } : item.resolution;
+
+  const rawDecisionFiles = (
+    (item.resolution as any)?.decisionIdeaFiles ||
+    (item.resolution as any)?.attachments ||
+    []
+  ).map((att: any) => cleanFileAttachment(att, code));
+
   return {
     id: item.id,
-    trackingCode: item.tracking_code || '',
+    trackingCode: code,
     name: item.name,
     phone: item.phone,
     email: item.email || '',
@@ -30,7 +82,7 @@ function mapRowToComplaint(item: any): Complaint {
     targetRegion: item.target_region,
     targetZone: item.target_zone,
     requestedResolution: item.requested_resolution,
-    attachments: item.attachments || [],
+    attachments: rawAttachments,
     date: formatECDate(item.created_at),
     createdAt: formatECDateTime(item.created_at),
     createdAtRaw: item.created_at,
@@ -41,7 +93,7 @@ function mapRowToComplaint(item: any): Complaint {
     processedBy: item.processed_by,
     resolvedBy: item.resolved_by,
     status: item.status,
-    resolution: item.resolution,
+    resolution: rawResolution,
     groupMembers: item.group_members || [],
     assignedCommittee: item.assigned_committee || (item.resolution as any)?.assignedCommittee || undefined,
     serviceName: item.service_name,
@@ -50,7 +102,7 @@ function mapRowToComplaint(item: any): Complaint {
     workflowStep: (item.resolution as any)?.workflowStep || (item.status === 'Accepted' ? 2 : item.status === 'Processing' ? 3 : item.status === 'PendingApproval' ? 4 : item.status === 'Resolved' || item.status === 'Rejected' ? 5 : 1),
     adminInstructions: (item.resolution as any)?.adminInstructions || undefined,
     decisionIdeaSummary: (item.resolution as any)?.decisionIdeaSummary || undefined,
-    decisionIdeaFiles: (item.resolution as any)?.decisionIdeaFiles || [],
+    decisionIdeaFiles: rawDecisionFiles,
     slaDeadline: (item.resolution as any)?.slaDeadline ? formatECDateTime((item.resolution as any).slaDeadline) : undefined,
     slaDeadlineRaw: (item.resolution as any)?.slaDeadline || undefined,
     slaNotified: item.sla_notified || false,
@@ -59,19 +111,11 @@ function mapRowToComplaint(item: any): Complaint {
 }
 
 export const complaintService = {
-  getSecureAttachmentUrl: async (filePath: string): Promise<string | null> => {
+  resolveFileUrl: resolveFileUrl,
+
+  getSecureAttachmentUrl: async (filePath: string, trackingCode?: string): Promise<string | null> => {
     if (!filePath) return null;
-    try {
-      const { data, error } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600); // 1 hour expiry
-      if (error) {
-        console.error('Error generating signed URL:', error);
-        return null;
-      }
-      return data.signedUrl;
-    } catch (e) {
-      console.error('Exception generating signed URL:', e);
-      return null;
-    }
+    return resolveFileUrl(filePath, trackingCode);
   },
 
   refreshSecureUrls: async (complaint: Complaint): Promise<Complaint> => {
@@ -179,14 +223,14 @@ export const complaintService = {
           throw uploadError;
         }
 
-        const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
+        const fileUrl = resolveFileUrl({ filePath });
 
         attachments.push({
           id: crypto.randomUUID(),
           filename: file.name,
           fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
           fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-          url: urlData?.signedUrl,
+          url: fileUrl,
           filePath: filePath,
         });
       }
@@ -320,14 +364,14 @@ export const complaintService = {
               throw uploadError;
             }
 
-            const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
+            const fileUrl = resolveFileUrl({ filePath });
 
             resolutionAttachments.push({
               id: crypto.randomUUID(),
               filename: file.name,
               fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
               fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-              url: urlData?.signedUrl,
+              url: fileUrl,
               filePath: filePath,
             });
           }
@@ -507,12 +551,12 @@ export const complaintService = {
 
         const { error: uploadError } = await supabase.storage.from('complaints').upload(filePath, file);
         if (!uploadError) {
-          const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
+          const fileUrl = resolveFileUrl({ filePath });
           resolutionAttachments.push({
             filename: file.name,
             fileType: file.type,
             fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-            url: urlData?.signedUrl || '',
+            url: fileUrl,
             filePath
           });
         }
@@ -574,13 +618,13 @@ export const complaintService = {
           throw uploadError;
         }
 
-        const { data: urlData } = await supabase.storage.from('complaints').createSignedUrl(filePath, 3600);
+        const fileUrl = resolveFileUrl({ filePath });
         decisionAttachments.push({
           id: crypto.randomUUID(),
           filename: file.name,
           fileType: file.type || (fileExt ? fileExt.toUpperCase() : 'UNKNOWN'),
           fileSize: `${(file.size / 1024).toFixed(1)} KB`,
-          url: urlData?.signedUrl,
+          url: fileUrl,
           filePath: filePath,
         });
       }

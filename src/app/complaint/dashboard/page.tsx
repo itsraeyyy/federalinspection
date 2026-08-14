@@ -6,12 +6,15 @@ import {
   IconBan,
   IconClock,
   IconUser,
+  IconUsers,
+  IconEye,
   IconFileText,
   IconAlertTriangle,
   IconBuilding,
   IconCalendar,
   IconPaperclip,
   IconExternalLink,
+  IconDownload,
   IconRefresh,
   IconLogout,
   IconShieldCheck,
@@ -688,11 +691,44 @@ export default function CommitteeLeaderDashboard() {
               {selectedTicket.status === 'PendingApproval' && (
                 <div className="p-5 sm:p-6 rounded-3xl bg-sky-500/5 border border-sky-500/20 shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-sky-500"></div>
-                  <div className="flex items-center gap-2.5 text-sky-700 dark:text-sky-300 font-extrabold text-base mb-4">
-                    <IconShieldCheck size={24} className="text-sky-500" />
-                    የውሳኔ ሀሳብ (Decision Proposal)
-                  </div>
                   
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5 text-sky-700 dark:text-sky-300 font-extrabold text-base">
+                      <IconShieldCheck size={24} className="text-sky-500" />
+                      የውሳኔ ሀሳብ (Decision Proposal)
+                    </div>
+
+                    {/* Committee Badge */}
+                    <div className="flex items-center gap-2 text-xs font-bold text-text-primary bg-surface-primary/90 px-3 py-1.5 rounded-xl border border-sky-500/20 shadow-2xs">
+                      <IconUsers size={16} className="text-sky-500 shrink-0" />
+                      <span>አጣሪ ኮሚቴ፡</span>
+                      <span className="font-extrabold text-sky-700 dark:text-sky-300">
+                        {selectedTicket.assignedCommittee || (selectedTicket.resolution as any)?.assignedCommittee || 'አልተመደበም'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Committee Members Sub-Bar */}
+                  {(() => {
+                    const members: any[] = (selectedTicket.resolution as any)?.committeeMembers || [];
+                    if (!members || members.length === 0) return null;
+                    return (
+                      <div className="mb-4 p-3 rounded-2xl bg-surface-primary/80 border border-sky-500/20 flex items-center gap-2 flex-wrap text-xs">
+                        <span className="font-bold text-text-muted flex items-center gap-1">
+                          <IconUser size={14} className="text-sky-500" /> የኮሚቴ አባላት ({members.length}):
+                        </span>
+                        {members.map((m: any, idx: number) => {
+                          const nameStr = typeof m === 'string' ? m : `${m.name}${m.phone ? ` (${m.phone})` : ''}`;
+                          return (
+                            <span key={idx} className="font-extrabold px-2.5 py-1 bg-surface-secondary text-text-primary rounded-lg border border-border/30 text-[11px]">
+                              {nameStr}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
                   <textarea
                     value={editableDecision}
                     onChange={(e) => setEditableDecision(e.target.value)}
@@ -700,6 +736,86 @@ export default function CommitteeLeaderDashboard() {
                     className="w-full bg-surface-primary p-4 sm:p-5 rounded-2xl border border-sky-500/30 leading-relaxed font-medium text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/40 shadow-sm resize-none transition-shadow"
                     placeholder="የውሳኔ ሀሳብ እዚህ ይጻፉ..."
                   />
+
+                  {(() => {
+                    const proposalFiles: any[] = 
+                      (selectedTicket.resolution as any)?.decisionIdeaFiles ||
+                      (selectedTicket.resolution as any)?.attachments ||
+                      (selectedTicket.resolution as any)?.files ||
+                      selectedTicket.decisionIdeaFiles ||
+                      [];
+
+                    if (proposalFiles.length === 0) return null;
+
+                    return (
+                      <div className="mt-4 p-4 rounded-2xl bg-surface-primary/80 border border-sky-500/20 space-y-2 relative z-10">
+                        <h5 className="text-xs font-extrabold text-sky-700 dark:text-sky-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <IconPaperclip size={14} className="text-sky-500" /> በኮሚቴው የቀረቡ ተያያዥ ሰነዶች ({proposalFiles.length})
+                        </h5>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {proposalFiles.map((file: any, idx: number) => {
+                            const fileUrl = complaintService.resolveFileUrl(file);
+                            return (
+                              <div
+                                key={file.id || idx}
+                                className="flex items-center gap-2 p-2 pl-3 bg-surface-secondary/70 hover:bg-surface-secondary text-brand-blue rounded-xl border border-sky-500/20 text-xs font-bold shadow-2xs transition-all"
+                              >
+                                <IconFileText size={16} className="text-sky-500 shrink-0" />
+                                <span className="truncate max-w-[160px]" title={file.filename || file.name}>
+                                  {file.filename || file.name || `ፋይል ${idx + 1}`}
+                                </span>
+                                {file.fileSize && <span className="text-[10px] text-text-muted">({file.fileSize})</span>}
+                                
+                                <div className="flex items-center gap-1 ml-1 border-l border-border/30 pl-1.5">
+                                  {/* Open in Browser */}
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      window.open(fileUrl, '_blank');
+                                    }}
+                                    className="p-1.5 rounded-lg hover:bg-surface-primary text-text-muted hover:text-brand-blue transition-colors"
+                                    title="ክፈት (Open)"
+                                  >
+                                    <IconExternalLink size={14} />
+                                  </a>
+                                  
+                                  {/* Download file */}
+                                  <a
+                                    href={fileUrl}
+                                    download={file.filename || file.name || 'document'}
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      try {
+                                        const res = await fetch(fileUrl);
+                                        const blob = await res.blob();
+                                        const blobUrl = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = blobUrl;
+                                        a.download = file.filename || file.name || 'document';
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                        URL.revokeObjectURL(blobUrl);
+                                      } catch {
+                                        window.open(fileUrl, '_blank');
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-lg hover:bg-surface-primary text-text-muted hover:text-green-600 transition-colors"
+                                    title="አውርድ (Download)"
+                                  >
+                                    <IconDownload size={14} />
+                                  </a>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <button
@@ -796,32 +912,77 @@ export default function CommitteeLeaderDashboard() {
               </div>
 
               {/* Attachments */}
-              {selectedTicket.attachments && selectedTicket.attachments.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
-                      <IconPaperclip size={16} />
+              {(() => {
+                const submitterFiles: any[] = selectedTicket.attachments && selectedTicket.attachments.length > 0 
+                  ? selectedTicket.attachments 
+                  : ((selectedTicket as any).files || []);
+                if (submitterFiles.length === 0) return null;
+
+                return (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+                        <IconPaperclip size={16} />
+                      </div>
+                      <h4 className="text-sm font-extrabold text-text-primary">ማስረጃ ሰነዶች ({submitterFiles.length})</h4>
                     </div>
-                    <h4 className="text-sm font-extrabold text-text-primary">ማስረጃ ሰነዶች ({selectedTicket.attachments.length})</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {submitterFiles.map((att: any, idx: number) => {
+                        const fileUrl = complaintService.resolveFileUrl(att, selectedTicket.trackingCode);
+                        const fileName = att.filename || att.name || `ሰነድ ${idx + 1}`;
+                        return (
+                          <div
+                            key={att.id || idx}
+                            className="p-4 rounded-2xl bg-surface-secondary/40 hover:bg-surface-secondary border border-border/40 flex items-center justify-between transition-all hover:shadow-sm text-sm font-bold text-brand-blue min-h-[56px]"
+                          >
+                            <span className="truncate max-w-[180px]" title={fileName}>{fileName}</span>
+                            <div className="flex items-center gap-1.5 bg-surface-primary p-1.5 rounded-xl border border-border/20 shadow-2xs">
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  window.open(fileUrl, '_blank');
+                                }}
+                                className="p-1 rounded-lg text-text-muted hover:text-brand-blue transition-colors"
+                                title="ክፈት (Open)"
+                              >
+                                <IconExternalLink size={16} />
+                              </a>
+                              <a
+                                href={fileUrl}
+                                download={fileName}
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  try {
+                                    const res = await fetch(fileUrl);
+                                    const blob = await res.blob();
+                                    const blobUrl = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = blobUrl;
+                                    a.download = fileName;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    a.remove();
+                                    URL.revokeObjectURL(blobUrl);
+                                  } catch {
+                                    window.open(fileUrl, '_blank');
+                                  }
+                                }}
+                                className="p-1 rounded-lg text-text-muted hover:text-green-600 transition-colors"
+                                title="አውርድ (Download)"
+                              >
+                                <IconDownload size={16} />
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {selectedTicket.attachments.map(att => (
-                      <a
-                        key={att.id}
-                        href={att.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-4 rounded-2xl bg-surface-secondary/40 hover:bg-surface-secondary border border-border/40 flex items-center justify-between transition-all hover:shadow-sm text-sm font-bold text-brand-blue group min-h-[56px]"
-                      >
-                        <span className="truncate max-w-[180px]">{att.filename}</span>
-                        <div className="w-8 h-8 rounded-full bg-surface-primary flex items-center justify-center border border-border/20 shadow-sm group-hover:scale-110 transition-transform">
-                          <IconExternalLink size={14} className="text-text-muted group-hover:text-brand-blue" />
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Final Resolution Box */}
               {(selectedTicket.status === 'Resolved' || selectedTicket.status === 'Rejected') && selectedTicket.resolution && (
@@ -836,6 +997,46 @@ export default function CommitteeLeaderDashboard() {
                   <p className="text-text-primary font-medium text-sm leading-loose whitespace-pre-wrap relative z-10 pl-10 border-l-2 border-success/30 ml-4 py-1">
                     {selectedTicket.resolution.message}
                   </p>
+                  {(() => {
+                    const finalFiles: any[] = 
+                      (selectedTicket.resolution as any)?.attachments ||
+                      (selectedTicket.resolution as any)?.decisionIdeaFiles ||
+                      (selectedTicket.resolution as any)?.files ||
+                      selectedTicket.decisionIdeaFiles ||
+                      [];
+
+                    if (finalFiles.length === 0) return null;
+
+                    return (
+                      <div className="mt-4 pl-10 ml-4 relative z-10 space-y-2">
+                        <p className="text-xs font-bold text-success uppercase tracking-wider flex items-center gap-1.5">
+                          <IconPaperclip size={14} /> ተያያዥ ሰነዶች ({finalFiles.length})
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {finalFiles.map((file: any, idx: number) => {
+                            const fileUrl = complaintService.resolveFileUrl(file);
+                            return (
+                              <a
+                                key={file.id || idx}
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  window.open(fileUrl, '_blank');
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 bg-surface-primary hover:bg-surface-secondary text-brand-blue rounded-xl border border-success/30 text-xs font-semibold shadow-2xs transition-colors group cursor-pointer"
+                              >
+                                <IconFileText size={14} className="text-success shrink-0" />
+                                <span className="truncate max-w-[180px]">{file.filename || file.name || `ፋይል ${idx + 1}`}</span>
+                                <IconExternalLink size={12} className="text-text-muted group-hover:text-brand-blue transition-colors shrink-0 ml-1" />
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -847,14 +1048,12 @@ export default function CommitteeLeaderDashboard() {
             <div className="p-4 sm:p-6 bg-surface-primary border-t border-border/40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] shrink-0">
               <div className="max-w-5xl mx-auto">
                 {selectedTicket.status === 'Accepted' ? (
-                  <button
-                    onClick={() => setShowCommitteeModal(true)}
-                    disabled={actionLoading}
-                    className="w-full min-h-[50px] px-6 py-3 bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-base rounded-2xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                  >
-                    <IconUser size={20} />
-                    ኮሚቴ መድብና አጣራ (Assign & Start)
-                  </button>
+                  <div className="flex items-center gap-3 text-brand-blue bg-brand-blue/10 border border-brand-blue/20 px-5 py-3.5 rounded-2xl w-full shadow-xs">
+                    <IconEye size={22} className="shrink-0 text-brand-blue" />
+                    <span className="text-xs sm:text-sm font-extrabold">
+                      ለእይታ ብቻ የቀረበ ቅሬታ (View Only) — ኮሚቴው ማጣራቱን አጠናቆ የውሳኔ ሀሳብ (Decision Proposal) ሲያቀርብ፣ እዚህ ገጽ ላይ ማጽደቂያው ይቀርባል።
+                    </span>
+                  </div>
                 ) : (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 px-4 py-3 rounded-2xl w-full sm:w-auto shadow-xs">
@@ -887,114 +1086,6 @@ export default function CommitteeLeaderDashboard() {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Committee Assignment Modal with Phone Field */}
-      {showCommitteeModal && selectedTicket && (
-        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
-          <div className="bg-surface-primary w-full max-w-md p-6 rounded-t-3xl sm:rounded-3xl border border-border/30 shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-extrabold text-text-primary flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue">
-                  <IconUser size={20} />
-                </div>
-                ለኮሚቴ ይመድቡ
-              </h3>
-              <button onClick={() => setShowCommitteeModal(false)} className="p-2 bg-surface-secondary hover:bg-surface-secondary/80 rounded-full transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center">
-                <IconX size={20} className="text-text-muted" />
-              </button>
-            </div>
-
-            <p className="text-sm text-text-muted mb-6 leading-relaxed">
-              ይህን አቤቱታ የሚያጣሩትን የኮሚቴ አባላት ስምና ስልክ ቁጥር ያስገቡ። "መደብና አጣራ" ሲሉ የ15 ቀናት ጊዜ ገደብ ይጀምራል።
-            </p>
-
-            <div className="space-y-5 overflow-y-auto flex-1 px-1 pb-4 hide-scrollbar">
-              {committeeMembers.map((member, index) => (
-                <div key={index} className="p-4 rounded-3xl bg-surface-secondary/30 border border-border/50 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider">አባል {index + 1}</span>
-                    {committeeMembers.length > 1 && (
-                      <button
-                        onClick={() => {
-                          const newMembers = committeeMembers.filter((_, i) => i !== index);
-                          setCommitteeMembers(newMembers);
-                        }}
-                        className="p-1.5 text-danger hover:bg-danger/10 rounded-full transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
-                      >
-                        <IconX size={16} />
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-bold text-text-primary mb-1.5 block">
-                      የኮሚቴ አባል ስም *
-                    </label>
-                    <div className="relative">
-                      <IconUser size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                      <input
-                        type="text"
-                        value={member.name}
-                        onChange={(e) => {
-                          const newMembers = [...committeeMembers];
-                          newMembers[index].name = e.target.value;
-                          setCommitteeMembers(newMembers);
-                        }}
-                        className="block w-full min-h-[48px] rounded-2xl border border-border/50 bg-surface-primary pl-11 pr-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
-                        placeholder="ሙሉ ስም ያስገቡ"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-bold text-text-primary mb-1.5 block">
-                      ስልክ ቁጥር (አማራጭ)
-                    </label>
-                    <div className="relative">
-                      <IconPhone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                      <input
-                        type="tel"
-                        value={member.phone}
-                        onChange={(e) => {
-                          const newMembers = [...committeeMembers];
-                          newMembers[index].phone = e.target.value;
-                          setCommitteeMembers(newMembers);
-                        }}
-                        className="block w-full min-h-[48px] rounded-2xl border border-border/50 bg-surface-primary pl-11 pr-4 py-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
-                        placeholder="09..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <button
-                onClick={() => setCommitteeMembers([...committeeMembers, { name: '', phone: '' }])}
-                className="w-full min-h-[48px] border-2 border-dashed border-brand-blue/30 text-brand-blue rounded-2xl text-sm font-bold hover:bg-brand-blue/5 transition-colors mt-4 flex items-center justify-center gap-2"
-              >
-                <span>+</span> ተጨማሪ አባል ያክሉ
-              </button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border/30 mt-4">
-              <button
-                onClick={() => setShowCommitteeModal(false)}
-                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary text-sm font-bold rounded-2xl border border-border/30 transition-colors"
-              >
-                ሰርዝ (Cancel)
-              </button>
-              <button
-                onClick={handleCommitteeAssign}
-                disabled={actionLoading || !committeeMembers.some(m => m.name.trim())}
-                className="w-full sm:w-auto min-h-[48px] px-8 py-3 bg-brand-blue hover:bg-brand-blue/90 text-white text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {actionLoading ? <IconLoader2 size={20} className="animate-spin" /> : <IconPlayerPlay size={20} />}
-                {actionLoading ? 'በመመደብ ላይ...' : 'መደብና አጣራ (Start)'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
