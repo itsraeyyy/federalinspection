@@ -16,7 +16,7 @@ export const PERMISSION_GROUPS: Record<PermissionGroupId, { label: string; label
   content: { label: 'Content Management', labelAm: 'ይዘት አስተዳደር', modules: ['news', 'documents'] },
   communications: { label: 'Communications', labelAm: 'ኮሙኒኬሽን', modules: ['complaints', 'feedback', 'map'] },
   management: { label: 'Management', labelAm: 'ማኔጅመንት', modules: ['personnel', 'sletena', 'qr-access', 'statistics', 'assessment', 'forms', 'admin_forms'] },
-  system: { label: 'System', labelAm: 'ሲስተም', modules: ['dashboard', 'analytics', 'admins', 'settings'] },
+  system: { label: 'System', labelAm: 'ሲስተም', modules: ['dashboard', 'admins', 'settings'] },
 };
 
 export const ALL_MODULES = [
@@ -31,7 +31,6 @@ export const ALL_MODULES = [
   { id: 'feedback', label: 'Feedback', labelAm: 'አስተያየት' },
   { id: 'forms', label: 'Reports', labelAm: 'ሪፖርት' },
   { id: 'admin_forms', label: 'Form Editor', labelAm: 'የቅጽ ማስተካከያ' },
-  { id: 'analytics', label: 'Analytics', labelAm: 'አናሊቲክስ' },
   { id: 'qr-access', label: 'QR Access', labelAm: 'QR መዳረሻ' },
   { id: 'statistics', label: 'Statistics', labelAm: 'ስታቲስቲክስ' },
   { id: 'admins', label: 'Admins', labelAm: 'አስተዳዳሪዎች' },

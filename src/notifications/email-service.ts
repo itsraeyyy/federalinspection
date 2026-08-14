@@ -48,8 +48,13 @@ export function wrapEmailTemplate(title: string, subtitle: string, bodyContent: 
   </div></body></html>`;
 }
 
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_FROM_EMAIL = process.env.BREVO_FROM_EMAIL || "alazartesema1@gmail.com";
+const BREVO_FROM_NAME = process.env.BREVO_FROM_NAME || "ICODiS System";
+
 /**
- * Sends an email using Resend HTTP API.
+ * Sends an email using Brevo or Resend HTTP API.
  */
 export async function sendEmail(
   to: string,
@@ -57,37 +62,71 @@ export async function sendEmail(
   html: string,
   textContent?: string
 ): Promise<SendEmailResult> {
-  if (!RESEND_API_KEY) {
-    console.warn("[Email Service] RESEND_API_KEY missing — Email skipped:", { to, subject });
-    return { success: false, error: "Resend API Key missing" };
-  }
+  // 1. Try Brevo API if key is present
+  if (BREVO_API_KEY) {
+    try {
+      const response = await fetch(BREVO_API_URL, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "api-key": BREVO_API_KEY,
+        },
+        body: JSON.stringify({
+          sender: { name: BREVO_FROM_NAME, email: BREVO_FROM_EMAIL },
+          to: [{ email: to }],
+          subject: subject,
+          htmlContent: html,
+          ...(textContent && { textContent }),
+        }),
+      });
 
-  try {
-    const response = await fetch(RESEND_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: DEFAULT_FROM_EMAIL,
-        to: [to],
-        subject: subject,
-        html: html,
-        ...(textContent && { text: textContent }),
-      }),
-    });
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[Email Service Brevo Error ${response.status}]:`, errText);
+        return { success: false, error: `Brevo returned ${response.status}: ${errText}` };
+      }
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[Email Service Resend Error ${response.status}]:`, errText);
-      return { success: false, error: `Resend returned ${response.status}: ${errText}` };
+      console.log(`[Email Sent Successfully via Brevo] to ${to}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error("[Email Service Brevo Exception]:", error);
+      return { success: false, error: error.message || "Failed to send email via Brevo" };
     }
-
-    console.log(`[Email Sent Successfully] to ${to}`);
-    return { success: true };
-  } catch (error: any) {
-    console.error("[Email Service Exception]:", error);
-    return { success: false, error: error.message || "Failed to send email" };
   }
+
+  // 2. Try Resend API if key is present
+  if (RESEND_API_KEY) {
+    try {
+      const response = await fetch(RESEND_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: DEFAULT_FROM_EMAIL,
+          to: [to],
+          subject: subject,
+          html: html,
+          ...(textContent && { text: textContent }),
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[Email Service Resend Error ${response.status}]:`, errText);
+        return { success: false, error: `Resend returned ${response.status}: ${errText}` };
+      }
+
+      console.log(`[Email Sent Successfully via Resend] to ${to}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error("[Email Service Resend Exception]:", error);
+      return { success: false, error: error.message || "Failed to send email via Resend" };
+    }
+  }
+
+  console.warn("[Email Service] No API keys configured (BREVO_API_KEY or RESEND_API_KEY missing) — Email skipped:", { to, subject });
+  return { success: false, error: "No email gateway API keys configured" };
 }
