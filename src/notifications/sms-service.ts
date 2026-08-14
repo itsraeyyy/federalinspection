@@ -3,7 +3,7 @@
  * Uses Textbee SMS Gateway API with error handling and phone number formatting.
  */
 
-const TEXTBEE_BASE_URL = process.env.TEXTBEE_BASE_URL || "https://api.textbee.dev";
+const TEXTBEE_BASE_URL = process.env.TEXTBEE_BASE_URL || "https://api.text.raey.work";
 const TEXTBEE_API_KEY = process.env.TEXTBEE_API_KEY;
 const TEXTBEE_DEVICE_ID = process.env.TEXTBEE_DEVICE_ID;
 
@@ -30,7 +30,7 @@ export function formatPhoneNumber(phone: string): string {
 }
 
 /**
- * Sends an SMS message to a mobile recipient.
+ * Sends an SMS message to a mobile recipient via Textbee gateway.
  */
 export async function sendSMS(to: string, message: string): Promise<SendSMSResult> {
   const formattedPhone = formatPhoneNumber(to);
@@ -38,40 +38,78 @@ export async function sendSMS(to: string, message: string): Promise<SendSMSResul
     return { success: false, error: "Invalid or empty phone number" };
   }
 
-  if (!TEXTBEE_API_KEY || !TEXTBEE_DEVICE_ID) {
+  const apiKey = process.env.TEXTBEE_API_KEY;
+  const deviceId = process.env.TEXTBEE_DEVICE_ID;
+  const baseUrl = process.env.TEXTBEE_BASE_URL || "https://api.text.raey.work";
+
+  if (!apiKey || !deviceId) {
     console.warn("[SMS Service] TEXTBEE_API_KEY or TEXTBEE_DEVICE_ID missing. SMS log only:", {
       to: formattedPhone,
       message,
     });
-    // Return mock success in dev environment if gateway is unconfigured
     return { success: true, messageId: "dev-simulated-sms-id" };
   }
 
-  try {
-    const url = `${TEXTBEE_BASE_URL}/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": TEXTBEE_API_KEY,
-      },
-      body: JSON.stringify({
-        recipients: [formattedPhone],
-        message: message,
-      }),
-    });
+  const baseUrls = Array.from(new Set([
+    baseUrl,
+    "https://api.text.raey.work",
+    "https://api.textbee.dev"
+  ]));
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[SMS Service Gateway Error ${response.status}]:`, errorText);
-      return { success: false, error: `SMS Gateway returned ${response.status}: ${errorText}` };
+  let lastError = "";
+
+  for (const currentUrl of baseUrls) {
+    // Format 1: send-sms (recipients / message)
+    try {
+      const url1 = `${currentUrl}/api/v1/gateway/devices/${deviceId}/send-sms`;
+      const response1 = await fetch(url1, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          recipients: [formattedPhone],
+          message: message,
+        }),
+      });
+
+      if (response1.ok) {
+        const data = await response1.json();
+        console.log(`[SMS Sent Successfully via ${currentUrl}] to ${formattedPhone}`);
+        return { success: true, messageId: data.id || data.messageId || "sent" };
+      }
+      lastError = await response1.text();
+    } catch (err: any) {
+      lastError = err.message || "Network error";
     }
 
-    const data = await response.json();
-    console.log(`[SMS Sent Successfully] to ${formattedPhone}`);
-    return { success: true, messageId: data.id || data.messageId };
-  } catch (error: any) {
-    console.error("[SMS Service Exception]:", error);
-    return { success: false, error: error.message || "Failed to send SMS" };
+    // Format 2: sendSMS (receivers / smsBody)
+    try {
+      const url2 = `${currentUrl}/api/v1/gateway/devices/${deviceId}/sendSMS`;
+      const response2 = await fetch(url2, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          receivers: [formattedPhone],
+          smsBody: message,
+        }),
+      });
+
+      if (response2.ok) {
+        const data = await response2.json();
+        console.log(`[SMS Sent Successfully via ${currentUrl} sendSMS] to ${formattedPhone}`);
+        return { success: true, messageId: data.id || data.messageId || "sent" };
+      }
+      lastError = await response2.text();
+    } catch (err: any) {
+      lastError = err.message || "Network error";
+    }
   }
+
+  console.error(`[SMS Service Error]:`, lastError);
+  return { success: false, error: lastError || "Failed to send SMS" };
 }
