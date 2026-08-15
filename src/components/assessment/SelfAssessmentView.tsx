@@ -190,10 +190,16 @@ export function SelfAssessmentView({
           {SELF_ASSESSMENT_QUESTIONS.map((category) => {
             let catAnswered = 0;
             const catTotal = category.questions.length;
+            let catRaw = 0;
             category.questions.forEach(q => {
-              if (responses[q.question_id] !== undefined) catAnswered++;
+              const score = responses[q.question_id];
+              if (score !== undefined) {
+                catAnswered++;
+                catRaw += (q.weight || 1.0) * score;
+              }
             });
             const catComplete = catAnswered === catTotal;
+            const catScoreVal = (catRaw / 5).toFixed(1);
 
             return (
               <div key={category.category_id} className="premium-card overflow-hidden border border-border/60 shadow-sm bg-surface-primary rounded-xl">
@@ -208,9 +214,14 @@ export function SelfAssessmentView({
                       </h2>
                     </div>
                   </div>
-                  <span className={`text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full ${catComplete ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                    {catAnswered} / {catTotal}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
+                      የክፍሉ ውጤት፡ {catScoreVal}
+                    </span>
+                    <span className={`text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full ${catComplete ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                      {catAnswered} / {catTotal}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex flex-col">

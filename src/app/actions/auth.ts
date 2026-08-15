@@ -70,16 +70,21 @@ export async function registerUserAction(formData: FormData) {
     }
 
     if (!userId) {
-      // Fallback: check if auth user exists by synthetic email or raw email using listUsers with perPage 1000
-      const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      const authUser = usersList?.users?.find(u => 
-        u.email === syntheticEmail || 
-        (rawEmail && u.email === rawEmail) ||
-        u.phone === phone ||
-        u.user_metadata?.phone === phone
-      );
-      if (authUser) {
-        userId = authUser.id;
+      // Fallback: check if auth user exists using generateLink (which bypasses listUsers 500 error)
+      const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: syntheticEmail,
+      });
+      if (linkData?.user) {
+        userId = linkData.user.id;
+      } else if (rawEmail) {
+        const { data: rawLinkData } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: rawEmail,
+        });
+        if (rawLinkData?.user) {
+          userId = rawLinkData.user.id;
+        }
       }
     }
 
@@ -108,10 +113,15 @@ export async function registerUserAction(formData: FormData) {
       if (authError) {
         // Handle case where user already exists in auth.users
         if (authError.message.includes('already') || authError.message.includes('registered') || authError.message.includes('exists')) {
-          const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          const authUser = usersList?.users?.find(u => u.email === syntheticEmail || (rawEmail && u.email === rawEmail));
-          if (authUser) {
-            userId = authUser.id;
+          const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({ type: 'magiclink', email: syntheticEmail });
+          if (linkData?.user) {
+            userId = linkData.user.id;
+            await supabaseAdmin.auth.admin.updateUserById(userId, {
+              email: syntheticEmail,
+              email_confirm: true,
+              password: password,
+              user_metadata: { full_name: fullName, phone: phone, force_password_change: isAdminCreated, requires_password_change: isAdminCreated }
+            });
           } else {
             return { error: `አዲስ ተጠቃሚ መፍጠር አልተቻለም፡ ${authError.message}` };
           }

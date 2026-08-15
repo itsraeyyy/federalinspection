@@ -164,10 +164,11 @@ const getScoreText = (score?: number): string => {
 };
 
 const getOverallGrade = (score10: number): string => {
-  if (score10 >= 9.0) return 'በጣም ከፍተኛ';
-  if (score10 >= 8.0) return 'ከፍተኛ';
-  if (score10 >= 7.0) return 'መካከለኛ';
-  return 'ዝቅተኛ';
+  if (score10 > 9.5) return 'በጣም ከፍተኛ';
+  if (score10 >= 8.5) return 'ከፍተኛ';
+  if (score10 >= 6.5) return 'መካከለኛ';
+  if (score10 >= 5.0) return 'ዝቅተኛ';
+  return 'በጣም ዝቅተኛ';
 };
 
 interface SelfAssessmentReportPDFProps {

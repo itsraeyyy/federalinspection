@@ -92,8 +92,8 @@ export default function ComplaintsPage() {
   // Committee Group Creation Modal State
   const [showCommitteeModal, setShowCommitteeModal] = useState(false);
   const [committeeName, setCommitteeName] = useState('የኢንስፔክሽን አጣሪ ኮሚቴ');
-  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string; email?: string }[]>([
-    { name: '', phone: '', email: '' }
+  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; role?: string; phone: string; email?: string }[]>([
+    { name: '', role: '', phone: '', email: '' }
   ]);
 
   // Export Modal State
@@ -618,10 +618,22 @@ export default function ComplaintsPage() {
                       {((selectedTicket.resolution as any)?.committeeMembers || (selectedTicket.groupMembers && selectedTicket.groupMembers.length > 0)) && (
                         <div className="flex flex-wrap gap-2 pt-1">
                           {((selectedTicket.resolution as any)?.committeeMembers || selectedTicket.groupMembers || []).map((m: any, idx: number) => {
-                            const name = typeof m === 'string' ? m : `${m.name}${m.phone || m.email ? ` (${[m.phone, m.email].filter(Boolean).join(', ')})` : ''}`;
+                            if (typeof m === 'string') {
+                              return (
+                                <span key={idx} className="px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
+                                  • {m}
+                                </span>
+                              );
+                            }
                             return (
-                              <span key={idx} className="px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
-                                • {name}
+                              <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
+                                <span className="font-bold">{m.name}</span>
+                                {m.role && <span className="px-1.5 py-0.5 rounded-md bg-brand-blue/10 text-brand-blue text-[10px] font-extrabold">{m.role}</span>}
+                                {(m.phone || m.email) && (
+                                  <span className="text-text-muted text-[11px] font-normal">
+                                    ({[m.phone, m.email].filter(Boolean).join(', ')})
+                                  </span>
+                                )}
                               </span>
                             );
                           })}
@@ -1131,54 +1143,71 @@ export default function ComplaintsPage() {
                 <label className="text-xs font-bold text-text-primary mb-2 block">የኮሚቴ አባላት ዝርዝር *</label>
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {committeeMembers.map((member, index) => (
-                    <div key={index} className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
-                      <input
-                        type="text"
-                        placeholder={`አባል ${index + 1} ስም`}
-                        value={member.name}
-                        onChange={(e) => {
-                          const updated = [...committeeMembers];
-                          updated[index].name = e.target.value;
-                          setCommitteeMembers(updated);
-                        }}
-                        className="flex-1 min-w-[120px] px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
-                      />
-                      <input
-                        type="text"
-                        placeholder="ስልክ ቁጥር"
-                        value={member.phone}
-                        onChange={(e) => {
-                          const updated = [...committeeMembers];
-                          updated[index].phone = e.target.value;
-                          setCommitteeMembers(updated);
-                        }}
-                        className="w-28 px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
-                      />
-                      <input
-                        type="email"
-                        placeholder="ኢሜይል (Email)"
-                        value={member.email || ''}
-                        onChange={(e) => {
-                          const updated = [...committeeMembers];
-                          updated[index].email = e.target.value;
-                          setCommitteeMembers(updated);
-                        }}
-                        className="flex-1 min-w-[130px] px-3 py-2 text-xs bg-surface-secondary/50 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
-                      />
-                      {committeeMembers.length > 1 && (
-                        <button
-                          onClick={() => setCommitteeMembers(committeeMembers.filter((_, i) => i !== index))}
-                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors shrink-0 cursor-pointer"
-                        >
-                          <IconX size={16} />
-                        </button>
-                      )}
+                    <div key={index} className="p-2.5 rounded-2xl bg-surface-secondary/30 border border-border/40 space-y-2">
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+                        <input
+                          type="text"
+                          placeholder={`አባል ${index + 1} ስም *`}
+                          value={member.name}
+                          onChange={(e) => {
+                            const updated = [...committeeMembers];
+                            updated[index].name = e.target.value;
+                            setCommitteeMembers(updated);
+                          }}
+                          className="flex-1 min-w-[130px] px-3 py-2 text-xs bg-surface-primary border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue font-semibold"
+                        />
+                        <input
+                          type="text"
+                          placeholder="ኃላፊነት (Responsibility)"
+                          value={member.role || ''}
+                          onChange={(e) => {
+                            const updated = [...committeeMembers];
+                            updated[index].role = e.target.value;
+                            setCommitteeMembers(updated);
+                          }}
+                          className="w-full sm:w-36 px-3 py-2 text-xs bg-surface-primary border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+                        />
+                      </div>
+                      <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+                        <input
+                          type="text"
+                          placeholder="ስልክ ቁጥር"
+                          value={member.phone}
+                          onChange={(e) => {
+                            const updated = [...committeeMembers];
+                            updated[index].phone = e.target.value;
+                            setCommitteeMembers(updated);
+                          }}
+                          className="w-full sm:w-32 px-3 py-2 text-xs bg-surface-primary border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+                        />
+                        <input
+                          type="email"
+                          placeholder="ኢሜይል (Email) - አማራጭ"
+                          value={member.email || ''}
+                          onChange={(e) => {
+                            const updated = [...committeeMembers];
+                            updated[index].email = e.target.value;
+                            setCommitteeMembers(updated);
+                          }}
+                          className="flex-1 min-w-[130px] px-3 py-2 text-xs bg-surface-primary border border-border/50 rounded-xl text-text-primary focus:outline-none focus:border-brand-blue"
+                        />
+                        {committeeMembers.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setCommitteeMembers(committeeMembers.filter((_, i) => i !== index))}
+                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors shrink-0 cursor-pointer"
+                            title="አባል አስወግድ"
+                          >
+                            <IconX size={16} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
                 <button
                   type="button"
-                  onClick={() => setCommitteeMembers([...committeeMembers, { name: '', phone: '', email: '' }])}
+                  onClick={() => setCommitteeMembers([...committeeMembers, { name: '', role: '', phone: '', email: '' }])}
                   className="mt-2 text-xs font-bold text-brand-blue hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   + አባል ጨምር

@@ -176,7 +176,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
     });
 
     if (totalAns !== totalQuestions) {
-      showToast(`እባክዎን ለ ${targetMember.users?.full_name} የሁሉም ጥያቄዎች (1.1, 1.2...) ውጤት እና ምክንያት/አስተያየት ይሙሉ (${totalAns}/${totalQuestions} ተሞልቷል)`, 'error');
+      showToast(`እባክዎን ለ ${targetMember.users?.full_name} የሁሉም ጥያቄዎች (1.1, 1.2...) ውጤት እና ሂስ ይሙሉ (${totalAns}/${totalQuestions} ተሞልቷል)`, 'error');
       return;
     }
 
@@ -311,7 +311,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                   {currentIndex + 1} ከ {members.length} አባላት
                 </span>
               </div>
-              <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-2: የ 20% የአቻ ምዘና ቅጽ (ለእያንዳንዱ ጥያቄ ምክንያት/አስተያየት መጻፍ ግዴታ ነው)</p>
+              <p className="text-[11px] text-text-muted mt-0.5">ቅፅ-2: የ 20% የአቻ ምዘና ቅጽ (ለእያንዳንዱ ጥያቄ ሂስ መጻፍ ግዴታ ነው)</p>
             </div>
           </div>
 
@@ -321,7 +321,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
               መመሪያ (Instructions):
             </div>
             <ul className="space-y-1 text-[11px] text-text-secondary leading-snug">
-              <li>• ለእያንዳንዱ መስፈርት ከ<b>1 እስከ 5</b> ውጤት ይስጡ እና <b>ምክንያት/አስተያየት</b> ይጻፉ።</li>
+              <li>• ለእያንዳንዱ መስፈርት ከ<b>1 እስከ 5</b> ውጤት ይስጡ እና <b>ሂስ</b> ይጻፉ።</li>
               <li className="text-[10px] text-brand-blue font-medium flex flex-wrap gap-1 mt-1">
                 <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">1 = በጣም ዝቅተኛ</span>
                 <span className="bg-brand-blue/10 px-1.5 py-0.5 rounded">2 = ዝቅተኛ</span>
@@ -417,12 +417,17 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
           {LEADERSHIP_EVALUATION_QUESTIONS_20.map((category) => {
             let catAnswered = 0;
             const catTotal = category.questions.length;
+            let catRaw = 0;
             category.questions.forEach(q => {
               const score = currentResponses[q.question_id];
               const comment = (currentComments[q.question_id] || '').trim();
               if (score !== undefined && comment !== '') catAnswered++;
+              if (score !== undefined) {
+                catRaw += (q.weight || 1.0) * score;
+              }
             });
             const catComplete = catAnswered === catTotal;
+            const catScoreVal = (catRaw / 5).toFixed(1);
 
             return (
               <div key={category.category_id} className="premium-card overflow-hidden border border-border/60 shadow-sm bg-surface-primary rounded-xl">
@@ -437,9 +442,14 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                       </h2>
                     </div>
                   </div>
-                  <span className={`text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full ${catComplete ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
-                    {catAnswered} / {catTotal}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue border border-brand-blue/20">
+                      የክፍሉ ውጤት፡ {catScoreVal}
+                    </span>
+                    <span className={`text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full ${catComplete ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                      {catAnswered} / {catTotal}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex flex-col">
@@ -503,12 +513,12 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                         <div className="flex items-center justify-between mb-1.5">
                           <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
                             <MessageSquare className="w-3.5 h-3.5 text-brand-blue" />
-                            <span>ለጥያቄ {q.question_id} ምክንያት / ማብራሪያ (Reason for {q.question_id})</span>
+                            <span>ለጥያቄ {q.question_id} ሂስ</span>
                             <span className="text-danger font-bold text-xs">* (ግዴታ)</span>
                           </label>
                           {!(currentComments[q.question_id] || '').trim() && (
                             <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded font-semibold border border-amber-500/20">
-                              ማብራሪያ ይፈልጋል
+                              ሂስ ይፈልጋል
                             </span>
                           )}
                         </div>
@@ -517,7 +527,7 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
                           disabled={readOnly || isCurrentMemberLocked}
                           value={currentComments[q.question_id] || ''}
                           onChange={(e) => handleCommentChange(currentMember.user_id, q.question_id, e.target.value)}
-                          placeholder={`ለጥያቄ ${q.question_id} የሰጡትን ውጤት ምክንያት ወይም ማብራሪያ እዚህ ይጻፉ... (Required)`}
+                          placeholder={`ለጥያቄ ${q.question_id} የሰጡትን ውጤት ሂስ እዚህ ይጻፉ... (Required)`}
                           className="w-full p-3 bg-surface-secondary/50 border border-border/80 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue disabled:opacity-60 transition-all placeholder:text-text-muted/60"
                         />
                       </div>

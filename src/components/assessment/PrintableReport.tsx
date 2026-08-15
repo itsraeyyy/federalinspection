@@ -114,10 +114,11 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
 
                 let rowGrade = '-';
                 if (sub30Val > 0) {
-                  if (pct >= 90) rowGrade = 'በጣም ከፍተኛ';
-                  else if (pct >= 80) rowGrade = 'ከፍተኛ';
-                  else if (pct >= 70) rowGrade = 'መካከለኛ';
-                  else rowGrade = 'ዝቅተኛ';
+                  if (pct > 95) rowGrade = 'በጣም ከፍተኛ';
+                  else if (pct >= 85) rowGrade = 'ከፍተኛ';
+                  else if (pct >= 65) rowGrade = 'መካከለኛ';
+                  else if (pct >= 50) rowGrade = 'ዝቅተኛ';
+                  else rowGrade = 'በጣም ዝቅተኛ';
                 }
 
                 return (
@@ -145,7 +146,7 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
             <td className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center' }}>{peer20.toFixed(1)}</td>
             <td className="p-2 text-center" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', color: '#0284c7' }}>{sum30.toFixed(1)}</td>
             <td className="p-2 text-center text-xs" style={{ border: '1px solid black', padding: '6px', textAlign: 'center', color: '#0284c7' }}>
-              {sum30 >= 27 ? 'በጣም ከፍተኛ' : sum30 >= 24 ? 'ከፍተኛ' : sum30 >= 21 ? 'መካከለኛ' : 'ዝቅተኛ'}
+              {sum30 > 28.5 ? 'በጣም ከፍተኛ' : sum30 >= 25.5 ? 'ከፍተኛ' : sum30 >= 19.5 ? 'መካከለኛ' : sum30 >= 15.0 ? 'ዝቅተኛ' : 'በጣም ዝቅተኛ'}
             </td>
           </tr>
         </tbody>
@@ -185,10 +186,11 @@ export const PrintableReport = forwardRef<HTMLDivElement, PrintableReportProps>(
                 </tr>
               </thead>
               <tbody>
-                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>1. በጣም ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 90% እስከ 100%</td></tr>
-                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>2. ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 80% እስከ 89%</td></tr>
-                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>3. መካከለኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% እስከ 79%</td></tr>
-                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>4. ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 70% በታች</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>1. በጣም ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 95% በላይ (&gt;95%)</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>2. ከፍተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 85% እስከ 95%</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>3. መካከለኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 65% እስከ 85%</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>4. ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 50% እስከ 65%</td></tr>
+                <tr><td className="p-2 font-bold" style={{ border: '1px solid black', padding: '5px', fontWeight: 'bold' }}>5. በጣም ዝቅተኛ</td><td className="p-2" style={{ border: '1px solid black', padding: '5px' }}>ከ 50% በታች (&lt;50%)</td></tr>
               </tbody>
             </table>
           </div>

@@ -293,10 +293,22 @@ function TrackingContent() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[11px] font-bold text-slate-500">አባላት ({members.length}):</span>
                         {members.map((m: any, idx: number) => {
-                          const contact = typeof m === 'string' ? m : `${m.name}${m.phone || m.email ? ` (${[m.phone, m.email].filter(Boolean).join(', ')})` : ''}`;
+                          if (typeof m === 'string') {
+                            return (
+                              <span key={idx} className="text-[11px] font-bold px-2.5 py-0.5 bg-white text-slate-700 rounded-md border border-slate-200">
+                                {m}
+                              </span>
+                            );
+                          }
                           return (
-                            <span key={idx} className="text-[11px] font-bold px-2.5 py-0.5 bg-white text-slate-700 rounded-md border border-slate-200">
-                              {contact}
+                            <span key={idx} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 bg-white text-slate-700 rounded-md border border-slate-200">
+                              <span>{m.name}</span>
+                              {m.role && <span className="px-1.5 py-0.5 rounded bg-blue-50 text-[#014BAA] text-[10px] font-extrabold">{m.role}</span>}
+                              {(m.phone || m.email) && (
+                                <span className="text-slate-400 text-[10px] font-normal">
+                                  ({[m.phone, m.email].filter(Boolean).join(', ')})
+                                </span>
+                              )}
                             </span>
                           );
                         })}

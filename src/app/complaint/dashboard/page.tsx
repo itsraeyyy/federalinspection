@@ -104,12 +104,12 @@ export default function CommitteeLeaderDashboard() {
 
   // Committee Modal State
   const [showCommitteeModal, setShowCommitteeModal] = useState(false);
-  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; phone: string; email?: string }[]>([{ name: '', phone: '', email: '' }]);
+  const [committeeMembers, setCommitteeMembers] = useState<{ name: string; role?: string; phone: string; email?: string }[]>([{ name: '', role: '', phone: '', email: '' }]);
 
   // Editable Decision State
   const [editableDecision, setEditableDecision] = useState('');
 
-  const leaderName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'የኮሚቴ ሰብሳቢ (Leader)' : 'የኮሚቴ ሰብሳቢ';
+  const leaderName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)' : 'የኮሚሽን ጽ/ቤት ሃላፊ';
 
   useEffect(() => {
     if (!profileLoading && !profile) {
@@ -153,7 +153,7 @@ export default function CommitteeLeaderDashboard() {
   const handleTicketSelect = (ticket: Complaint) => {
     setSelectedTicket(ticket);
     if (ticket.status === 'PendingApproval') {
-      setEditableDecision(ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚቴ ሰብሳቢ ተረጋግቶና ጸድቆ ተጠናቋል።');
+      setEditableDecision(ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚሽን ጽ/ቤት ሃላፊ ተረጋግቶና ጸድቆ ተጠናቋል።');
     }
   };
 
@@ -163,8 +163,9 @@ export default function CommitteeLeaderDashboard() {
     setActionLoading(true);
     
     const assignedStr = validMembers.map(m => {
+      const roleStr = m.role?.trim() ? ` [${m.role.trim()}]` : '';
       const info = [m.phone?.trim(), m.email?.trim()].filter(Boolean).join(', ');
-      return `${m.name.trim()}${info ? ` (${info})` : ''}`;
+      return `${m.name.trim()}${roleStr}${info ? ` (${info})` : ''}`;
     }).join('፣ ');
     const assigned = await complaintService.startProcessingByLeader(selectedTicket.id, leaderName, assignedStr, validMembers);
     if (assigned) {
@@ -172,7 +173,7 @@ export default function CommitteeLeaderDashboard() {
       const updated = await complaintService.getComplaintById(selectedTicket.id);
       setSelectedTicket(updated);
       setShowCommitteeModal(false);
-      setCommitteeMembers([{ name: '', phone: '', email: '' }]);
+      setCommitteeMembers([{ name: '', role: '', phone: '', email: '' }]);
       setFeedbackMsg({ type: 'success', text: 'ኮሚቴው በተሳካ ሁኔታ ተመድቧል፣ እና የ15 ቀናት ጊዜ ገደብ ጀምሯል።' });
       setTimeout(() => setFeedbackMsg(null), 5000);
     } else {
@@ -228,7 +229,7 @@ export default function CommitteeLeaderDashboard() {
     setActionLoading(true);
     setFeedbackMsg(null);
     try {
-      const resolutionMsg = editableDecision.trim() || ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚቴ ሰብሳቢ ተረጋግቶና ጸድቆ ተጠናቋል።';
+      const resolutionMsg = editableDecision.trim() || ticket.resolution?.message || ticket.decisionIdeaSummary || 'የውሳኔ ሀሳቡ በኮሚሽን ጽ/ቤት ሃላፊ ተረጋግቶና ጸድቆ ተጠናቋል።';
       const success = await complaintService.approveDecisionByLeader(
         ticket.id,
         leaderName,
@@ -282,7 +283,7 @@ export default function CommitteeLeaderDashboard() {
       const success = await complaintService.updateComplaintStatus(
         selectedTicket.id,
         action,
-        `${leaderName} (የኮሚቴ ሰብሳቢ የቀጥታ ውሳኔ)`,
+        `${leaderName} (የኮሚሽን ጽ/ቤት ሃላፊ የቀጥታ ውሳኔ)`,
         { message: directMessage, files: directFiles }
       );
       if (success) {
@@ -313,7 +314,7 @@ export default function CommitteeLeaderDashboard() {
       <div className="min-h-screen bg-surface-primary flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
           <IconLoader2 size={36} className="animate-spin text-brand-blue" />
-          <p className="text-sm text-text-secondary font-medium">የኮሚቴ ሰብሳቢ ፖርታል በመጫን ላይ ነው...</p>
+          <p className="text-sm text-text-secondary font-medium">የኮሚሽን ጽ/ቤት ሃላፊ ፖርታል በመጫን ላይ ነው...</p>
         </div>
       </div>
     );
@@ -330,7 +331,7 @@ export default function CommitteeLeaderDashboard() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm md:text-base font-extrabold tracking-tight text-text-primary truncate">
-                የኮሚቴ ሰብሳቢ
+                የኮሚሽን ጽ/ቤት ሃላፊ
               </span>
               <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-brand-blue/10 text-brand-blue border border-brand-blue/20 shrink-0">
                 Executive Portal
@@ -755,10 +756,22 @@ export default function CommitteeLeaderDashboard() {
                           <IconUser size={14} className="text-sky-500" /> የኮሚቴ አባላት ({members.length}):
                         </span>
                         {members.map((m: any, idx: number) => {
-                          const contact = typeof m === 'string' ? m : `${m.name}${m.phone || m.email ? ` (${[m.phone, m.email].filter(Boolean).join(', ')})` : ''}`;
+                          if (typeof m === 'string') {
+                            return (
+                              <span key={idx} className="font-extrabold px-2.5 py-1 bg-surface-secondary text-text-primary rounded-lg border border-border/30 text-[11px]">
+                                {m}
+                              </span>
+                            );
+                          }
                           return (
-                            <span key={idx} className="font-extrabold px-2.5 py-1 bg-surface-secondary text-text-primary rounded-lg border border-border/30 text-[11px]">
-                              {contact}
+                            <span key={idx} className="inline-flex items-center gap-1.5 font-extrabold px-2.5 py-1 bg-surface-secondary text-text-primary rounded-lg border border-border/30 text-[11px]">
+                              <span>{m.name}</span>
+                              {m.role && <span className="px-1.5 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[10px] font-extrabold">{m.role}</span>}
+                              {(m.phone || m.email) && (
+                                <span className="text-text-muted text-[10px] font-normal">
+                                  ({[m.phone, m.email].filter(Boolean).join(', ')})
+                                </span>
+                              )}
                             </span>
                           );
                         })}
@@ -787,7 +800,7 @@ export default function CommitteeLeaderDashboard() {
                     return (
                       <div className="mt-4 p-4 rounded-2xl bg-surface-primary/80 border border-sky-500/20 space-y-2 relative z-10">
                         <h5 className="text-xs font-extrabold text-sky-700 dark:text-sky-300 uppercase tracking-wider flex items-center gap-1.5">
-                          <IconPaperclip size={14} className="text-sky-500" /> በኮሚቴው የቀረቡ ተያያዥ ሰነዶች ({proposalFiles.length})
+                          <IconPaperclip size={14} className="text-sky-500" /> በአጣሪ ኮሚቴው የቀረበ የውሳኔ ሰነድ ({proposalFiles.length})
                         </h5>
                         <div className="flex flex-wrap gap-2 pt-1">
                           {proposalFiles.map((file: any, idx: number) => {
@@ -856,12 +869,15 @@ export default function CommitteeLeaderDashboard() {
 
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <button
-                      onClick={() => handleRatify(selectedTicket)}
+                      onClick={() => {
+                        setDirectMessage(editableDecision || selectedTicket.resolution?.message || selectedTicket.decisionIdeaSummary || '');
+                        setShowDirectModal(true);
+                      }}
                       disabled={actionLoading}
-                      className="w-full sm:flex-1 min-h-[48px] px-6 bg-success hover:bg-success/90 text-white font-bold rounded-2xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
+                      className="w-full sm:flex-1 min-h-[48px] px-6 bg-success hover:bg-success/90 text-white font-extrabold rounded-2xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
                     >
-                      {actionLoading ? <IconLoader2 className="animate-spin" size={20} /> : <IconCheck size={20} />}
-                      ያጽድቁ (Approve)
+                      <IconShieldCheck size={20} />
+                      የመጨረሻ ውሳኔ ስጥ
                     </button>
                     <button
                       onClick={() => setShowRevisionModal(true)}
@@ -1212,10 +1228,10 @@ export default function CommitteeLeaderDashboard() {
               <button
                 onClick={() => handleDirectResolve('Resolved')}
                 disabled={actionLoading || !directMessage.trim()}
-                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-success hover:bg-success/90 text-white text-sm font-bold rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 bg-success hover:bg-success/90 text-white text-sm font-extrabold rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {actionLoading && <IconLoader2 className="animate-spin" size={20} />}
-                ውሳኔውን አጽድቀው ያጠናቅቁ
+                {actionLoading ? <IconLoader2 className="animate-spin" size={20} /> : <IconShieldCheck size={20} />}
+                የመጨረሻ ውሳኔ ስጥ
               </button>
             </div>
           </div>

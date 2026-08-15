@@ -244,10 +244,11 @@ export function AssessmentReportPDF({
 
                 let rowGrade = '-';
                 if (sub30Val > 0) {
-                  if (pct >= 90) rowGrade = 'በጣም ከፍተኛ';
-                  else if (pct >= 80) rowGrade = 'ከፍተኛ';
-                  else if (pct >= 70) rowGrade = 'መካከለኛ';
-                  else rowGrade = 'ዝቅተኛ';
+                  if (pct > 95) rowGrade = 'በጣም ከፍተኛ';
+                  else if (pct >= 85) rowGrade = 'ከፍተኛ';
+                  else if (pct >= 65) rowGrade = 'መካከለኛ';
+                  else if (pct >= 50) rowGrade = 'ዝቅተኛ';
+                  else rowGrade = 'በጣም ዝቅተኛ';
                 }
 
                 return (
@@ -276,7 +277,7 @@ export function AssessmentReportPDF({
             <Text style={[styles.cellBold, { width: 42 }]}>{peer20.toFixed(1)}</Text>
             <Text style={[styles.cellBold, { width: 42, color: '#0284c7' }]}>{sum30.toFixed(1)}</Text>
             <Text style={[styles.cellBold, { width: 60, borderRight: 'none', color: '#0284c7', fontSize: 7 }]}>
-              {sum30 >= 27 ? 'በጣም ከፍተኛ' : sum30 >= 24 ? 'ከፍተኛ' : sum30 >= 21 ? 'መካከለኛ' : 'ዝቅተኛ'}
+              {sum30 > 28.5 ? 'በጣም ከፍተኛ' : sum30 >= 25.5 ? 'ከፍተኛ' : sum30 >= 19.5 ? 'መካከለኛ' : sum30 >= 15.0 ? 'ዝቅተኛ' : 'በጣም ዝቅተኛ'}
             </Text>
           </View>
         </View>
@@ -317,19 +318,23 @@ export function AssessmentReportPDF({
               </View>
               <View style={styles.gradeRow}>
                 <Text style={styles.gradeLabel}>{'1. በጣም ከፍተኛ'}</Text>
-                <Text style={styles.gradeValue}>{'ከ 90% እስከ 100%'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 95% በላይ (>95%)'}</Text>
               </View>
               <View style={styles.gradeRow}>
                 <Text style={styles.gradeLabel}>{'2. ከፍተኛ'}</Text>
-                <Text style={styles.gradeValue}>{'ከ 80% እስከ 89%'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 85% እስከ 95%'}</Text>
               </View>
               <View style={styles.gradeRow}>
                 <Text style={styles.gradeLabel}>{'3. መካከለኛ'}</Text>
-                <Text style={styles.gradeValue}>{'ከ 70% እስከ 79%'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 65% እስከ 85%'}</Text>
+              </View>
+              <View style={styles.gradeRow}>
+                <Text style={styles.gradeLabel}>{'4. ዝቅተኛ'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 50% እስከ 65%'}</Text>
               </View>
               <View style={[styles.gradeRow, { borderBottom: 'none' }]}>
-                <Text style={styles.gradeLabel}>{'4. ዝቅተኛ'}</Text>
-                <Text style={styles.gradeValue}>{'ከ 70% በታች'}</Text>
+                <Text style={styles.gradeLabel}>{'5. በጣም ዝቅተኛ'}</Text>
+                <Text style={styles.gradeValue}>{'ከ 50% በታች (<50%)'}</Text>
               </View>
             </View>
           </View>

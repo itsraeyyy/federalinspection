@@ -389,10 +389,13 @@ export const complaintService = {
           }
         }
 
+        const existingAttachments = (existing?.resolution as any)?.attachments || (existing?.resolution as any)?.decisionIdeaFiles || [];
+        const combinedAttachments = [...existingAttachments, ...resolutionAttachments];
+
         updates.resolution = {
           ...(existing?.resolution as any || {}),
           message: resolution.message,
-          attachments: resolutionAttachments,
+          attachments: combinedAttachments,
           resolvedAt: new Date().toISOString(),
           resolvedBy: adminName,
         };
@@ -425,7 +428,7 @@ export const complaintService = {
               await notifyViaAPI('report_update', {
                 phone: l.phone || undefined,
                 email: l.email || undefined,
-                name: 'የኮሚቴ ሰብሳቢ (Leader)',
+                name: 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)',
                 subject: 'ICODiS — የውሳኔ ሀሳብ ለጽድቅ ቀርቧል (Pending Approval)',
                 message: `ለማጽደቅ የቀረበ አዲስ የውሳኔ ሀሳብ አለ። መከታተያ ኮድ፡ [${updatedComplaint?.tracking_code || id}]። እባክዎ በመግባት ውሳኔውን ያረጋግጡና ያጽድቁ።`,
                 loginPath: '/complaint/dashboard',
@@ -501,7 +504,7 @@ export const complaintService = {
             await notifyReportUpdate({
               phone: l.phone || undefined,
               email: l.email || undefined,
-              name: 'የኮሚቴ ሰብሳቢ (Leader)',
+              name: 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)',
               subject: 'ICODiS — አዲስ ጉዳይ ለኮሚቴ ምደባ (Awaiting Assignment)',
               message: msg,
               loginPath: '/complaint/dashboard',
@@ -516,14 +519,15 @@ export const complaintService = {
     return true;
   },
 
-  startProcessingByLeader: async (id: string, leaderName: string, committeeName: string, members?: { name: string; phone: string; email?: string }[]): Promise<boolean> => {
+  startProcessingByLeader: async (id: string, leaderName: string, committeeName: string, members?: { name: string; role?: string; phone: string; email?: string }[]): Promise<boolean> => {
     const { data: existing } = await supabase.from('complaints').select('resolution').eq('id', id).single();
     const existingRes = (existing?.resolution as any) || {};
 
     const formattedMembers = members && members.length > 0
       ? members.filter(m => m.name.trim()).map(m => {
+          const roleStr = m.role?.trim() ? ` [${m.role.trim()}]` : '';
           const contact = [m.phone?.trim(), m.email?.trim()].filter(Boolean).join(', ');
-          return `${m.name.trim()}${contact ? ` (${contact})` : ''}`;
+          return `${m.name.trim()}${roleStr}${contact ? ` (${contact})` : ''}`;
         })
       : undefined;
 
@@ -738,7 +742,7 @@ export const complaintService = {
             await notifyViaAPI('decision_proposal_submitted', {
               phone: l.phone || undefined,
               email: l.email || undefined,
-              committeeLeaderName: 'የኮሚቴ ሰብሳቢ (Leader)',
+              committeeLeaderName: 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)',
               trackingCode: existing?.tracking_code || id,
               proposalSummary: summary,
             });

@@ -13,7 +13,7 @@ export function RepLogoutButton() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/representative/login");
+    window.location.href = "/representative/login";
   };
 
   return (

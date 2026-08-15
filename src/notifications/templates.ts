@@ -167,13 +167,13 @@ export function buildDecisionProposalTemplates(opts: {
 
   const sms =
     `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
-    `ክቡር/ርት የኮሚቴ ሰብሳቢ፣ በአቤቱታ ቁጥር ${opts.trackingCode} ላይ በአጣሪ ኮሚቴው የተዘጋጀው የውሳኔ ሀሳብ (Proposal) ለማጽደቅ ቀርቧል።\n` +
+    `ክቡር/ርት የኮሚሽን ጽ/ቤት ሃላፊ፣ በአቤቱታ ቁጥር ${opts.trackingCode} ላይ በአጣሪ ኮሚቴው የተዘጋጀው የውሳኔ ሀሳብ (Proposal) ለማጽደቅ ቀርቧል።\n` +
     `👉 ገብተው ውሳኔውን መርምረው ለማጽደቅ: ${dashboardUrl}`;
 
   const html = wrapEmailTemplate(
     "ICODiS — የውሳኔ ሀሳብ ለማጽደቅ ቀርቧል",
     "Decision Proposal Pending Approval",
-    `<p>ሰላም ክቡር/ርት የኮሚቴ ሰብሳቢ <strong>${opts.committeeLeaderName || "Leader"}</strong>፣</p>
+    `<p>ሰላም ክቡር/ርት የኮሚሽን ጽ/ቤት ሃላፊ <strong>${opts.committeeLeaderName || "የኮሚሽን ጽ/ቤት ሃላፊ"}</strong>፣</p>
     <p>በአቤቱታ ቁጥር <strong>${opts.trackingCode}</strong> ላይ በአጣሪ ኮሚቴው የማጣራት ስራ ተጠናቆ የቀረበው የውሳኔ ሀሳብ (Decision Proposal) በእርስዎ እንዲጸድቅ ቀርቧል።</p>
     ${
       opts.proposalSummary
@@ -279,21 +279,21 @@ export function buildSlaReminderTemplates(opts: {
       `👉 ገብተው ያፋጥኑ፡ ${url}`;
 
     htmlBody =
-      `<p>ሰላም የኮሚቴ ሰብሳቢ፣</p>` +
+      `<p>ሰላም የኮሚሽን ጽ/ቤት ሃላፊ፣</p>` +
       `<p>በአቤቱታ ቁጥር <strong>${opts.trackingCode}</strong> ላይ የቀረበውን የውሳኔ ሀሳብ መርምረው ለማጽደቅ <strong>${timeText}</strong>።</p>` +
       `<div class="warning">⚠️ ጉዳዩ ትኩረት የሚሻ በመሆኑ እባክዎ ገብተው ያጽድቁ።</div>` +
-      `<div style="text-align:center"><a href="${url}" class="btn">👉 ወደ ሰብሳቢ ዳሽቦርድ ይግቡ</a></div>`;
+      `<div style="text-align:center"><a href="${url}" class="btn">👉 ወደ ጽ/ቤት ሃላፊ ዳሽቦርድ ይግቡ</a></div>`;
   } else {
     // Committee Group Member - NO LINK
     sms =
       `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
       `አስቸኳይ ማሳሰቢያ፡ በ${opts.committeeName || 'ኮሚቴው'} ስር ለተመደበው አቤቱታ (ኮድ: ${opts.trackingCode}) የማጣሪያ ቀነ ገደብ ለማጠናቀቅ ${timeText}።\n` +
-      `እባክዎ ከኮሚቴ ሰብሳቢዎ ጋር በመሆን ማጣራቱን ያፋጥኑ።`;
+      `እባክዎ ከጽ/ቤት ሃላፊዎ ጋር በመሆን ማጣራቱን ያፋጥኑ።`;
 
     htmlBody =
       `<p>ሰላም የኮሚቴ አባል፣</p>` +
       `<p>በ <strong>${opts.committeeName || 'ኮሚቴዎ'}</strong> ስር ለተመደበው አቤቱታ ቁጥር <strong>${opts.trackingCode}</strong> የማጣሪያ ቀነ ገደብ ለማጠናቀቅ <strong>${timeText}</strong>።</p>` +
-      `<p>እባክዎ ከኮሚቴ ሰብሳቢዎ ጋር በመሆን ማጣራቱን በአስቸኳይ እንድታፋጥኑ እናሳስባለን።</p>`;
+      `<p>እባክዎ ከጽ/ቤት ሃላፊዎ ጋር በመሆን ማጣራቱን በአስቸኳይ እንድታፋጥኑ እናሳስባለን።</p>`;
   }
 
   const html = wrapEmailTemplate(

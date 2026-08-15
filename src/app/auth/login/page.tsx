@@ -62,7 +62,7 @@ export default function LoginPage() {
 
         if (profile?.role === 'committee_leader') {
           await supabase.auth.signOut();
-          setErrorMsg("ይህ መግቢያ ለአስተዳዳሪዎች (Admins) ብቻ የተዘጋጀ ነው። እባክዎ የኮሚቴ ሰብሳቢ መግቢያን ይጠቀሙ።");
+          setErrorMsg("ይህ መግቢያ ለአስተዳዳሪዎች (Admins) ብቻ የተዘጋጀ ነው። እባክዎ የኮሚሽን ጽ/ቤት ሃላፊ መግቢያን ይጠቀሙ።");
           setLoading(false);
           return;
         }

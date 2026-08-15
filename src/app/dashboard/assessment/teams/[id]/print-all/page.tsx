@@ -102,10 +102,11 @@ export default function PrintAllPage() {
           const final100 = sum30 + appr70;
 
           const getGrade = (s: number) => {
-            if (s >= 90) return 'በጣም ከፍተኛ';
-            if (s >= 80) return 'ከፍተኛ';
-            if (s >= 70) return 'መካከለኛ';
-            return 'ዝቅተኛ';
+            if (s > 95) return 'በጣም ከፍተኛ';
+            if (s >= 85) return 'ከፍተኛ';
+            if (s >= 65) return 'መካከለኛ';
+            if (s >= 50) return 'ዝቅተኛ';
+            return 'በጣም ዝቅተኛ';
           };
 
           return {

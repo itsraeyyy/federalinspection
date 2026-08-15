@@ -54,8 +54,8 @@ export const ReportNavGroup: React.FC<ReportNavGroupProps> = ({
   // Filter sub-items if allowedModuleIds is provided
   const subItems = allowedModuleIds
     ? allSubItems.filter(
-        (sub) => allowedModuleIds.includes(sub.id) || allowedModuleIds.includes('all')
-      )
+      (sub) => allowedModuleIds.includes(sub.id) || allowedModuleIds.includes('all')
+    )
     : allSubItems;
 
   if (subItems.length === 0) return null;
@@ -65,13 +65,12 @@ export const ReportNavGroup: React.FC<ReportNavGroupProps> = ({
       <div className="relative group">
         <Link
           href="/dashboard/forms"
-          title="📋 ሪፖርት"
+          title="ሪፖርት"
           onClick={onItemClick}
-          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 ${
-            isReportActive
+          className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 ${isReportActive
               ? 'bg-surface-secondary/80 text-text-primary shadow-sm border border-border/50'
               : 'text-text-secondary hover:bg-surface-secondary/50 hover:text-text-primary'
-          }`}
+            }`}
         >
           <IconFileDescription size={20} className={isReportActive ? 'text-brand-blue' : 'text-text-muted'} />
         </Link>
@@ -85,11 +84,10 @@ export const ReportNavGroup: React.FC<ReportNavGroupProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-          isReportActive
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${isReportActive
             ? 'bg-surface-secondary/60 text-text-primary border border-border/40 font-semibold'
             : 'text-text-secondary hover:bg-surface-secondary/40 hover:text-text-primary border border-transparent'
-        }`}
+          }`}
       >
         <div className="flex items-center gap-3">
           <IconFileDescription
@@ -114,11 +112,10 @@ export const ReportNavGroup: React.FC<ReportNavGroupProps> = ({
                 key={sub.href}
                 href={sub.href}
                 onClick={onItemClick}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
-                  isActive
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all duration-150 ${isActive
                     ? 'bg-brand-blue/10 text-brand-blue font-semibold border border-brand-blue/20'
                     : 'text-text-secondary hover:bg-surface-secondary/50 hover:text-text-primary'
-                }`}
+                  }`}
               >
                 <sub.icon size={16} className={isActive ? 'text-brand-blue' : 'text-text-muted'} />
                 <span>{sub.label}</span>

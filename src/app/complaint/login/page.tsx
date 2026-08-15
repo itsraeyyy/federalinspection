@@ -24,7 +24,7 @@ export default function ComplaintLoginPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('error') === 'unauthorized') {
-        setErrorMsg("አካውንትዎ የአድሚን ወይም የኮሚቴ ሰብሳቢ ፈቃድ የለውም ወይም ገቢር (Active) አይደለም።");
+        setErrorMsg("አካውንትዎ የአድሚን ወይም የኮሚሽን ጽ/ቤት ሃላፊ ፈቃድ የለውም ወይም ገቢር (Active) አይደለም።");
       }
     }
   }, []);
@@ -67,7 +67,7 @@ export default function ComplaintLoginPage() {
 
         if (profile?.role !== 'committee_leader') {
           await supabase.auth.signOut();
-          setErrorMsg("ይህ መግቢያ ለኮሚቴ ሰብሳቢ (Committee Leader) ብቻ የተዘጋጀ ነው። እባክዎ የአስተዳዳሪ መግቢያን ይጠቀሙ።");
+          setErrorMsg("ይህ መግቢያ ለኮሚሽን ጽ/ቤት ሃላፊ (Head of Office) ብቻ የተዘጋጀ ነው። እባክዎ የአስተዳዳሪ መግቢያን ይጠቀሙ።");
           setLoading(false);
           return;
         }
@@ -143,7 +143,7 @@ export default function ComplaintLoginPage() {
             {requiresReset ? 'አዲስ የይለፍ ቃል ያስገቡ' : 'የጥቆማ እና አቤቱታ መግቢያ'}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            {requiresReset ? 'ለደህንነትዎ ሲባል እባክዎን አዲስ የይለፍ ቃል ይፍጠሩ።' : 'የኮሚቴ ሰብሳቢዎችና አስተዳዳሪዎች ልዩ የስራ መግቢያ'}
+            {requiresReset ? 'ለደህንነትዎ ሲባል እባክዎን አዲስ የይለፍ ቃል ይፍጠሩ።' : 'የኮሚሽን ጽ/ቤት ሃላፊዎችና አስተዳዳሪዎች ልዩ የስራ መግቢያ'}
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
             <div className="h-1 w-8 bg-blue-600 rounded-full"></div>
