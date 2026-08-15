@@ -54,30 +54,37 @@ export async function registerUserAction(formData: FormData) {
     // We use a synthetic email to avoid Supabase's 'Phone Logins Disabled' requirement
     const syntheticEmail = `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local`;
     
-    let userId;
+    let userId: string | null = null;
     
-    // First, check if user exists in public.users
-    const { data: existingUser } = await supabaseAdmin
+    // First, check if user exists in public.users by any phone variation
+    const phoneNoPlus = phone.replace('+', '');
+    const phoneWith0 = `0${phone.replace(/^\+251/, '')}`;
+
+    const { data: existingUsers } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('phone_number', phone)
-      .maybeSingle();
+      .in('phone_number', [phone, phoneNoPlus, phoneWith0, cleanPhone]);
 
-    let existingAuthUserId = existingUser?.id;
+    if (existingUsers && existingUsers.length > 0) {
+      userId = existingUsers[0].id;
+    }
 
-    if (!existingAuthUserId) {
-      // Fallback: check if auth user exists by synthetic email
-      const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
-      const authUser = usersList?.users?.find(u => u.email === syntheticEmail);
+    if (!userId) {
+      // Fallback: check if auth user exists by synthetic email or raw email using listUsers with perPage 1000
+      const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const authUser = usersList?.users?.find(u => 
+        u.email === syntheticEmail || 
+        (rawEmail && u.email === rawEmail) ||
+        u.phone === phone ||
+        u.user_metadata?.phone === phone
+      );
       if (authUser) {
-        existingAuthUserId = authUser.id;
+        userId = authUser.id;
       }
     }
 
-    if (existingAuthUserId) {
-      // User exists from a previous registration
-      userId = existingAuthUserId;
-      // Update their auth account with the synthetic email, new temp password, and metadata flags
+    if (userId) {
+      // User exists from a previous registration - update their auth account
       const updatePayload: any = { 
         email: syntheticEmail, 
         email_confirm: true,
@@ -86,9 +93,8 @@ export async function registerUserAction(formData: FormData) {
       if (password) updatePayload.password = password;
       
       const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, updatePayload);
-      if (updateErr && !updateErr.message.includes('already been registered')) {
-        console.error('Failed to update existing user:', updateErr);
-        return { error: 'የተጠቃሚ መረጃን ማስተካከል አልተቻለም (Failed to update existing user)' };
+      if (updateErr && !updateErr.message.includes('already')) {
+        console.warn('Warning updating existing auth user:', updateErr.message);
       }
     } else {
       // Create a brand new user
@@ -100,10 +106,22 @@ export async function registerUserAction(formData: FormData) {
       });
 
       if (authError) {
-        console.error('Failed to create user:', authError);
-        return { error: 'አዲስ ተጠቃሚ መፍጠር አልተቻለም (Failed to create new user)' };
+        // Handle case where user already exists in auth.users
+        if (authError.message.includes('already') || authError.message.includes('registered') || authError.message.includes('exists')) {
+          const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          const authUser = usersList?.users?.find(u => u.email === syntheticEmail || (rawEmail && u.email === rawEmail));
+          if (authUser) {
+            userId = authUser.id;
+          } else {
+            return { error: `አዲስ ተጠቃሚ መፍጠር አልተቻለም፡ ${authError.message}` };
+          }
+        } else {
+          console.error('Failed to create user:', authError);
+          return { error: `አዲስ ተጠቃሚ መፍጠር አልተቻለም፡ ${authError.message}` };
+        }
+      } else {
+        userId = authData.user.id;
       }
-      userId = authData.user.id;
     }
 
     // 2. Upsert into public.users
@@ -112,23 +130,25 @@ export async function registerUserAction(formData: FormData) {
       .upsert({ id: userId, phone_number: phone, full_name: fullName });
 
     if (usersError) {
-      return { error: 'የተጠቃሚውን መገለጫ ማዘመን አልተቻለም (Failed to update user profile)' };
+      console.error('Failed to update public.users:', usersError);
+      return { error: `የተጠቃሚውን መገለጫ ማዘመን አልተቻለም፡ ${usersError.message}` };
     }
 
-    // 3. Insert into period_members
+    // 3. Upsert into period_members
     const { error: memberError } = await supabaseAdmin
       .from('period_members')
-      .insert({ period_id: periodId, user_id: userId, role: role });
+      .upsert({ 
+        period_id: periodId, 
+        user_id: userId, 
+        role: role 
+      }, { onConflict: 'period_id, user_id' });
 
     if (memberError) {
-      // If the user was already a member, insert will fail depending on unique constraints.
       console.error("Member Error:", memberError);
-      
-      let userFriendlyMessage = 'ይህንን አባል መጨመር አልተቻለም (Failed to add member to team).';
+      let userFriendlyMessage = `ይህንን አባል መጨመር አልተቻለም፡ ${memberError.message}`;
       if (memberError.code === '23505') {
         userFriendlyMessage = 'ይህ ተጠቃሚ ቀድሞውኑ በዚህ ምዘና ላይ ተመዝግቧል (This user is already registered for this team).';
       }
-      
       return { error: userFriendlyMessage };
     }
 

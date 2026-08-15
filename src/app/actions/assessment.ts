@@ -21,31 +21,41 @@ export async function createAssessmentPeriodAction(periodName: string, year: str
   }
 }
 
-/** Fetch all unique users who are registered assessment users (only users present in period_members) */
+/** Fetch all unique users in the system for assessment assignment */
 export async function getExistingAssessmentUsersAction() {
   try {
-    const { data: membersData, error: membersErr } = await supabaseAdmin
-      .from('period_members')
-      .select('user_id, role, created_at, users(id, full_name, phone_number)')
-      .order('created_at', { ascending: false });
+    // 1. Fetch all users from public.users
+    const { data: usersData, error: usersErr } = await supabaseAdmin
+      .from('users')
+      .select('id, full_name, phone_number')
+      .order('full_name', { ascending: true });
 
-    if (membersErr) throw membersErr;
+    if (usersErr) throw usersErr;
+
+    // 2. Fetch period_members for roles
+    const { data: membersData } = await supabaseAdmin
+      .from('period_members')
+      .select('user_id, role, created_at')
+      .order('created_at', { ascending: false });
 
     const seenMap = new Map<string, { user_id: string; full_name: string; phone_number: string; last_role: string }>();
 
+    for (const u of (usersData || [])) {
+      if (!u.full_name || u.full_name.trim().toLowerCase().startsWith('rep')) continue;
+      seenMap.set(u.id, {
+        user_id: u.id,
+        full_name: u.full_name,
+        phone_number: u.phone_number || '',
+        last_role: 'regular',
+      });
+    }
+
     for (const m of (membersData || [])) {
-      const u = m.users as any;
-      if (!u || !u.full_name) continue;
-
-      if (u.full_name.trim().toLowerCase().startsWith('rep')) continue;
-
-      if (!seenMap.has(m.user_id)) {
-        seenMap.set(m.user_id, {
-          user_id: m.user_id,
-          full_name: u.full_name,
-          phone_number: u.phone_number,
-          last_role: m.role || 'regular',
-        });
+      if (seenMap.has(m.user_id)) {
+        const existing = seenMap.get(m.user_id)!;
+        if (existing.last_role === 'regular' && m.role) {
+          existing.last_role = m.role;
+        }
       }
     }
 

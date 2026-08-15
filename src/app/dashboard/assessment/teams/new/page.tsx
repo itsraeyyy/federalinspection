@@ -40,6 +40,7 @@ type NewMemberDraft = {
   id: string;
   fullName: string;
   phone: string;
+  email?: string;
   role: string;
 };
 
@@ -73,6 +74,7 @@ export default function CreatePeriodPage() {
   const [newMembers, setNewMembers] = useState<NewMemberDraft[]>([]);
   const [newFullName, setNewFullName] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('regular');
   const [newFormError, setNewFormError] = useState<string | null>(null);
 
@@ -125,13 +127,13 @@ export default function CreatePeriodPage() {
     setSelectedUsers(new Map());
   };
 
-  const handleAddNewDraftMember = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddNewDraftMember = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setNewFormError(null);
 
     if (!newFullName.trim() || !newPhone.trim()) {
       setNewFormError('እባክዎን ስም እና ስልክ ቁጥር ያስገቡ (Please fill in name and phone)');
-      return;
+      return false;
     }
 
     const cleanPhone = newPhone.trim();
@@ -139,20 +141,23 @@ export default function CreatePeriodPage() {
     // Check if duplicate in newMembers
     if (newMembers.some(m => m.phone === cleanPhone)) {
       setNewFormError('ይህ ስልክ ቁጥር ቀድሞ በረቂቅ ዝርዝር ውስጥ አለ');
-      return;
+      return false;
     }
 
     const draftItem: NewMemberDraft = {
       id: Date.now().toString(),
       fullName: newFullName.trim(),
       phone: cleanPhone,
+      email: newEmail.trim() || undefined,
       role: newRole
     };
 
     setNewMembers(prev => [...prev, draftItem]);
     setNewFullName('');
     setNewPhone('');
+    setNewEmail('');
     setNewRole('regular');
+    return true;
   };
 
   const handleRemoveDraftMember = (id: string) => {
@@ -164,6 +169,21 @@ export default function CreatePeriodPage() {
     setLoading(true);
     setError(null);
     setSuccessMsg(null);
+
+    // Auto-commit pending new member input fields if filled out but "+ Add" wasn't clicked
+    const currentNewMembers = [...newMembers];
+    if (newFullName.trim() && newPhone.trim()) {
+      const cleanPhone = newPhone.trim();
+      if (!currentNewMembers.some(m => m.phone === cleanPhone)) {
+        currentNewMembers.push({
+          id: Date.now().toString(),
+          fullName: newFullName.trim(),
+          phone: cleanPhone,
+          email: newEmail.trim() || undefined,
+          role: newRole
+        });
+      }
+    }
 
     const periodName = `${year} ዓ.ም - ${periodHalf === '1st' ? '1ኛ መንፈቀ አመት' : '2ኛ መንፈቀ አመት'}`;
 
@@ -191,18 +211,22 @@ export default function CreatePeriodPage() {
     }
 
     // 3. Register newly added members
-    if (newMembers.length > 0) {
-      for (const m of newMembers) {
+    if (currentNewMembers.length > 0) {
+      for (const m of currentNewMembers) {
         const formData = new FormData();
         formData.append('periodId', periodId);
         formData.append('fullName', m.fullName);
         formData.append('phone', m.phone);
+        if (m.email) formData.append('email', m.email);
         formData.append('role', m.role);
-        await registerUserAction(formData);
+        const res = await registerUserAction(formData);
+        if (res?.error) {
+          console.error(`Failed registering member ${m.fullName}:`, res.error);
+        }
       }
     }
 
-    const totalAdded = selectedUsers.size + newMembers.length;
+    const totalAdded = selectedUsers.size + currentNewMembers.length;
     setSuccessMsg(`"${periodName}" በትክክል ተፈጥሯል${totalAdded > 0 ? ` እና ${totalAdded} አባላት ተመድበዋል!` : '!'}`);
     
     setTimeout(() => {
@@ -481,7 +505,7 @@ export default function CreatePeriodPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-text-secondary mb-1">
                         ሙሉ ስም (Full Name) *
@@ -505,6 +529,19 @@ export default function CreatePeriodPage() {
                         onChange={e => setNewPhone(e.target.value)}
                         placeholder="0911..."
                         className="w-full px-3 py-2 text-xs bg-surface-primary border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-text-primary font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-secondary mb-1">
+                        ኢሜይል (Email) - አማራጭ
+                      </label>
+                      <input
+                        type="email"
+                        value={newEmail}
+                        onChange={e => setNewEmail(e.target.value)}
+                        placeholder="example@domain.com"
+                        className="w-full px-3 py-2 text-xs bg-surface-primary border border-border/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/30 text-text-primary"
                       />
                     </div>
 
@@ -551,7 +588,10 @@ export default function CreatePeriodPage() {
                             </div>
                             <div>
                               <div className="font-bold text-text-primary">{m.fullName}</div>
-                              <div className="text-[11px] font-mono text-text-muted">{m.phone}</div>
+                              <div className="text-[11px] font-mono text-text-muted flex items-center gap-2">
+                                <span>{m.phone}</span>
+                                {m.email && <span className="text-text-secondary">• {m.email}</span>}
+                              </div>
                             </div>
                           </div>
 
