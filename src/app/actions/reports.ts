@@ -71,7 +71,7 @@ export async function createRepresentativeAction(formData: FormData) {
     }
 
     // Notify representative (SMS first → email fallback)
-    await notifyRegistration({
+    const notifyResult = await notifyRegistration({
       phone,
       email: rawEmail,
       name: fullName,
@@ -79,11 +79,11 @@ export async function createRepresentativeAction(formData: FormData) {
       role: 'representative',
     });
 
-    // Force password change on next login (by saving it in a metadata if we supported that, 
-    // but the UI currently checks force_password_change or we can add it to user_profiles)
-    // There is a 20260617135000_force_password_change.sql migration, let's see how it works later.
+    if (!notifyResult.smsDelivered && !notifyResult.emailDelivered) {
+      return { success: true, smsDelivered: false, tempPassword: password, phone };
+    }
 
-    return { success: true };
+    return { success: true, smsDelivered: notifyResult.smsDelivered, emailDelivered: notifyResult.emailDelivered };
   } catch (error: any) {
     return { error: error.message };
   }

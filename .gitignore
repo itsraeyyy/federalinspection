@@ -61,3 +61,7 @@ migration/
 
 # PDF Documents
 public/documents/
+
+# Sensitive credentials & test user docs
+TEST_USERS_CREDENTIALS.md
+

@@ -14,12 +14,14 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [createdTempPassword, setCreatedTempPassword] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(false);
+    setCreatedTempPassword(null);
 
     const formData = new FormData(e.currentTarget);
     const result = await createRepresentativeAction(formData);
@@ -28,11 +30,15 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
       setError(result.error);
     } else {
       setSuccess(true);
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setSuccess(false);
-        window.location.reload(); // naive reload to fetch new data
-      }, 1500);
+      if (result.smsDelivered === false && result.tempPassword) {
+        setCreatedTempPassword(result.tempPassword);
+      } else {
+        setTimeout(() => {
+          setIsModalOpen(false);
+          setSuccess(false);
+          window.location.reload(); // naive reload to fetch new data
+        }, 1500);
+      }
     }
     setLoading(false);
   };
@@ -67,6 +73,8 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
     
     if (result.error) {
       alert(result.error);
+    } else if (result.smsDelivered === false && result.tempPassword) {
+      alert(`የይለፍ ቃል ተቀይሯል! ነገር ግን SMS መላክ አልተቻለም።\nአዲሱ ጊዜያዊ የይለፍ ቃል፡ ${result.tempPassword}\n\nእባክዎ ይህንን የይለፍ ቃል ለተወካዩ በቀጥታ ያሳውቁ።`);
     } else {
       alert('የይለፍ ቃል በተሳካ ሁኔታ ተቀይሮ ተልኳል!');
     }
@@ -167,9 +175,42 @@ export function RepresentativesManager({ initialRepresentatives }: { initialRepr
                 </div>
               )}
               {success && (
-                <div className="p-3.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm rounded-xl border border-green-200 dark:border-green-900/30 flex items-center gap-2.5 animate-in slide-in-from-top-2">
-                  <IconCheck size={18} />
-                  በተሳካ ሁኔታ ተመዝግቧል!
+                <div className="space-y-3">
+                  <div className="p-3.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm rounded-xl border border-green-200 dark:border-green-900/30 flex items-center gap-2.5 animate-in slide-in-from-top-2">
+                    <IconCheck size={18} />
+                    በተሳካ ሁኔታ ተመዝግቧል!
+                  </div>
+                  {createdTempPassword && (
+                    <div className="p-3.5 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 text-xs rounded-xl border border-amber-200 dark:border-amber-900/30 space-y-2">
+                      <p className="font-semibold text-amber-700 dark:text-amber-400">⚠️ SMS መላክ አልተቻለም (SMS failed)</p>
+                      <p>ጊዜያዊ የይለፍ ቃል ከዚህ ቀድተው ለተወካዩ ይስጡ፡</p>
+                      <div className="bg-white dark:bg-[#1a1a1a] p-2 rounded-lg font-mono text-sm font-bold text-slate-900 dark:text-white select-all border border-amber-300 dark:border-amber-700/50 flex justify-between items-center">
+                        <span>{createdTempPassword}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(createdTempPassword);
+                            alert('የይለፍ ቃሉ ተቀድቷል!');
+                          }}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-normal"
+                        >
+                          ቅዳ (Copy)
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsModalOpen(false);
+                          setSuccess(false);
+                          setCreatedTempPassword(null);
+                          window.location.reload();
+                        }}
+                        className="mt-2 w-full text-center text-xs text-slate-600 dark:text-slate-400 hover:underline font-medium"
+                      >
+                        ዝጋ (Close & Refresh)
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -11,10 +11,19 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Verify the request ID is Approved
+    // Verify user authentication
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader ? authHeader.replace('Bearer ', '') : null;
+    let userId: string | null = null;
+    if (token) {
+      const { data: authData } = await supabaseAdmin.auth.getUser(token);
+      userId = authData?.user?.id || null;
+    }
+
+    // Verify the request ID is Approved and matches user or admin
     const { data: requestData, error: requestError } = await supabaseAdmin
       .from('scan_requests')
-      .select('status')
+      .select('status, user_id')
       .eq('id', requestId)
       .single();
 
@@ -24,6 +33,11 @@ export async function GET(request: Request) {
 
     if (requestData.status !== 'Approved') {
       return NextResponse.json({ error: 'Request not approved' }, { status: 403 });
+    }
+
+    // Check ownership unless admin/session token provided
+    if (requestData.user_id && userId && requestData.user_id !== userId) {
+      return NextResponse.json({ error: 'Forbidden: unauthorized user for this document' }, { status: 403 });
     }
 
     // Get the file path from public_files

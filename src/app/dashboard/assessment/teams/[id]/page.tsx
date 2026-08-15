@@ -452,6 +452,8 @@ export default function PeriodManagePage() {
       }
 
       setAddSuccess(true);
+      const tempPass = result?.tempPassword;
+      const memberPhone = result?.phone || addPhone;
       setAddFullName('');
       setAddPhone('');
       setAddEmail('');
@@ -465,7 +467,11 @@ export default function PeriodManagePage() {
       setAddGovResponsibility('');
       setAddPartyResponsibility('');
       setShowAddModal(false);
-      showToast('አዲስ አባል በተሳካ ሁኔታ ተጨምሯል!', 'success');
+      if (result?.smsDelivered === false && tempPass) {
+        alert(`አባሉ በተሳካ ሁኔታ ተጨምሯል! ነገር ግን በቴክኒክ ምክንያት SMS መላክ አልተቻለም።\n\nጊዜያዊ የይለፍ ቃል፡ ${tempPass}\nስልክ ቁጥር፡ ${memberPhone}\n\nእባክዎ ይህንን የይለፍ ቃል ለአባሉ በቀጥታ ያሳውቁ።`);
+      } else {
+        showToast('አዲስ አባል በተሳካ ሁኔታ ተጨምሯል!', 'success');
+      }
       fetchPeriodData();
     } catch (err: any) {
       setAddError(err.message || 'አባል መጨመር አልተሳካም። (Failed to add member)');

@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
+    // Secret authentication check for webhook callers (Supabase Custom SMS hook)
+    const webhookSecret = req.headers.get('x-webhook-secret') || req.headers.get('authorization')?.replace('Bearer ', '');
+    const expectedSecret = process.env.SMS_WEBHOOK_SECRET || process.env.CRON_SECRET;
+    
+    if (expectedSecret && webhookSecret !== expectedSecret) {
+      return NextResponse.json({ error: 'Unauthorized webhook caller' }, { status: 401 });
+    }
+
     const body = await req.json();
     
     // Supabase custom SMS provider payload format

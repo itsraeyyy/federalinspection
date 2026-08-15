@@ -5,6 +5,15 @@ import { sendEmail } from "@/notifications/email-service";
 import { buildSlaReminderTemplates } from "@/notifications/templates";
 
 export async function GET(request: Request) {
+  // Simple auth check for the cron job (e.g., using a secret token in header or search params)
+  const authHeader = request.headers.get("Authorization");
+  const url = new URL(request.url);
+  const secret = url.searchParams.get("secret");
+
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // 1. Fetch active complaints/suggestions that haven't been resolved or rejected
     const { data: tickets, error: ticketsError } = await supabaseAdmin

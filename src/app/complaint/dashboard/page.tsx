@@ -337,7 +337,7 @@ export default function CommitteeLeaderDashboard() {
               </span>
             </div>
             <p className="text-xs text-text-muted hidden sm:block font-medium mt-0.5 truncate">
-              የዜጎች ጥቆማና አቤቱታ የመጨረሻ ግምገማና ውሳኔ ማጽደቂያ ስርዓት
+              የአባላት ጥቆማና አቤቱታ የመጨረሻ ግምገማና ውሳኔ ማጽደቂያ ስርዓት
             </p>
           </div>
         </div>

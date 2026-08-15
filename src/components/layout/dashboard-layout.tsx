@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 
 import { SletenaNavGroup } from '@/components/layout/SletenaNavGroup';
+import { ReportNavGroup } from '@/components/layout/ReportNavGroup';
 import { formatECDateTime } from '@/lib/date-formatter';
 
 export const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -77,18 +78,22 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
     }
   }, [pathname]);
 
-  const navItems = [
+  const navItems: Array<{
+    label: string;
+    type?: 'report_group' | 'sletena_group';
+    id: string;
+    href?: string;
+    icon?: any;
+  }> = [
     { label: 'ዳሽቦርድ', icon: IconDashboard, href: '/dashboard', id: 'dashboard' },
-    { label: 'ዜና', icon: IconNews, href: '/dashboard/news', id: 'news' },
-    { label: 'ሰነዶች', icon: IconFileText, href: '/dashboard/documents', id: 'documents' },
-    { label: 'የአመራር አካላት', icon: IconUsers, href: '/dashboard/personnel', id: 'personnel' },
-    { label: 'ጥቆማ እና አቤቱታ', icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
-    { label: 'ሥልጠና', icon: IconBooks, href: '/dashboard/sletena/yesltena-flagot', id: 'sletena' },
+    { label: 'ሪፖርት', type: 'report_group', id: 'report_group' },
     { label: 'ምዘና', icon: IconClipboardCheck, href: '/dashboard/assessment', id: 'assessment' },
+    { label: 'ሥልጠና', type: 'sletena_group', id: 'sletena' },
+    { label: 'ጥቆማ እና አቤቱታ', icon: IconMessage2, href: '/dashboard/complaints', id: 'complaints' },
+    { label: 'ሰነዶች', icon: IconFileText, href: '/dashboard/documents', id: 'documents' },
+    { label: 'ዜና', icon: IconNews, href: '/dashboard/news', id: 'news' },
+    { label: 'የአመራር አካላት', icon: IconUsers, href: '/dashboard/personnel', id: 'personnel' },
     { label: 'አስተያየት', icon: IconMessageStar, href: '/dashboard/feedback', id: 'feedback' },
-    { label: 'ሪፖርት', icon: IconFileDescription, href: '/dashboard/forms', id: 'forms' },
-    { label: 'የሪፖርት ታሪክ', icon: IconHistory, href: '/dashboard/reports-history', id: 'forms' },
-    { label: 'የቅጽ ማስተካከያ', icon: IconFileDescription, href: '/dashboard/admin/forms', id: 'admin_forms' },
     { label: 'QR መዳረሻ', icon: IconQrcode, href: '/dashboard/qr-access', id: 'qr-access' },
     { label: 'አስተዳዳሪዎች', icon: IconShieldCheck, href: '/dashboard/admins', id: 'admins' },
   ];
@@ -96,6 +101,11 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   const allowedNavItems = navItems.filter(item => {
     // If they have full access, allow everything
     if (profile?.access_level === 'all' || profile?.role === 'super_admin') return true;
+
+    // Report Group access check
+    if (item.type === 'report_group') {
+      return profile?.modules?.includes('forms') || profile?.modules?.includes('admin_forms');
+    }
 
     // Otherwise, check if the item's id is in their modules array
     if (profile?.access_level === 'specific' && item.id) {
@@ -108,8 +118,8 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
   useEffect(() => {
     if (pathname === '/dashboard' && profile) {
       if (profile.access_level !== 'all' && profile.role !== 'super_admin') {
-        const firstAllowed = allowedNavItems.find(i => i.href !== '/dashboard');
-        if (firstAllowed) {
+        const firstAllowed = allowedNavItems.find(i => i.href && i.href !== '/dashboard');
+        if (firstAllowed && firstAllowed.href) {
           router.replace(firstAllowed.href);
         }
       }
@@ -168,7 +178,17 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
           )}
 
           {allowedNavItems.map((item) => {
-            if (item.id === 'sletena') {
+            if (item.type === 'report_group') {
+              return (
+                <ReportNavGroup
+                  key="report_group"
+                  isCollapsed={isCollapsed}
+                  onItemClick={() => setMobileMenuOpen(false)}
+                  allowedModuleIds={profile?.access_level === 'all' || profile?.role === 'super_admin' ? ['all'] : (profile?.modules || [])}
+                />
+              );
+            }
+            if (item.type === 'sletena_group' || item.id === 'sletena') {
               return (
                 <SletenaNavGroup
                   key="sletena"
@@ -177,11 +197,11 @@ export const DashboardLayout = ({ children }: { children: React.ReactNode }) => 
                 />
               );
             }
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = pathname === item.href || (item.href && pathname.startsWith(`${item.href}/`));
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={item.href || item.id}
+                href={item.href!}
                 title={isCollapsed ? item.label : undefined}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center rounded-xl transition-all duration-200 group relative ${isActive

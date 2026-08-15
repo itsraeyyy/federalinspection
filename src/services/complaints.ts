@@ -1,7 +1,23 @@
 import { supabase } from '../lib/supabaseClient';
 import { Complaint, ComplaintStatus } from '../types';
 import { formatECDate, formatECDateTime } from '../lib/date-formatter';
-import { notifyComplaintSubmitted, notifyComplaintStatusUpdate, notifyReportUpdate, notifyDecisionProposalSubmitted, notifyCommitteeAssigned, notifyNewComplaintAdminAlert, notifyDecisionApprovedAdminAlert } from '@/notifications';
+/**
+ * Client-safe notification trigger.
+ * Routes through /api/internal/notify so that TEXTBEE_API_KEY (a server-only
+ * env var) is available. Calling sendSMS directly here would silently fail
+ * in the browser because process.env.TEXTBEE_API_KEY is undefined client-side.
+ */
+async function notifyViaAPI(type: string, opts: Record<string, any>): Promise<void> {
+  try {
+    await fetch('/api/internal/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, opts }),
+    });
+  } catch (err) {
+    console.error(`[ComplaintService] Notification failed (type=${type}):`, err);
+  }
+}
 
 function generateTrackingCode(): string {
   const prefix = 'TRK';
@@ -271,7 +287,7 @@ export const complaintService = {
 
     if (formData.phone || formData.email) {
       try {
-        await notifyComplaintSubmitted({
+        await notifyViaAPI('complaint_submitted', {
           phone: formData.phone,
           email: formData.email,
           name: formData.name || 'አልተገለጸም (Anonymous)',
@@ -298,7 +314,7 @@ export const complaintService = {
       for (const admin of targetAdmins) {
         if (admin.phone || admin.email) {
           try {
-            await notifyNewComplaintAdminAlert({
+            await notifyViaAPI('new_complaint_admin_alert', {
               phone: admin.phone || undefined,
               email: admin.email || undefined,
               trackingCode,
@@ -406,7 +422,7 @@ export const complaintService = {
         for (const l of leaders) {
           if (l.phone || l.email) {
             try {
-              await notifyReportUpdate({
+              await notifyViaAPI('report_update', {
                 phone: l.phone || undefined,
                 email: l.email || undefined,
                 name: 'የኮሚቴ ሰብሳቢ (Leader)',
@@ -425,7 +441,7 @@ export const complaintService = {
 
     if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
       try {
-        await notifyComplaintStatusUpdate({
+        await notifyViaAPI('complaint_status_update', {
           phone: updatedComplaint.phone,
           email: (updatedComplaint as any).email,
           name: updatedComplaint.name,
@@ -458,7 +474,7 @@ export const complaintService = {
     // Notify submitter that complaint has been accepted
     if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
       try {
-        await notifyComplaintStatusUpdate({
+        await notifyViaAPI('complaint_status_update', {
           phone: updatedComplaint.phone,
           email: (updatedComplaint as any).email,
           name: updatedComplaint.name,
@@ -537,7 +553,7 @@ export const complaintService = {
 
     if (updatedComplaint && (updatedComplaint.phone || (updatedComplaint as any).email)) {
       try {
-        await notifyComplaintStatusUpdate({
+        await notifyViaAPI('complaint_status_update', {
           phone: updatedComplaint.phone,
           email: (updatedComplaint as any).email,
           name: updatedComplaint.name,
@@ -555,7 +571,7 @@ export const complaintService = {
       for (const m of members) {
         if (m.name && (m.phone || m.email)) {
           try {
-            await notifyCommitteeAssigned({
+            await notifyViaAPI('committee_assigned', {
               name: m.name.trim(),
               phone: m.phone ? m.phone.trim() : undefined,
               email: m.email ? m.email.trim() : undefined,
@@ -624,7 +640,7 @@ export const complaintService = {
 
     if (existing && (existing.phone || (existing as any).email)) {
       try {
-        await notifyComplaintStatusUpdate({
+        await notifyViaAPI('complaint_status_update', {
           phone: existing.phone,
           email: (existing as any).email,
           name: existing.name,
@@ -647,7 +663,7 @@ export const complaintService = {
       for (const admin of targetAdmins) {
         if (admin.phone || admin.email) {
           try {
-            await notifyDecisionApprovedAdminAlert({
+            await notifyViaAPI('decision_approved_admin_alert', {
               phone: admin.phone || undefined,
               email: admin.email || undefined,
               trackingCode: existing.tracking_code,
@@ -719,7 +735,7 @@ export const complaintService = {
       for (const l of leaders) {
         if (l.phone || l.email) {
           try {
-            await notifyDecisionProposalSubmitted({
+            await notifyViaAPI('decision_proposal_submitted', {
               phone: l.phone || undefined,
               email: l.email || undefined,
               committeeLeaderName: 'የኮሚቴ ሰብሳቢ (Leader)',
@@ -763,7 +779,7 @@ export const complaintService = {
       for (const m of mainAdmins) {
         if (m.phone || m.email) {
           try {
-            await notifyReportUpdate({
+            await notifyViaAPI('report_update', {
               phone: m.phone || undefined,
               email: m.email || undefined,
               name: 'ዋና አስተዳዳሪ',

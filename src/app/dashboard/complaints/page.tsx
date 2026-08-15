@@ -354,7 +354,7 @@ export default function ComplaintsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
             <h1 className="text-3xl font-light text-text-primary tracking-tight">ጥቆማ እና አቤቱታ</h1>
-            <p className="text-sm text-text-muted mt-1">የዜጎችን ጥቆማዎች እና ቅሬታዎች ያስተዳድሩ።</p>
+            <p className="text-sm text-text-muted mt-1">የአባላትን ጥቆማዎች እና ቅሬታዎች ያስተዳድሩ።</p>
             <div className="flex items-center gap-2 mt-3">
               <div className="h-1 w-8 bg-brand-blue rounded-full"></div>
               <div className="h-1 w-4 bg-brand-yellow rounded-full"></div>
