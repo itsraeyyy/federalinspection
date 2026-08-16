@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, KeyRound, ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { changePasswordSelfAction } from '@/app/actions/auth';
 
 export default function AdminChangePasswordPage() {
   const [password, setPassword] = useState('');
@@ -71,15 +72,31 @@ export default function AdminChangePasswordPage() {
     setLoading(true);
 
     try {
-      // 1. Update Supabase Auth user password & metadata
+      // 1. Try server action first for maximum reliability
+      const res = await changePasswordSelfAction(password);
+
+      if (res?.success) {
+        setSuccessMsg('የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል። ወደ ዳሽቦርድ በመግባት ላይ... (Password updated successfully! Redirecting...)');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1200);
+        return;
+      }
+
+      // 2. Fallback to client-side auth update
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
         data: { force_password_change: false, requires_password_change: false }
       });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        if (updateError.message.includes('Auth session missing')) {
+          throw new Error('የመለያ ክፍለ ጊዜ አልተገኘም። እባክዎ ከገጹ ወጥተው እንደገና ይግቡ (Session expired. Please sign in again)');
+        }
+        throw updateError;
+      }
 
-      // 2. Update admin_profiles table
+      // 3. Update admin_profiles table
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase

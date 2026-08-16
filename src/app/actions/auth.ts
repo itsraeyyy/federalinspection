@@ -602,3 +602,63 @@ export async function updateUserProfileSelfAction(userId: string, data: {
     return { error: err.message || 'An unexpected error occurred' };
   }
 }
+
+export async function changePasswordSelfAction(newPassword: string) {
+  try {
+    if (!newPassword || newPassword.length < 8) {
+      return { error: 'የይለፍ ቃሉ ቢያንስ 8 ቁምፊዎች መሆን አለበት (Password must be at least 8 characters)' };
+    }
+
+    const { createServerClient } = await import('@supabase/ssr');
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+
+    const supabaseServer = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
+
+    const { data: { user }, error: userError } = await supabaseServer.auth.getUser();
+
+    if (userError || !user) {
+      return { error: 'የመለያ ክፍለ ጊዜ አልተገኘም። እባክዎ እንደገና ይግቡ (Auth session missing. Please log in again)' };
+    }
+
+    // Update password via admin API
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      password: newPassword,
+      user_metadata: {
+        ...user.user_metadata,
+        force_password_change: false,
+        requires_password_change: false,
+      },
+    });
+
+    if (updateError) {
+      return { error: updateError.message || 'የይለፍ ቃል ማዘመን አልተቻለም' };
+    }
+
+    // Also update admin_profiles if user is an admin
+    await supabaseAdmin
+      .from('admin_profiles')
+      .update({ requires_password_change: false })
+      .eq('id', user.id);
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('changePasswordSelfAction error:', err);
+    return { error: err.message || 'ያልተጠበቀ ስህተት አጋጥሟል' };
+  }
+}

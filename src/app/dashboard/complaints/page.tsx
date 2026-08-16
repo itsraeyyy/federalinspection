@@ -697,13 +697,9 @@ export default function ComplaintsPage() {
                   ? selectedTicket.resolution
                   : (selectedTicket.resolution?.message || selectedTicket.resolution?.decisionIdeaSummary || selectedTicket.decisionIdeaSummary || '');
 
-                const resolutionAttachments =
-                  (selectedTicket.resolution as any)?.decisionIdeaFiles ||
-                  (selectedTicket.resolution as any)?.attachments ||
-                  (selectedTicket.resolution as any)?.files ||
-                  selectedTicket.decisionIdeaFiles ||
-                  selectedTicket.resolution?.attachments ||
-                  [];
+                const resolutionAttachments = selectedTicket.status === 'PendingApproval'
+                  ? ((selectedTicket.resolution as any)?.decisionIdeaFiles || (selectedTicket.resolution as any)?.attachments || selectedTicket.decisionIdeaFiles || [])
+                  : ((selectedTicket.resolution as any)?.attachments || (selectedTicket.resolution as any)?.finalDecisionFiles || (selectedTicket.resolution as any)?.files || []);
 
                 if (!resolutionText?.trim() && (!resolutionAttachments || resolutionAttachments.length === 0)) return null;
 
@@ -728,7 +724,7 @@ export default function ComplaintsPage() {
                       <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap">{resolutionText}</p>
                       {resolutionAttachments && resolutionAttachments.length > 0 && (
                         <div className="mt-5 space-y-2">
-                          <p className="text-xs font-semibold text-text-secondary mb-2">ተያያዥ ሰነዶች:</p>
+                          <p className="text-xs font-semibold text-text-secondary mb-2">ውሳኔ ሰነዶች:</p>
                           <div className="flex flex-wrap gap-2">
                             {resolutionAttachments.map((att: any, i: number) => {
                               const fileUrl = complaintService.resolveFileUrl(att);

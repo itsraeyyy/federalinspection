@@ -568,6 +568,11 @@ export default function CommitteeLeaderDashboard() {
                         <span className={`px-2.5 py-1 rounded-full text-[11px] border ${badge.bg} ${badge.text} ${badge.border}`}>
                           {badge.label}
                         </span>
+                        {Boolean((ticket.resolution as any)?.acknowledgedBySubmitter || (ticket.resolution as any)?.acknowledgedAt) && (
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 flex items-center gap-1">
+                            <IconCheck size={13} stroke={3} /> ውሳኔ ደርሶታል
+                          </span>
+                        )}
                         {(() => {
                           const daysLeft = getDaysLeft(ticket);
                           if (daysLeft > 5 || ticket.status === 'Resolved' || ticket.status === 'Rejected') return null;
@@ -1029,9 +1034,18 @@ export default function CommitteeLeaderDashboard() {
 
               {/* Final Resolution Box */}
               {(selectedTicket.status === 'Resolved' || selectedTicket.status === 'Rejected') && selectedTicket.resolution && (
-                <div className="p-5 sm:p-6 rounded-3xl bg-success/10 border border-success/30 relative overflow-hidden shadow-sm">
+                <div className="p-5 sm:p-6 rounded-3xl bg-success/10 border border-success/30 relative overflow-hidden shadow-sm flex flex-col gap-4">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-success/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-                  <span className="text-sm font-extrabold text-success flex items-center gap-2 mb-3 relative z-10">
+                  
+                  {/* Submitter Acknowledgment Badge inside Modal */}
+                  {Boolean((selectedTicket.resolution as any)?.acknowledgedBySubmitter || (selectedTicket.resolution as any)?.acknowledgedAt) && (
+                    <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 text-xs font-extrabold w-fit relative z-10">
+                      <IconCheck size={16} className="text-emerald-600 shrink-0" stroke={3} />
+                      ውሳኔ ደርሶታል (በአመልካቹ ተረጋግጧል)
+                    </div>
+                  )}
+
+                  <span className="text-sm font-extrabold text-success flex items-center gap-2 relative z-10">
                     <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
                       <IconCheck size={16} />
                     </div>
@@ -1043,17 +1057,16 @@ export default function CommitteeLeaderDashboard() {
                   {(() => {
                     const finalFiles: any[] =
                       (selectedTicket.resolution as any)?.attachments ||
-                      (selectedTicket.resolution as any)?.decisionIdeaFiles ||
+                      (selectedTicket.resolution as any)?.finalDecisionFiles ||
                       (selectedTicket.resolution as any)?.files ||
-                      selectedTicket.decisionIdeaFiles ||
                       [];
 
                     if (finalFiles.length === 0) return null;
 
                     return (
-                      <div className="mt-4 pl-10 ml-4 relative z-10 space-y-2">
+                      <div className="mt-2 pl-10 ml-4 relative z-10 space-y-2">
                         <p className="text-xs font-bold text-success uppercase tracking-wider flex items-center gap-1.5">
-                          <IconPaperclip size={14} /> ተያያዥ ሰነዶች ({finalFiles.length})
+                          <IconPaperclip size={14} /> ውሳኔ ሰነዶች ({finalFiles.length})
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {finalFiles.map((file: any, idx: number) => {

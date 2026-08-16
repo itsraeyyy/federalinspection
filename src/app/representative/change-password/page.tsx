@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createBrowserClient } from "@supabase/ssr";
 import { IconLoader2, IconKey } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
+import { changePasswordSelfAction } from '@/app/actions/auth';
 
 export default function ChangePasswordPage() {
   const [password, setPassword] = useState('');
@@ -61,15 +62,26 @@ export default function ChangePasswordPage() {
     setLoading(true);
 
     try {
+      const res = await changePasswordSelfAction(password);
+      if (res?.success) {
+        window.location.href = '/representative/dashboard';
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: password,
         data: { force_password_change: false, requires_password_change: false }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Auth session missing')) {
+          throw new Error('የመለያ ክፍለ ጊዜ አልተገኘም። እባክዎ ከገጹ ወጥተው እንደገና ይግቡ (Session expired. Please sign in again)');
+        }
+        throw error;
+      }
       
       // Successfully updated password, navigate to dashboard
-      router.push('/representative/dashboard');
+      window.location.href = '/representative/dashboard';
     } catch (error: any) {
       setErrorMsg(error.message || 'Failed to update password');
     } finally {

@@ -240,11 +240,14 @@ export async function notifyRegistration(opts: {
   role?: "assessment" | "representative";
 }): Promise<NotifyResult> {
   const { sms, html, text } = buildRegistrationTemplates(opts);
+  const subject = opts.role === "representative" 
+    ? "ICODiS — የሪፖርት ፖርታል ተወካይ ምዝገባ ተሳክቷል" 
+    : "ICODiS — የምዘና ፖርታል ምዝገባ ተሳክቷል";
   return dispatchNotification(
     opts.phone,
     opts.email,
     sms,
-    "ICODiS — ምዝገባ ተሳክቷል",
+    subject,
     html,
     text
   );

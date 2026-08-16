@@ -411,20 +411,25 @@ export function buildRegistrationTemplates(opts: {
   role?: "assessment" | "representative";
   loginUrl?: string;
 }) {
-  const loginPath = opts.role === "representative" ? "/representative/login" : "/assessment/login";
+  const isRep = opts.role === "representative";
+  const loginPath = isRep ? "/representative/login" : "/assessment/login";
   const loginUrl = opts.loginUrl || `${SITE_URL}${loginPath}`;
+
+  const portalNameAmh = isRep ? "የተወካዮች ሪፖርት ፖርታል" : "የምዘና ፖርታል";
+  const portalHeader = isRep ? "Report Representative Registration" : "Assessment Portal Registration";
+  const actionText = isRep ? "ገብተው ሪፖርት ለማቅረብ" : "ገብተው ለመመዘን";
 
   const sms =
     `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
-    `ሰላም ${opts.name}፣ ለምዘና ፖርታሉ ተመዝግበዋል።\n` +
+    `ሰላም ${opts.name}፣ ለ${portalNameAmh} ተወካይ ሆነው ተመዝግበዋል።\n` +
     `ስልክ: ${opts.phone}\nየይለፍ ቃል: ${opts.password}\n` +
-    `👉 ገብተው ለመመዘን: ${loginUrl}`;
+    `👉 ${actionText}: ${loginUrl}`;
 
   const html = wrapEmailTemplate(
-    "ICODiS — ምዝገባ ተሳክቷል",
-    "Assessment Portal Registration",
+    `ICODiS — የ${portalNameAmh} ምዝገባ ተሳክቷል`,
+    portalHeader,
     `<p>ሰላም <strong>${opts.name}</strong>፣</p>
-    <p>ለምዘና ፖርታሉ ተመዝግበዋል። የመግቢያ መረጃዎ ከዚህ በታች ይገኛል:</p>
+    <p>ለ<strong>${portalNameAmh}</strong> ተወካይ ሆነው ተመዝግበዋል። የመግቢያ መረጃዎ ከዚህ በታች ይገኛል:</p>
     <div class="box">
       <div class="label">ስልክ ቁጥር</div>
       <div class="value">${opts.phone}</div>
@@ -433,11 +438,11 @@ export function buildRegistrationTemplates(opts: {
     </div>
     <div class="warning">⚠️ ለደህንነትዎ — ለመጀመሪያ ጊዜ ሲገቡ ይህን የይለፍ ቃል ይለውጡ።</div>
     <div style="text-align:center">
-      <a href="${loginUrl}" class="btn">👉 ወደ ምዘና ፖርታሉ ይግቡ</a>
+      <a href="${loginUrl}" class="btn">👉 ወደ ${portalNameAmh} ይግቡ</a>
     </div>`
   );
 
-  const text = `ሰላም ${opts.name}፣ ለምዘና ተመዝግበዋል!\nስልክ: ${opts.phone}\nየይለፍ ቃል: ${opts.password}\nመግቢያ: ${loginUrl}`;
+  const text = `ሰላም ${opts.name}፣ ለ${portalNameAmh} ተመዝግበዋል!\nስልክ: ${opts.phone}\nየይለፍ ቃል: ${opts.password}\nመግቢያ: ${loginUrl}`;
 
   return { sms, html, text };
 }
@@ -450,12 +455,14 @@ export function buildPasswordResetTemplates(opts: {
   role?: "assessment" | "representative";
   loginUrl?: string;
 }) {
-  const loginPath = opts.role === "representative" ? "/representative/login" : "/assessment/login";
+  const isRep = opts.role === "representative";
+  const loginPath = isRep ? "/representative/login" : "/assessment/login";
   const loginUrl = opts.loginUrl || `${SITE_URL}${loginPath}`;
+  const portalNameAmh = isRep ? "የተወካዮች ሪፖርት ፖርታል" : "የምዘና ፖርታል";
 
   const sms =
     `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
-    `ሰላም ${opts.name}፣ የምዘና ፖርታል የይለፍ ቃልዎ ተቀይሯል።\n` +
+    `ሰላም ${opts.name}፣ የ${portalNameAmh} የይለፍ ቃልዎ ተቀይሯል።\n` +
     `አዲሱ የይለፍ ቃል: ${opts.password}\n` +
     `👉 ለመግባት ይህን ይጫኑ: ${loginUrl}`;
 
@@ -463,17 +470,17 @@ export function buildPasswordResetTemplates(opts: {
     "ICODiS — የይለፍ ቃል ተቀይሯል",
     "Password Reset Notification",
     `<p>ሰላም <strong>${opts.name}</strong>፣</p>
-    <p>የይለፍ ቃልዎ ተቀይሯል። ከዚህ በታች ያለውን አዲስ ጊዜያዊ የይለፍ ቃል ይጠቀሙ:</p>
+    <p>የ<strong>${portalNameAmh}</strong> የይለፍ ቃልዎ ተቀይሯል። ከዚህ በታች ያለውን አዲስ ጊዜያዊ የይለፍ ቃል ይጠቀሙ:</p>
     <div class="box">
       <div class="label">አዲስ ጊዜያዊ የይለፍ ቃል</div>
       <div class="code-badge">${opts.password}</div>
     </div>
     <div style="text-align:center">
-      <a href="${loginUrl}" class="btn">👉 ወደ ፖርታሉ ይግቡ</a>
+      <a href="${loginUrl}" class="btn">👉 ወደ ${portalNameAmh} ይግቡ</a>
     </div>`
   );
 
-  const text = `ሰላም ${opts.name}፣ የይለፍ ቃልዎ ተቀይሯል።\nአዲሱ የይለፍ ቃል: ${opts.password}\nመግቢያ: ${loginUrl}`;
+  const text = `ሰላም ${opts.name}፣ የ${portalNameAmh} የይለፍ ቃልዎ ተቀይሯል።\nአዲሱ የይለፍ ቃል: ${opts.password}\nመግቢያ: ${loginUrl}`;
 
   return { sms, html, text };
 }

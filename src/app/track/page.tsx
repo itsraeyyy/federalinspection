@@ -350,7 +350,7 @@ function TrackingContent() {
                     return (
                       <div className="mt-6 space-y-3">
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                          <FileText className="size-4 text-[#014BAA]" /> ተያያዥ ውሳኔ ሰነዶች ({resolutionFiles.length})
+                          <FileText className="size-4 text-[#014BAA]" /> ውሳኔ ሰነዶች ({resolutionFiles.length})
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                           {resolutionFiles.map((file: any, idx: number) => {
