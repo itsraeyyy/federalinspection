@@ -42,7 +42,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
     icon: Loader2,
   },
   PendingApproval: {
-    label: 'ውሳኔ ለጽድቅ ቀርቧል (Pending Approval)',
+    label: 'ውሳኔ ለመጽደቅ ቀርቧል (Pending Approval)',
     color: 'text-teal-700',
     bgColor: 'bg-teal-50 border-teal-200',
     icon: Clock,
@@ -69,7 +69,7 @@ function TrackingContent() {
   const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  
+
   // Acknowledgment state
   const [isAcknowledged, setIsAcknowledged] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
@@ -85,7 +85,7 @@ function TrackingContent() {
     if (initialCode) {
       handleSearch(initialCode);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = async (searchCode?: string) => {
@@ -143,25 +143,25 @@ function TrackingContent() {
 
   // 4 Process History Steps for Submitters
   const steps = [
-    { 
-      key: 'New', 
-      label: '1. ደርሷል (Submitted)', 
-      date: complaint?.createdAt 
+    {
+      key: 'New',
+      label: '1. ደርሷል (Submitted)',
+      date: complaint?.createdAt
     },
-    { 
-      key: 'Accepted', 
-      label: '2. ተቀብሏል (Accepted)', 
-      date: (complaint?.status === 'Accepted' || complaint?.status === 'Processing' || (complaint as any)?.status === 'UnderInvestigation' || complaint?.status === 'PendingApproval' || complaint?.status === 'Resolved' || complaint?.status === 'Rejected') ? (complaint?.processedAt || complaint?.createdAt) : undefined 
+    {
+      key: 'Accepted',
+      label: '2. ተቀብሏል (Accepted)',
+      date: (complaint?.status === 'Accepted' || complaint?.status === 'Processing' || (complaint as any)?.status === 'UnderInvestigation' || complaint?.status === 'PendingApproval' || complaint?.status === 'Resolved' || complaint?.status === 'Rejected') ? (complaint?.processedAt || complaint?.createdAt) : undefined
     },
-    { 
-      key: 'Processing', 
-      label: '3. ኮሚቴ ተመድቦ በማጣራት ላይ (In Process)', 
-      date: (complaint?.status === 'Processing' || (complaint as any)?.status === 'UnderInvestigation' || complaint?.status === 'PendingApproval' || complaint?.status === 'Resolved' || complaint?.status === 'Rejected') ? (complaint?.processedAt || complaint?.createdAt) : undefined 
+    {
+      key: 'Processing',
+      label: '3. ኮሚቴ ተመድቦ በማጣራት ላይ (In Process)',
+      date: (complaint?.status === 'Processing' || (complaint as any)?.status === 'UnderInvestigation' || complaint?.status === 'PendingApproval' || complaint?.status === 'Resolved' || complaint?.status === 'Rejected') ? (complaint?.processedAt || complaint?.createdAt) : undefined
     },
-    { 
-      key: 'Resolved', 
-      label: complaint?.status === 'Rejected' ? '4. ውድቅ ሆኗል (Rejected)' : '4. ውሳኔ ተሰጥቶበታል (Decision Made)', 
-      date: complaint?.resolvedAt 
+    {
+      key: 'Resolved',
+      label: complaint?.status === 'Rejected' ? '4. ውድቅ ሆኗል (Rejected)' : '4. ውሳኔ ተሰጥቶበታል (Decision Made)',
+      date: complaint?.resolvedAt
     },
   ];
 
@@ -340,7 +340,7 @@ function TrackingContent() {
 
                   {/* Decision Files Grid */}
                   {(() => {
-                    const resolutionFiles: any[] = 
+                    const resolutionFiles: any[] =
                       (complaint.resolution as any)?.attachments ||
                       (complaint.resolution as any)?.files ||
                       [];
@@ -366,7 +366,7 @@ function TrackingContent() {
                                   {fileName}
                                 </span>
                                 {file.fileSize && <span className="text-[10px] text-slate-400">({file.fileSize})</span>}
-                                
+
                                 <div className="flex items-center gap-1 ml-1 border-l border-slate-200 pl-1.5">
                                   {/* Open in Browser */}
                                   <a
@@ -382,7 +382,7 @@ function TrackingContent() {
                                   >
                                     <ExternalLink className="size-3.5" />
                                   </a>
-                                  
+
                                   {/* Download file */}
                                   <a
                                     href={fileUrl}
@@ -426,14 +426,14 @@ function TrackingContent() {
                   <h3 className="text-sm font-semibold text-slate-800 mb-4">
                     {reviewSubmitted ? 'የሰጡት አስተያየት እና ደረጃ' : 'የአገልግሎት እርካታዎን ይግለጹ'}
                   </h3>
-                  
+
                   {reviewSubmitted ? (
                     <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
                       <div className="flex items-center gap-1 mb-3">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <Star 
-                            key={star} 
-                            className={`size-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
+                          <Star
+                            key={star}
+                            className={`size-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
                           />
                         ))}
                       </div>
@@ -453,8 +453,8 @@ function TrackingContent() {
                             onMouseLeave={() => setHoverRating(0)}
                             className="p-1 focus:outline-none transition-transform hover:scale-110"
                           >
-                            <Star 
-                              className={`size-8 ${(hoverRating || rating) >= star ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
+                            <Star
+                              className={`size-8 ${(hoverRating || rating) >= star ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
                             />
                           </button>
                         ))}

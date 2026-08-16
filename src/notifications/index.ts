@@ -153,6 +153,7 @@ export async function notifyCommitteeAssigned(opts: {
   phone?: string;
   email?: string;
   name?: string;
+  role?: string;
   committeeName: string;
   trackingCode: string;
   institution?: string;

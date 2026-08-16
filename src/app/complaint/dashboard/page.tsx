@@ -42,7 +42,7 @@ type StatusTab = 'All' | 'NeedsAttention' | 'Accepted' | 'PendingApproval' | 'Pr
 
 function getDaysLeft(ticket: Complaint): number {
   if (ticket.status === 'Resolved' || ticket.status === 'Rejected') return 999;
-  
+
   const rawDeadline = ticket.slaDeadlineRaw || (ticket.resolution as any)?.slaDeadline;
   if (rawDeadline) {
     const deadlineTime = new Date(rawDeadline).getTime();
@@ -69,7 +69,7 @@ const STATUS_BADGES: Record<string, { label: string; bg: string; text: string; b
   New: { label: 'አዲስ የተመዘገበ', bg: 'bg-blue-500/10 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300 font-semibold', border: 'border-blue-500/20' },
   Accepted: { label: 'የተቀበሉት', bg: 'bg-blue-500/10 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300 font-semibold', border: 'border-blue-500/20' },
   Processing: { label: 'በኮሚቴ በማጣራት ላይ', bg: 'bg-amber-500/10 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-300 font-semibold', border: 'border-amber-500/20' },
-  PendingApproval: { label: 'ለማጽደቅ የቀረበ (ለጽድቅ ዝግጁ)', bg: 'bg-sky-500/15 dark:bg-sky-900/30', text: 'text-sky-700 dark:text-sky-300 font-bold', border: 'border-sky-500/40' },
+  PendingApproval: { label: 'ለማጽደቅ የቀረበ (ለመጽደቅ ዝግጁ)', bg: 'bg-sky-500/15 dark:bg-sky-900/30', text: 'text-sky-700 dark:text-sky-300 font-bold', border: 'border-sky-500/40' },
   Resolved: { label: 'ውሳኔ የጸደቀለት', bg: 'bg-emerald-500/10 dark:emerald-900/20', text: 'text-emerald-700 dark:text-emerald-300 font-semibold', border: 'border-emerald-500/20' },
   Rejected: { label: 'ውድቅ የተደረገ', bg: 'bg-red-500/10 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-300 font-semibold', border: 'border-red-500/20' },
   RevisionRequested: { label: 'ማስተካከያ የተጠየቀበት', bg: 'bg-amber-500/15 dark:bg-amber-900/30', text: 'text-amber-800 dark:text-amber-300 font-semibold', border: 'border-amber-500/30' },
@@ -161,7 +161,7 @@ export default function CommitteeLeaderDashboard() {
     const validMembers = committeeMembers.filter(m => m.name.trim());
     if (!selectedTicket || validMembers.length === 0) return;
     setActionLoading(true);
-    
+
     const assignedStr = validMembers.map(m => {
       const roleStr = m.role?.trim() ? ` [${m.role.trim()}]` : '';
       const info = [m.phone?.trim(), m.email?.trim()].filter(Boolean).join(', ');
@@ -199,7 +199,7 @@ export default function CommitteeLeaderDashboard() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.trackingCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -380,11 +380,10 @@ export default function CommitteeLeaderDashboard() {
 
       <main className="w-full max-w-7xl mx-auto px-4 md:px-10 mt-6 sm:mt-8 space-y-6">
         {feedbackMsg && (
-          <div className={`p-4 rounded-2xl border flex items-center justify-between text-sm font-bold shadow-sm transition-all ${
-            feedbackMsg.type === 'success' 
+          <div className={`p-4 rounded-2xl border flex items-center justify-between text-sm font-bold shadow-sm transition-all ${feedbackMsg.type === 'success'
               ? 'bg-success/10 border-success/20 text-success'
               : 'bg-danger/10 border-danger/20 text-danger'
-          }`}>
+            }`}>
             <div className="flex items-center gap-3">
               <span>{feedbackMsg.type === 'success' ? '✓' : '⚠'}</span>
               <span>{feedbackMsg.text}</span>
@@ -397,14 +396,13 @@ export default function CommitteeLeaderDashboard() {
 
         {/* Executive KPI Cards Row - Horizontally scrollable on mobile */}
         <div className="flex overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 snap-x snap-mandatory hide-scrollbar">
-          
-          <div 
+
+          <div
             onClick={() => setActiveTab('Accepted')}
-            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
-              activeTab === 'Accepted' 
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${activeTab === 'Accepted'
                 ? 'bg-surface-primary border-brand-blue shadow-md ring-1 ring-brand-blue/20'
                 : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-brand-blue/40 shadow-sm'
-            }`}
+              }`}
           >
             {activeTab === 'Accepted' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-brand-blue"></div>}
             <div>
@@ -421,13 +419,12 @@ export default function CommitteeLeaderDashboard() {
             </div>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('Processing')}
-            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
-              activeTab === 'Processing' 
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${activeTab === 'Processing'
                 ? 'bg-surface-primary border-warning shadow-md ring-1 ring-warning/20'
                 : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-warning/40 shadow-sm'
-            }`}
+              }`}
           >
             {activeTab === 'Processing' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-warning"></div>}
             <div>
@@ -441,13 +438,12 @@ export default function CommitteeLeaderDashboard() {
             </div>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('PendingApproval')}
-            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
-              activeTab === 'PendingApproval' 
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${activeTab === 'PendingApproval'
                 ? 'bg-surface-primary border-sky-500 shadow-md ring-1 ring-sky-500/20'
                 : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-sky-500/40 shadow-sm'
-            }`}
+              }`}
           >
             {activeTab === 'PendingApproval' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-sky-500"></div>}
             <div>
@@ -464,13 +460,12 @@ export default function CommitteeLeaderDashboard() {
             </div>
           </div>
 
-          <div 
+          <div
             onClick={() => setActiveTab('Resolved')}
-            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${
-              activeTab === 'Resolved' 
+            className={`flex-none w-[280px] sm:w-auto snap-center p-5 rounded-3xl border transition-all duration-150 cursor-pointer select-none flex flex-col justify-between relative overflow-hidden group ${activeTab === 'Resolved'
                 ? 'bg-surface-primary border-success shadow-md ring-1 ring-success/20'
                 : 'bg-surface-primary/90 border-border hover:bg-surface-primary hover:border-success/50 shadow-sm'
-            }`}
+              }`}
           >
             {activeTab === 'Resolved' && <div className="absolute top-0 left-0 right-0 h-[4px] bg-success"></div>}
             <div>
@@ -502,11 +497,10 @@ export default function CommitteeLeaderDashboard() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
-                    isActive 
+                  className={`min-h-[44px] px-4 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${isActive
                       ? tab === 'NeedsAttention' ? 'bg-red-600 text-white shadow-sm' : 'bg-brand-blue text-white shadow-sm'
                       : tab === 'NeedsAttention' ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' : 'bg-surface-secondary/80 text-text-secondary hover:text-text-primary hover:bg-surface-secondary border border-border/30'
-                  }`}
+                    }`}
                 >
                   {labels[tab]}
                   {tab === 'NeedsAttention' && stats.needsAttention > 0 && (
@@ -554,23 +548,21 @@ export default function CommitteeLeaderDashboard() {
               const timeline = getTimelineStatus(ticket);
 
               return (
-                <div 
+                <div
                   key={ticket.id}
                   onClick={() => handleTicketSelect(ticket)}
-                  className={`p-5 rounded-3xl bg-surface-primary border transition-all duration-200 hover:shadow-lg cursor-pointer flex flex-col justify-between active:scale-[0.98] ${
-                    ticket.status === 'PendingApproval'
+                  className={`p-5 rounded-3xl bg-surface-primary border transition-all duration-200 hover:shadow-lg cursor-pointer flex flex-col justify-between active:scale-[0.98] ${ticket.status === 'PendingApproval'
                       ? 'border-sky-500/50 shadow-md ring-1 ring-sky-500/20 bg-gradient-to-br from-sky-500/5 via-surface-primary to-surface-primary'
                       : 'border-border/40 hover:border-border/80 shadow-sm'
-                  }`}
+                    }`}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                       <div className="flex items-center gap-1.5">
-                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          ticket.type === 'Suggestion'
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${ticket.type === 'Suggestion'
                             ? 'bg-warning/10 text-warning border border-warning/20'
                             : 'bg-brand-blue/10 text-brand-blue border border-brand-blue/20'
-                        }`}>
+                          }`}>
                           {ticket.type === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ'}
                         </span>
                         <span className={`px-2.5 py-1 rounded-full text-[11px] border ${badge.bg} ${badge.text} ${badge.border}`}>
@@ -593,7 +585,7 @@ export default function CommitteeLeaderDashboard() {
                     <h3 className="text-base font-bold text-text-primary mb-2 line-clamp-1">
                       {ticket.subject || 'አልተገለጸም'}
                     </h3>
-                    
+
                     <p className="text-sm text-text-secondary line-clamp-2 mb-4 font-normal leading-relaxed">
                       {ticket.message}
                     </p>
@@ -614,10 +606,9 @@ export default function CommitteeLeaderDashboard() {
                         <span className="flex items-center gap-1 font-medium text-text-muted">
                           <IconClock size={14} /> ቀሪ ጊዜ፡
                         </span>
-                        <span className={`font-bold text-[11px] ${
-                          timeline.isOverdue ? 'text-danger flex items-center gap-1 animate-pulse' :
-                          timeline.isWarning ? 'text-warning font-bold' : 'text-text-primary'
-                        }`}>
+                        <span className={`font-bold text-[11px] ${timeline.isOverdue ? 'text-danger flex items-center gap-1 animate-pulse' :
+                            timeline.isWarning ? 'text-warning font-bold' : 'text-text-primary'
+                          }`}>
                           {timeline.isOverdue && <IconAlertTriangle size={13} />}
                           {timeline.label}
                         </span>
@@ -640,27 +631,26 @@ export default function CommitteeLeaderDashboard() {
       {/* Ticket Detail Full Screen Modal View */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col animate-fadeIn overflow-hidden">
-          
+
           {/* Header Bar */}
           <div className="p-4 sm:px-10 sm:py-6 border-b border-border/40 flex items-center justify-between bg-surface-primary/95 backdrop-blur-md relative overflow-hidden shrink-0 shadow-sm">
             <div className="absolute top-0 right-0 w-96 h-96 bg-brand-blue/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-            
+
             <div className="relative z-10 flex items-center gap-3 sm:gap-5 min-w-0">
-              <button 
+              <button
                 onClick={() => setSelectedTicket(null)}
                 className="p-2.5 rounded-2xl bg-surface-secondary hover:bg-surface-secondary/80 text-text-secondary hover:text-text-primary transition-all border border-border/40 shadow-xs flex items-center gap-2 text-xs sm:text-sm font-extrabold active:scale-95 shrink-0"
               >
                 <IconArrowLeft size={18} />
                 <span className="hidden sm:inline">ተመለስ (Back)</span>
               </button>
-              
+
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest border ${
-                    selectedTicket.type === 'Suggestion'
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest border ${selectedTicket.type === 'Suggestion'
                       ? 'bg-warning/10 text-warning border-warning/20'
                       : 'bg-brand-blue/10 text-brand-blue border-brand-blue/20'
-                  }`}>
+                    }`}>
                     {selectedTicket.type === 'Suggestion' ? 'ጥቆማ (Suggestion)' : 'አቤቱታ (Complaint)'}
                   </span>
                   <span className="text-xs font-mono font-bold text-text-muted bg-surface-secondary px-2.5 py-0.5 rounded-md border border-border/30">
@@ -673,7 +663,7 @@ export default function CommitteeLeaderDashboard() {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => setSelectedTicket(null)}
               className="relative z-10 p-2.5 rounded-full bg-surface-secondary hover:bg-surface-secondary/80 text-text-muted hover:text-text-primary transition-all border border-border/40 shadow-xs min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 shrink-0 ml-2"
               title="ዝጋ (Close)"
@@ -685,19 +675,19 @@ export default function CommitteeLeaderDashboard() {
           {/* Full Screen Body Content */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-10 space-y-6 sm:space-y-8 bg-surface-primary/40">
             <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
-              
+
               {/* Committee In-Progress Investigation Banner */}
               {(selectedTicket.status === 'Processing' || selectedTicket.status === 'RevisionRequested') && (
                 <div className="p-5 sm:p-6 rounded-3xl bg-amber-500/10 border border-amber-500/30 shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
-                  
+
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2.5 text-amber-800 dark:text-amber-300 font-extrabold text-base sm:text-lg">
                         <IconClock size={24} className="text-amber-500 animate-spin" />
                         <span>በኮሚቴ በማጣራት ላይ ይገኛል (Under Investigation)</span>
                       </div>
-                      
+
                       <div className="space-y-1 text-sm">
                         <p className="text-text-primary font-bold flex items-center gap-2">
                           <IconUser size={18} className="text-amber-600 dark:text-amber-400" />
@@ -706,7 +696,7 @@ export default function CommitteeLeaderDashboard() {
                             {selectedTicket.assignedCommittee || 'አልተመደበም'}
                           </span>
                         </p>
-                        
+
                         <p className="text-text-secondary text-xs flex items-center gap-2 pt-1 font-semibold">
                           <IconCalendar size={15} className="text-amber-500" />
                           <span>{getTimelineStatus(selectedTicket).label}</span>
@@ -729,7 +719,7 @@ export default function CommitteeLeaderDashboard() {
               {selectedTicket.status === 'PendingApproval' && (
                 <div className="p-5 sm:p-6 rounded-3xl bg-sky-500/5 border border-sky-500/20 shadow-sm relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-sky-500"></div>
-                  
+
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-2.5 text-sky-700 dark:text-sky-300 font-extrabold text-base">
                       <IconShieldCheck size={24} className="text-sky-500" />
@@ -788,7 +778,7 @@ export default function CommitteeLeaderDashboard() {
                   />
 
                   {(() => {
-                    const proposalFiles: any[] = 
+                    const proposalFiles: any[] =
                       (selectedTicket.resolution as any)?.decisionIdeaFiles ||
                       (selectedTicket.resolution as any)?.attachments ||
                       (selectedTicket.resolution as any)?.files ||
@@ -815,7 +805,7 @@ export default function CommitteeLeaderDashboard() {
                                   {file.filename || file.name || `ፋይል ${idx + 1}`}
                                 </span>
                                 {file.fileSize && <span className="text-[10px] text-text-muted">({file.fileSize})</span>}
-                                
+
                                 <div className="flex items-center gap-1 ml-1 border-l border-border/30 pl-1.5">
                                   {/* Open in Browser */}
                                   <a
@@ -831,7 +821,7 @@ export default function CommitteeLeaderDashboard() {
                                   >
                                     <IconExternalLink size={14} />
                                   </a>
-                                  
+
                                   {/* Download file */}
                                   <a
                                     href={fileUrl}
@@ -966,8 +956,8 @@ export default function CommitteeLeaderDashboard() {
 
               {/* Attachments */}
               {(() => {
-                const submitterFiles: any[] = selectedTicket.attachments && selectedTicket.attachments.length > 0 
-                  ? selectedTicket.attachments 
+                const submitterFiles: any[] = selectedTicket.attachments && selectedTicket.attachments.length > 0
+                  ? selectedTicket.attachments
                   : ((selectedTicket as any).files || []);
                 if (submitterFiles.length === 0) return null;
 
@@ -1051,7 +1041,7 @@ export default function CommitteeLeaderDashboard() {
                     {selectedTicket.resolution.message}
                   </p>
                   {(() => {
-                    const finalFiles: any[] = 
+                    const finalFiles: any[] =
                       (selectedTicket.resolution as any)?.attachments ||
                       (selectedTicket.resolution as any)?.decisionIdeaFiles ||
                       (selectedTicket.resolution as any)?.files ||
@@ -1194,7 +1184,7 @@ export default function CommitteeLeaderDashboard() {
             <p className="text-sm text-text-muted leading-relaxed shrink-0">
               ይህን ውሳኔ ሲሰጡ ጉዳዩ የመጨረሻ ውሳኔ እንዳገኘ ተቆጥሮ ለአመልካቹ መልእክት ይተላለፋል።
             </p>
-            
+
             <div className="overflow-y-auto flex-1 space-y-5 px-1 py-1 hide-scrollbar">
               <div>
                 <label className="text-sm font-bold text-text-primary block mb-2">የውሳኔው ማብራሪያና ምላሽ፡ *</label>

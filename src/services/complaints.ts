@@ -429,7 +429,7 @@ export const complaintService = {
                 phone: l.phone || undefined,
                 email: l.email || undefined,
                 name: 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)',
-                subject: 'ICODiS — የውሳኔ ሀሳብ ለጽድቅ ቀርቧል (Pending Approval)',
+                subject: 'ICODiS — የውሳኔ ሀሳብ ለመጽደቅ ቀርቧል (Pending Approval)',
                 message: `ለማጽደቅ የቀረበ አዲስ የውሳኔ ሀሳብ አለ። መከታተያ ኮድ፡ [${updatedComplaint?.tracking_code || id}]። እባክዎ በመግባት ውሳኔውን ያረጋግጡና ያጽድቁ።`,
                 loginPath: '/complaint/dashboard',
               });
@@ -501,7 +501,7 @@ export const complaintService = {
       for (const l of leaders) {
         if (l.phone || l.email) {
           try {
-            await notifyReportUpdate({
+            await notifyViaAPI('report_update', {
               phone: l.phone || undefined,
               email: l.email || undefined,
               name: 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)',
@@ -525,10 +525,10 @@ export const complaintService = {
 
     const formattedMembers = members && members.length > 0
       ? members.filter(m => m.name.trim()).map(m => {
-          const roleStr = m.role?.trim() ? ` [${m.role.trim()}]` : '';
-          const contact = [m.phone?.trim(), m.email?.trim()].filter(Boolean).join(', ');
-          return `${m.name.trim()}${roleStr}${contact ? ` (${contact})` : ''}`;
-        })
+        const roleStr = m.role?.trim() ? ` [${m.role.trim()}]` : '';
+        const contact = [m.phone?.trim(), m.email?.trim()].filter(Boolean).join(', ');
+        return `${m.name.trim()}${roleStr}${contact ? ` (${contact})` : ''}`;
+      })
       : undefined;
 
     const { data: updatedComplaint, error } = await supabase
@@ -577,6 +577,7 @@ export const complaintService = {
           try {
             await notifyViaAPI('committee_assigned', {
               name: m.name.trim(),
+              role: m.role ? m.role.trim() : undefined,
               phone: m.phone ? m.phone.trim() : undefined,
               email: m.email ? m.email.trim() : undefined,
               committeeName,
@@ -841,7 +842,6 @@ export const complaintService = {
         .from('complaints')
         .update({
           resolution: updatedResolution,
-          acknowledged_at: ackTime,
         })
         .eq('id', existing.id);
 

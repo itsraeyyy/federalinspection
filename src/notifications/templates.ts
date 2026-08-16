@@ -154,37 +154,40 @@ export function buildDecisionAcknowledgedLeaderAlertTemplates(opts: {
 
 export function buildCommitteeAssignedTemplates(opts: {
   name?: string;
+  role?: string;
   committeeName: string;
   trackingCode: string;
   institution?: string;
   slaDeadline?: string;
 }) {
   const memberName = opts.name || "የኮሚቴ አባል";
+  const roleText = opts.role?.trim();
   const deadlineText = opts.slaDeadline || "15 ቀናት";
 
   const sms =
     `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
-    `ክቡር/ርት ${memberName}፣ በአቤቱታ ቁጥር ${opts.trackingCode} ላይ የማጣራት ስራ እንዲያካሂዱ በ ${opts.committeeName} አባልነት ተመድበዋል።\n` +
+    `ክቡር/ርት ${memberName}፣ በአቤቱታ ቁጥር ${opts.trackingCode} ላይ የማጣራት ስራ እንዲያካሂዱ በ${opts.committeeName} ${roleText ? `እንደ ${roleText}` : `በአባልነት`} ተመድበዋል።\n` +
     `የማጣሪያ ቀነ ገደብ: ${deadlineText}።`;
 
   const html = wrapEmailTemplate(
     "የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን — የኮሚቴ ምደባ ማስታወቂያ",
     "Committee Assignment Notification",
     `<p>ሰላም ክቡር/ርት <strong>${memberName}</strong>፣</p>
-    <p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን በአቤቱታ ቁጥር <strong>${opts.trackingCode}</strong> ላይ ዝርዝር ማጣራት እንዲያካሂዱ በ <strong>${opts.committeeName}</strong> ውስጥ የኮሚቴ አባል ሆነው መመደብዎን እንገልፃለን።</p>
+    <p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን በአቤቱታ ቁጥር <strong>${opts.trackingCode}</strong> ላይ ዝርዝር ማጣራት እንዲያካሂዱ በ <strong>${opts.committeeName}</strong> ውስጥ ${roleText ? `በ<strong>${roleText}</strong>ነት` : `የኮሚቴ አባል ሆነው`} መመደብዎን እንገልፃለን።</p>
     <div class="box">
       <div class="label">የአቤቱታ ኮድ</div>
       <div class="value">${opts.trackingCode}</div>
       <div class="label">የኮሚቴ ስም</div>
       <div class="value">${opts.committeeName}</div>
+      ${roleText ? `<div class="label">የተመደቡበት ኃላፊነት (Responsibility)</div><div class="value" style="font-weight:700;color:#0B2B5E;">${roleText}</div>` : ""}
       ${opts.institution ? `<div class="label">ተከሰሰበት ተቋም</div><div class="value">${opts.institution}</div>` : ""}
       <div class="label">የማጣሪያ ቀነ ገደብ (SLA)</div>
       <div class="value" style="color:#D97706;">${deadlineText}</div>
     </div>
-    <p>እባክዎ ከኮሚቴ ሰብሳቢዎ ጋር በመሆን አስፈላጊውን የማጣራት ስራ እንድታካሂዱ እናሳስባለን።</p>`
+    <p>የተጣለቦትን ኃላፊነት በታማኝነትና በቅንነት እንድትወጡ እናሳስባለን።</p>`
   );
 
-  const text = `ሰላም ${memberName}፣ በአቤቱታ ${opts.trackingCode} ላይ በ${opts.committeeName} አባልነት ተመድበዋል። ቀነ ገደብ: ${deadlineText}።`;
+  const text = `ሰላም ${memberName}፣ በአቤቱታ ${opts.trackingCode} ላይ በ${opts.committeeName} ${roleText ? `እንደ ${roleText}` : `በአባልነት`} ተመድበዋል። ቀነ ገደብ: ${deadlineText}።`;
 
   return { sms, html, text };
 }
@@ -210,10 +213,9 @@ export function buildDecisionProposalTemplates(opts: {
     "Decision Proposal Pending Approval",
     `<p>ሰላም ክቡር/ርት የኮሚሽን ጽ/ቤት ሃላፊ <strong>${opts.committeeLeaderName || "የኮሚሽን ጽ/ቤት ሃላፊ"}</strong>፣</p>
     <p>በአቤቱታ ቁጥር <strong>${opts.trackingCode}</strong> ላይ በአጣሪ ኮሚቴው የማጣራት ስራ ተጠናቆ የቀረበው የውሳኔ ሀሳብ (Decision Proposal) በእርስዎ እንዲጸድቅ ቀርቧል።</p>
-    ${
-      opts.proposalSummary
-        ? `<div class="box"><div class="label">የውሳኔ ሀሳብ ጭምቅ</div><div class="value" style="font-weight:normal;text-align:left;">"${opts.proposalSummary}"</div></div>`
-        : ""
+    ${opts.proposalSummary
+      ? `<div class="box"><div class="label">የውሳኔ ሀሳብ ጭምቅ</div><div class="value" style="font-weight:normal;text-align:left;">"${opts.proposalSummary}"</div></div>`
+      : ""
     }
     <div style="text-align:center">
       <a href="${dashboardUrl}" class="btn">👉 የቀረበውን ውሳኔ መርምርና አጽድቅ (Ratify Decision)</a>
@@ -237,42 +239,61 @@ export function buildComplaintStatusTemplates(opts: {
 }) {
   const trackUrl = opts.trackUrl || `${SITE_URL}/track?code=${opts.trackingCode}`;
   const typeAmh = opts.type === "Suggestion" ? "ጥቆማ" : "አቤቱታ";
+  const isFinal = opts.status === "Resolved" || opts.status === "Rejected";
 
   const statusMap: Record<string, string> = {
     Accepted: "ተቀብሏል (Accepted)",
-    UnderInvestigation: "በማጣራት ላይ (In Process)",
-    Processing: "በማጣራት ላይ (In Process)",
-    PendingApproval: "ለጽድቅ ቀርቧል",
+    UnderInvestigation: "ኮሚቴ ተመድቦ በማጣራት ላይ (In Process)",
+    Processing: "ኮሚቴ ተመድቦ በማጣራት ላይ (In Process)",
+    PendingApproval: "ለመጽደቅ ቀርቧል",
     Resolved: "ውሳኔ ተሰጥቶበታል (Decision Made)",
     Rejected: "ውድቅ ሆኗል (Rejected)",
   };
   const statusAmh = statusMap[opts.status] || opts.status;
 
-  let sms =
-    `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
+  const subject = isFinal
+    ? (opts.status === "Rejected"
+      ? `የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን — የ ${typeAmh}ዎ ውድቅ ተደርጓል`
+      : `የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን — የ ${typeAmh}ዎ የመጨረሻ ውሳኔ`)
+    : `የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን — የ ${typeAmh}ዎ ሁኔታ ማሻሻያ (${statusAmh})`;
+
+  let bodyContent = `<p>ሰላም ክቡር/ርት <strong>${opts.name}</strong>፣</p>`;
+
+  if (opts.status === "Accepted") {
+    bodyContent += `<p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ያቀረቡት <strong>${typeAmh}</strong> (የክትትል ኮድ: <strong>${opts.trackingCode}</strong>) ተቀባይነት አግኝቶ ወደ ቀጣይ ማጣራት ገብቷል: <strong style="color:#0B2B5E;">${statusAmh}</strong>።</p>`;
+  } else if (opts.status === "Processing" || opts.status === "UnderInvestigation") {
+    bodyContent += `<p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ያቀረቡት <strong>${typeAmh}</strong> (የክትትል ኮድ: <strong>${opts.trackingCode}</strong>) ኮሚቴ ተመድቦለት በማጣራት ሂደት ላይ ይገኛል: <strong style="color:#0B2B5E;">${statusAmh}</strong>።</p>`;
+  } else if (opts.status === "Rejected") {
+    bodyContent += `<p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ያቀረቡት <strong>${typeAmh}</strong> (የክትትል ኮድ: <strong>${opts.trackingCode}</strong>) ተመርምሮ ውድቅ ተደርጓል: <strong style="color:#ef4444;">${statusAmh}</strong>።</p>`;
+  } else if (opts.status === "Resolved") {
+    bodyContent += `<p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ያቀረቡት <strong>${typeAmh}</strong> (የክትትል ኮድ: <strong>${opts.trackingCode}</strong>) በኮሚቴ ተመርምሮ የመጨረሻ ውሳኔ አግኝቷል: <strong style="color:#10b981;">${statusAmh}</strong>።</p>`;
+  } else {
+    bodyContent += `<p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ያቀረቡት <strong>${typeAmh}</strong> (የክትትል ኮድ: <strong>${opts.trackingCode}</strong>) ሁኔታው ተሻሽሏል: <strong style="color:#0B2B5E;">${statusAmh}</strong>።</p>`;
+  }
+
+  if (opts.resolution && isFinal) {
+    bodyContent += `<div class="box">
+        <div class="label">የመጨረሻ ውሳኔ ምላሽ (Final Resolution)</div>
+        <div class="value" style="font-weight:500;text-align:left;line-height:1.6;">"${opts.resolution}"</div>
+       </div>`;
+  }
+
+  bodyContent += `<div style="text-align:center">
+      <a href="${trackUrl}" class="btn">👉 የ ${typeAmh}ዎን የሂደት ታሪክ እና ሁኔታ ለማየት ይህን ይጫኑ</a>
+    </div>`;
+
+  let sms = `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
     `ክቡር/ርት ${opts.name}፣ ያቀረቡት ${typeAmh} (ኮድ: ${opts.trackingCode}) ሁኔታ: ${statusAmh}።\n`;
-  if (opts.resolution) sms += `የተሰጠ ውሳኔ: ${opts.resolution}\n`;
-  sms += `👉 የተሰጠውን ውሳኔና የተያያዙ ሰነዶችን ለማየት: ${trackUrl}`;
+  if (opts.resolution && isFinal) sms += `የተሰጠ ውሳኔ: ${opts.resolution}\n`;
+  sms += `👉 ሁኔታውን በክትትል ገጽ ለመመልከት: ${trackUrl}`;
 
   const html = wrapEmailTemplate(
-    `የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን — የ ${typeAmh}ዎ የመጨረሻ ውሳኔ`,
+    subject,
     "Submission Status Update",
-    `<p>ሰላም ክቡር/ርት <strong>${opts.name}</strong>፣</p>
-    <p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን ያቀረቡት <strong>${typeAmh}</strong> (የክትትል ኮድ: <strong>${opts.trackingCode}</strong>) በኮሚቴ ተመርምሮ የመጨረሻ ውሳኔ አግኝቷል: <strong style="color:#0B2B5E;">${statusAmh}</strong>።</p>
-    ${
-      opts.resolution
-        ? `<div class="box">
-            <div class="label">የመጨረሻ ውሳኔ ምላሽ (Final Resolution)</div>
-            <div class="value" style="font-weight:500;text-align:left;line-height:1.6;">"${opts.resolution}"</div>
-           </div>`
-        : ""
-    }
-    <div style="text-align:center">
-      <a href="${trackUrl}" class="btn">👉 የተሰጠውን ውሳኔና ይፋዊ ሰነዶችን ለማየትና ለማውረድ ይህን ይጫኑ</a>
-    </div>`
+    bodyContent
   );
 
-  const text = `${typeAmh} ${opts.trackingCode} ሁኔታ: ${statusAmh}።\n${opts.resolution ? `ምላሽ: ${opts.resolution}\n` : ""}${trackUrl}`;
+  const text = `${typeAmh} ${opts.trackingCode} ሁኔታ: ${statusAmh}።\n${opts.resolution && isFinal ? `ምላሽ: ${opts.resolution}\n` : ""}${trackUrl}`;
 
   return { sms, html, text };
 }

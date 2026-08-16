@@ -38,7 +38,7 @@ type StatusFilter = 'All' | 'NeedsAttention' | ComplaintStatus;
 
 function getDaysLeft(ticket: Complaint): number {
   if (ticket.status === 'Resolved' || ticket.status === 'Rejected') return 999;
-  
+
   const rawDeadline = ticket.slaDeadlineRaw || (ticket.resolution as any)?.slaDeadline;
   if (rawDeadline) {
     const deadlineTime = new Date(rawDeadline).getTime();
@@ -117,7 +117,7 @@ export default function ComplaintsPage() {
   // Filter logic
   const filteredTickets = tickets.filter(t => {
     const matchesType = t.type === activeTab;
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -146,7 +146,7 @@ export default function ComplaintsPage() {
   const avgResTimeDays = useMemo(() => {
     const resolvedTickets = tickets.filter(t => t.status === 'Resolved' && (t.resolvedAtRaw || t.resolvedAt));
     if (resolvedTickets.length === 0) return 0;
-    
+
     const totalDays = resolvedTickets.reduce((acc, t) => {
       const resDateStr = t.resolvedAtRaw || t.resolvedAt || '';
       const createDateStr = t.createdAtRaw || t.createdAt || '';
@@ -154,7 +154,7 @@ export default function ComplaintsPage() {
       const created = createDateStr ? new Date(createDateStr).getTime() : Date.now();
       return acc + (resolved - created) / (1000 * 60 * 60 * 24);
     }, 0);
-    
+
     return (totalDays / resolvedTickets.length).toFixed(1);
   }, [tickets]);
 
@@ -163,7 +163,7 @@ export default function ComplaintsPage() {
     const deadlineRaw = ticket.slaDeadlineRaw || ticket.slaDeadline;
     if ((ticket.status !== 'Processing' && ticket.status !== 'PendingApproval' && ticket.status !== 'RevisionRequested') || !deadlineRaw) return null;
     const daysLeft = Math.ceil((new Date(deadlineRaw).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (daysLeft < 1) return { color: 'text-red-700 bg-red-500/10 border-red-500/20', label: 'ጊዜ አልፎበታል' };
     if (daysLeft <= 5) return { color: 'text-amber-700 bg-amber-500/10 border-amber-500/20', label: `${daysLeft} ቀናት ቀርተዋል` };
     return { color: 'text-green-700 bg-green-500/10 border-green-500/20', label: `${daysLeft} ቀናት ቀርተዋል` };
@@ -203,9 +203,9 @@ export default function ComplaintsPage() {
       let success = false;
       if (resolutionAction === 'PendingApproval') {
         success = await complaintService.submitDecisionIdea(
-          selectedTicket.id, 
-          resolutionMessage, 
-          resolutionFiles.length > 0 ? resolutionFiles : undefined, 
+          selectedTicket.id,
+          resolutionMessage,
+          resolutionFiles.length > 0 ? resolutionFiles : undefined,
           adminName
         );
       } else {
@@ -285,7 +285,7 @@ export default function ComplaintsPage() {
 
   const executeExport = () => {
     let toExport = tickets.filter(t => exportTypes.includes(t.type) && exportCategories.includes(t.status));
-    
+
     let subtitle = 'የተመረጡ: ';
     const typesStr = exportTypes.map(t => t === 'Suggestion' ? 'ጥቆማ' : 'አቤቱታ').join(' እና ');
     subtitle += typesStr + ' | ጊዜ: ';
@@ -337,9 +337,8 @@ export default function ComplaintsPage() {
     <DashboardLayout>
       <div className="flex flex-col gap-6 h-full pb-10">
         {feedbackMsg && (
-          <div className={`p-4 rounded-xl flex items-center justify-between text-sm font-semibold shadow-sm animate-in fade-in slide-in-from-top-2 ${
-            feedbackMsg.type === 'success' ? 'bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20'
-          }`}>
+          <div className={`p-4 rounded-xl flex items-center justify-between text-sm font-semibold shadow-sm animate-in fade-in slide-in-from-top-2 ${feedbackMsg.type === 'success' ? 'bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20'
+            }`}>
             <div className="flex items-center gap-2">
               <span>{feedbackMsg.type === 'success' ? '✓' : '⚠'}</span>
               <span>{feedbackMsg.text}</span>
@@ -386,11 +385,10 @@ export default function ComplaintsPage() {
           <div className="flex items-center gap-2 bg-surface-primary/40 backdrop-blur-md p-1.5 rounded-2xl border border-border/20 w-fit">
             <button
               onClick={() => setActiveTab('Suggestion')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                activeTab === 'Suggestion'
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'Suggestion'
                   ? 'bg-brand-blue text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary/50'
-              }`}
+                }`}
             >
               <IconBulb size={18} stroke={activeTab === 'Suggestion' ? 2 : 1.5} />
               ጥቆማ
@@ -400,11 +398,10 @@ export default function ComplaintsPage() {
             </button>
             <button
               onClick={() => setActiveTab('Complaint')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                activeTab === 'Complaint'
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'Complaint'
                   ? 'bg-brand-yellow text-[#3D352E] shadow-sm'
                   : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary/50'
-              }`}
+                }`}
             >
               <IconAlertTriangle size={18} stroke={activeTab === 'Complaint' ? 2 : 1.5} />
               አቤቱታ
@@ -431,11 +428,10 @@ export default function ComplaintsPage() {
               <button
                 key={stat.label}
                 onClick={() => setActiveStatusFilter(stat.id as StatusFilter)}
-                className={`text-left rounded-2xl border p-4 backdrop-blur-md transition-all duration-200 ${
-                  isActive 
+                className={`text-left rounded-2xl border p-4 backdrop-blur-md transition-all duration-200 ${isActive
                     ? stat.activeStyle
                     : 'bg-surface-primary/30 border-border/20 hover:bg-surface-primary/50 hover:border-border/30'
-                }`}
+                  }`}
               >
                 <div className={`text-2xl font-light ${stat.color} tabular-nums`}>{stat.value}</div>
                 <div className={`text-xs mt-1 ${isActive ? 'font-semibold text-text-primary' : 'text-text-muted'}`}>{stat.label}</div>
@@ -577,7 +573,7 @@ export default function ComplaintsPage() {
 
             {/* Drawer Content */}
             <div className="flex-1 p-8 space-y-8 bg-[url('/noise.png')] bg-repeat opacity-100">
-              
+
               {/* Submitter Info Card */}
               <div className="bg-surface-secondary/40 rounded-3xl p-6 border border-border/30 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-6 opacity-5">
@@ -701,7 +697,7 @@ export default function ComplaintsPage() {
                   ? selectedTicket.resolution
                   : (selectedTicket.resolution?.message || selectedTicket.resolution?.decisionIdeaSummary || selectedTicket.decisionIdeaSummary || '');
 
-                const resolutionAttachments = 
+                const resolutionAttachments =
                   (selectedTicket.resolution as any)?.decisionIdeaFiles ||
                   (selectedTicket.resolution as any)?.attachments ||
                   (selectedTicket.resolution as any)?.files ||
@@ -721,11 +717,11 @@ export default function ComplaintsPage() {
                     </div>
                     <h4 className={`text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2 ${selectedTicket.status === 'Rejected' ? 'text-red-600' : selectedTicket.status === 'PendingApproval' ? 'text-blue-600' : 'text-green-600'}`}>
                       {selectedTicket.status === 'Rejected' ? (
-                        <><IconBan size={16}/> የውድቅ ምክንያት</>
+                        <><IconBan size={16} /> የውድቅ ምክንያት</>
                       ) : selectedTicket.status === 'PendingApproval' ? (
-                        <><IconCheck size={16}/> የተሰጠ ውሳኔ (ለጽድቅ የቀረበ)</>
+                        <><IconCheck size={16} /> የተሰጠ ውሳኔ (ለመጽደቅ የቀረበ)</>
                       ) : (
-                        <><IconCheck size={16}/> የተሰጠ ውሳኔ</>
+                        <><IconCheck size={16} /> የተሰጠ ውሳኔ</>
                       )}
                     </h4>
                     <div className="relative z-10">
@@ -744,7 +740,7 @@ export default function ComplaintsPage() {
                                 >
                                   <IconFileText size={14} className="text-brand-blue shrink-0" />
                                   <span className="truncate max-w-[160px]" title={nameStr}>{nameStr}</span>
-                                  
+
                                   <div className="flex items-center gap-1 ml-1 border-l border-border/20 pl-1.5">
                                     <a
                                       href={fileUrl}
@@ -826,29 +822,98 @@ export default function ComplaintsPage() {
               {/* Timeline */}
               <div className="bg-surface-secondary/20 rounded-3xl p-6 border border-border/20">
                 <h4 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-6 flex items-center gap-2">
-                  <IconHistory size={16} /> የሂደት ታሪክ
+                  <IconHistory size={16} /> የሂደት ታሪክ (Process History)
                 </h4>
-                <div className="space-y-0 pl-2">
-                  {[
-                    { label: 'ተቀብለናል', date: convertToEthiopianTimeStr(selectedTicket.createdAt), active: true },
-                    { label: 'ወደ ሂደት ገብቷል', date: convertToEthiopianTimeStr(selectedTicket.processedAt), active: !!selectedTicket.processedAt },
-                    { label: selectedTicket.status === 'Rejected' ? 'ውድቅ ሆኗል' : 'ተፈቷል', date: convertToEthiopianTimeStr(selectedTicket.resolvedAt), active: !!selectedTicket.resolvedAt },
-                  ].map((step, i, arr) => (
-                    <div key={step.label} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-3.5 h-3.5 rounded-full border-2 z-10 bg-surface-primary shadow-sm ${step.active ? 'border-brand-blue ring-4 ring-brand-blue/10' : 'border-border/50'}`} />
-                        {i < arr.length - 1 && <div className={`w-0.5 h-10 -mt-1 ${step.active ? 'bg-brand-blue/30' : 'bg-border/30'}`} />}
-                      </div>
-                      <div className="pb-6 -mt-1">
-                        <p className={`text-sm font-bold ${step.active ? 'text-text-primary' : 'text-text-muted/60'}`}>{step.label}</p>
-                        {step.date && (
-                          <p className="text-[11px] text-text-secondary mt-1 font-medium">
-                            {step.date}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                <div className="space-y-0 pl-1">
+                  {(() => {
+                    const statusOrderMap: Record<string, number> = {
+                      New: 1,
+                      Accepted: 2,
+                      Processing: 3,
+                      UnderInvestigation: 3,
+                      RevisionRequested: 3,
+                      PendingApproval: 3,
+                      Resolved: 4,
+                      Rejected: 4,
+                    };
+                    const stepOrderMap: Record<string, number> = {
+                      New: 1,
+                      Accepted: 2,
+                      Processing: 3,
+                      Resolved: 4,
+                    };
+                    const currentOrder = statusOrderMap[selectedTicket.status] || 1;
+
+                    const formatTimelineDate = (d?: string) => {
+                      if (!d) return undefined;
+                      return d.includes('T') || d.includes('-') ? formatECDateTime(d) : convertToEthiopianTimeStr(d);
+                    };
+
+                    const steps = [
+                      {
+                        key: 'New',
+                        label: '1. ተቀብለናል (Received)',
+                        date: formatTimelineDate(selectedTicket.createdAt)
+                      },
+                      {
+                        key: 'Accepted',
+                        label: '2. ተቀብሏል (Accepted)',
+                        date: (selectedTicket.status === 'Accepted' || selectedTicket.status === 'Processing' || (selectedTicket as any).status === 'UnderInvestigation' || selectedTicket.status === 'PendingApproval' || selectedTicket.status === 'Resolved' || selectedTicket.status === 'Rejected')
+                          ? formatTimelineDate(selectedTicket.processedAt || selectedTicket.createdAt)
+                          : undefined
+                      },
+                      {
+                        key: 'Processing',
+                        label: '3. ኮሚቴ ተመድቦ በማጣራት ላይ (In Process)',
+                        date: (selectedTicket.status === 'Processing' || (selectedTicket as any).status === 'UnderInvestigation' || selectedTicket.status === 'PendingApproval' || selectedTicket.status === 'Resolved' || selectedTicket.status === 'Rejected')
+                          ? formatTimelineDate(selectedTicket.processedAt || selectedTicket.createdAt)
+                          : undefined
+                      },
+                      {
+                        key: 'Resolved',
+                        label: selectedTicket.status === 'Rejected' ? '4. ውድቅ ሆኗል (Rejected)' : '4. ውሳኔ ተሰጥቶበታል (Decision Made)',
+                        date: formatTimelineDate(selectedTicket.resolvedAt)
+                      },
+                    ];
+
+                    return steps.map((s, i) => {
+                      const stepOrder = stepOrderMap[s.key] || 1;
+                      const isPast = stepOrder < currentOrder;
+                      const isActive = stepOrder === currentOrder;
+
+                      return (
+                        <div key={s.key} className="flex gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold z-10 transition-all ${isPast
+                                ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
+                                : isActive
+                                  ? 'bg-brand-blue border-brand-blue text-white ring-4 ring-brand-blue/15 shadow-sm'
+                                  : 'bg-surface-primary border-border/50 text-text-muted/60'
+                              }`}>
+                              {isPast ? '✓' : i + 1}
+                            </div>
+                            {i < steps.length - 1 && (
+                              <div className={`w-0.5 h-12 -mt-0.5 ${isPast ? 'bg-emerald-500' : isActive ? 'bg-brand-blue' : 'bg-border/30'
+                                }`} />
+                            )}
+                          </div>
+                          <div className="pb-7 -mt-0.5">
+                            <p className={`text-xs sm:text-sm font-bold transition-colors ${isActive ? 'text-brand-blue' : isPast ? 'text-text-primary' : 'text-text-muted/60'
+                              }`}>
+                              {s.label}
+                            </p>
+                            {s.date ? (
+                              <p className="text-[11px] text-text-secondary mt-0.5 font-medium">
+                                {s.date}
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-text-muted/40 mt-0.5 font-medium">-</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
                 {selectedTicket.resolvedAt && (
                   <div className="text-xs font-medium text-text-secondary bg-surface-primary/60 rounded-xl px-4 py-3 mt-2 border border-border/30 shadow-sm inline-flex items-center gap-2">
@@ -894,7 +959,7 @@ export default function ComplaintsPage() {
                       className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
                     >
                       <IconCheck size={18} />
-                      የውሳኔ ሀሳብ ለጽድቅ አቅርብ (Submit Decision Proposal)
+                      የውሳኔ ሀሳብ ለመጽደቅ አቅርብ (Submit Decision Proposal)
                     </button>
                   )}
                 </div>
@@ -910,7 +975,7 @@ export default function ComplaintsPage() {
           <div className="bg-surface-primary rounded-2xl border border-border/30 p-6 max-w-lg w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-semibold text-text-primary">
-                {resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ለጽድቅ ማቅረቢያ' : resolutionAction === 'Resolved' ? 'መፍትሄ ይስጡ' : 'ውድቅ ያድርጉ'}
+                {resolutionAction === 'PendingApproval' ? 'የውሳኔ ሀሳብ ለመጽደቅ ማቅረቢያ' : resolutionAction === 'Resolved' ? 'መፍትሄ ይስጡ' : 'ውድቅ ያድርጉ'}
               </h3>
               <button onClick={() => setShowResolutionModal(false)} className="p-1.5 hover:bg-surface-secondary rounded-xl transition-colors">
                 <IconX size={20} className="text-text-muted" />
@@ -975,15 +1040,14 @@ export default function ComplaintsPage() {
               <button
                 onClick={handleResolutionSubmit}
                 disabled={actionLoading || !resolutionMessage.trim()}
-                className={`flex-1 py-2.5 px-4 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 ${
-                  resolutionAction === 'PendingApproval'
+                className={`flex-1 py-2.5 px-4 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 ${resolutionAction === 'PendingApproval'
                     ? 'bg-brand-blue hover:bg-brand-blue/90'
                     : resolutionAction === 'Resolved'
                       ? 'bg-green-600 hover:bg-green-700'
                       : 'bg-red-500 hover:bg-red-600'
-                }`}
+                  }`}
               >
-                {actionLoading ? 'በመላክ ላይ...' : resolutionAction === 'PendingApproval' ? 'ለጽድቅ አቅርብ' : resolutionAction === 'Resolved' ? 'መፍትሄ ስጥ' : 'ውድቅ አድርግ'}
+                {actionLoading ? 'በመላክ ላይ...' : resolutionAction === 'PendingApproval' ? 'ለመጽደቅ አቅርብ' : resolutionAction === 'Resolved' ? 'መፍትሄ ስጥ' : 'ውድቅ አድርግ'}
               </button>
             </div>
           </div>
