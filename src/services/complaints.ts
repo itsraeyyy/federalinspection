@@ -758,13 +758,20 @@ export const complaintService = {
   },
 
   requestRevisions: async (id: string, feedbackNotes: string, adminName: string): Promise<boolean> => {
+    const { data: existing } = await supabase.from('complaints').select('resolution').eq('id', id).maybeSingle();
+    const existingRes = (existing?.resolution as any) || {};
+
     const { error } = await supabase
       .from('complaints')
       .update({
         status: 'RevisionRequested',
         updated_at: new Date().toISOString(),
         resolution: {
+          ...existingRes,
           adminInstructions: feedbackNotes,
+          revisionNotes: feedbackNotes,
+          requestedBy: adminName,
+          requestedAt: new Date().toISOString()
         }
       })
       .eq('id', id);

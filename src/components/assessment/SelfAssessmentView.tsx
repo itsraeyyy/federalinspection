@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, CheckCircle2, AlertCircle, Info, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -20,7 +20,23 @@ export function SelfAssessmentView({
   onLocked?: (savedData: any) => void
 }) {
   const router = useRouter();
-  const [responses, setResponses] = useState<Record<string, number>>(existingData?.responses || {});
+  const draftKey = `draft_self_${periodId}`;
+
+  const [responses, setResponses] = useState<Record<string, number>>(() => {
+    if (existingData?.responses && Object.keys(existingData.responses).length > 0) {
+      return existingData.responses;
+    }
+    if (typeof window !== 'undefined' && periodId) {
+      try {
+        const saved = localStorage.getItem(draftKey);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to load local draft:', e);
+      }
+    }
+    return {};
+  });
+
   const [loading, setLoading] = useState(false);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +45,24 @@ export function SelfAssessmentView({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const isReadOnly = readOnly || isLockedLocally || !!existingData?.is_locked;
+
+  // Sync state if existingData updates
+  useEffect(() => {
+    if (existingData?.responses && Object.keys(existingData.responses).length > 0) {
+      setResponses(existingData.responses);
+    }
+  }, [existingData]);
+
+  // Auto-save draft to localStorage whenever responses change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && periodId && !isReadOnly && Object.keys(responses).length > 0) {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(responses));
+      } catch (e) {
+        console.error('Failed to auto-save local draft:', e);
+      }
+    }
+  }, [responses, periodId, isReadOnly, draftKey]);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -83,10 +117,16 @@ export function SelfAssessmentView({
       if (upsertError) throw upsertError;
 
       if (lock) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(draftKey);
+        }
         setIsLockedLocally(true);
         setShowSuccessModal(true);
         onLocked?.(payload);
       } else {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(draftKey, JSON.stringify(responses));
+        }
         showToast('በተሳካ ሁኔታ ተቀምጧል (Draft saved successfully)', 'success');
       }
     } catch (err: any) {

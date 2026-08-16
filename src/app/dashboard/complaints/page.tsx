@@ -691,6 +691,22 @@ export default function ComplaintsPage() {
                 </div>
               )}
 
+              {/* Revision / Correction Requested Box */}
+              {(selectedTicket.status === 'RevisionRequested' || Boolean((selectedTicket.resolution as any)?.adminInstructions || selectedTicket.adminInstructions || (selectedTicket.resolution as any)?.revisionNotes)) && (
+                <div className="p-5 sm:p-6 rounded-3xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/40 relative overflow-hidden shadow-sm flex flex-col gap-2">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                  <span className="text-sm font-extrabold text-amber-800 dark:text-amber-300 flex items-center gap-2 relative z-10">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-300 shrink-0">
+                      <IconAlertTriangle size={18} />
+                    </div>
+                    የተጠየቀ ማስተካከያ / መመሪያ (Correction Request / Revision Feedback)፡
+                  </span>
+                  <p className="text-text-primary font-medium text-sm leading-relaxed whitespace-pre-wrap relative z-10 pl-10 border-l-2 border-amber-500/40 ml-4 py-1">
+                    {(selectedTicket.resolution as any)?.adminInstructions || selectedTicket.adminInstructions || (selectedTicket.resolution as any)?.revisionNotes || 'እባክዎን የቀረበውን የውሳኔ ሀሳብ እንደገና አርመው ያቅርቡ።'}
+                  </p>
+                </div>
+              )}
+
               {/* Resolution Details */}
               {(() => {
                 const resolutionText = typeof selectedTicket.resolution === 'string'

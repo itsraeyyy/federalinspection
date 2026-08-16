@@ -397,84 +397,82 @@ function AssessmentDashboardLayout({
           ) : (
             <>
               {/* Tab 1: My Profile */}
-              {activeTab === 'profile' && session?.user?.id && (
-                <div className="animate-in fade-in duration-200">
+              {session?.user?.id && (
+                <div className={activeTab === 'profile' ? 'animate-in fade-in duration-200' : 'hidden'}>
                   <UserProfileViewer userId={session.user.id} />
                 </div>
               )}
 
               {/* Tab 2: Addis Mzena */}
-              {activeTab === 'addis' && (
-                <div className="space-y-6 animate-in fade-in duration-200">
-                  {!period ? (
-                    <div className="premium-card p-10 text-center bg-surface-primary rounded-3xl border border-border">
-                      <PlusCircle className="w-12 h-12 text-text-muted mx-auto mb-3" />
-                      <h3 className="text-lg font-heading font-bold text-text-primary mb-1">ምንም አዲስ ምዘና የለም (No Active Period)</h3>
-                      <p className="text-sm text-text-secondary">በአሁኑ ጊዜ የተመደበ አዲስ የምዘና ክፍለ-ጊዜ የለም።</p>
-                    </div>
-                  ) : period.status === 'finalized' ? (
-                    <FinalRevealView data={finalScore} />
-                  ) : !isSelfComplete && !isStartingSelf ? (
-                    /* Card displaying period title and simple button to start evaluating */
-                    <div className="premium-card overflow-hidden bg-gradient-to-br from-brand-blue/10 via-surface-primary to-surface-primary border border-brand-blue/30 rounded-3xl p-8 shadow-md">
-                      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="space-y-3 text-center md:text-left">
-                          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-brand-blue/15 text-brand-blue text-xs font-extrabold tracking-wide uppercase">
-                            <PlusCircle className="w-3.5 h-3.5" /> አዲስ ምዘና (Active Assessment)
-                          </span>
-                          <h2 className="text-2xl sm:text-3xl font-heading font-extrabold text-text-primary">
-                            {period.name}
-                          </h2>
-                          <p className="text-sm text-text-secondary leading-relaxed max-w-xl">
-                            እባክዎን ከታች ያለውን አዝራር በመጫን የራስዎን ምዘና (10%) መስፈርቶች መሙላት ይጀምሩ።
-                          </p>
-                        </div>
-
-                        <button
-                          onClick={() => setIsStartingSelf(true)}
-                          className="w-full md:w-auto px-8 py-4 rounded-2xl bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-base flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 shrink-0"
-                        >
-                          <PlayCircle className="w-6 h-6" />
-                          <span>ምዘናውን ጀምር (Start Assessment)</span>
-                          <ArrowRight className="w-5 h-5 ml-1" />
-                        </button>
+              <div className={activeTab === 'addis' ? 'space-y-6 animate-in fade-in duration-200' : 'hidden'}>
+                {!period ? (
+                  <div className="premium-card p-10 text-center bg-surface-primary rounded-3xl border border-border">
+                    <PlusCircle className="w-12 h-12 text-text-muted mx-auto mb-3" />
+                    <h3 className="text-lg font-heading font-bold text-text-primary mb-1">ምንም አዲስ ምዘና የለም (No Active Period)</h3>
+                    <p className="text-sm text-text-secondary">በአሁኑ ጊዜ የተመደበ አዲስ የምዘና ክፍለ-ጊዜ የለም።</p>
+                  </div>
+                ) : period.status === 'finalized' ? (
+                  <FinalRevealView data={finalScore} />
+                ) : !isSelfComplete && !isStartingSelf ? (
+                  /* Card displaying period title and simple button to start evaluating */
+                  <div className="premium-card overflow-hidden bg-gradient-to-br from-brand-blue/10 via-surface-primary to-surface-primary border border-brand-blue/30 rounded-3xl p-8 shadow-md">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="space-y-3 text-center md:text-left">
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-brand-blue/15 text-brand-blue text-xs font-extrabold tracking-wide uppercase">
+                          <PlusCircle className="w-3.5 h-3.5" /> አዲስ ምዘና (Active Assessment)
+                        </span>
+                        <h2 className="text-2xl sm:text-3xl font-heading font-extrabold text-text-primary">
+                          {period.name}
+                        </h2>
+                        <p className="text-sm text-text-secondary leading-relaxed max-w-xl">
+                          እባክዎን ከታች ያለውን አዝራር በመጫን የራስዎን ምዘና (10%) መስፈርቶች መሙላት ይጀምሩ።
+                        </p>
                       </div>
+
+                      <button
+                        onClick={() => setIsStartingSelf(true)}
+                        className="w-full md:w-auto px-8 py-4 rounded-2xl bg-brand-blue hover:bg-brand-blue/90 text-white font-bold text-base flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95 shrink-0"
+                      >
+                        <PlayCircle className="w-6 h-6" />
+                        <span>ምዘናውን ጀምር (Start Assessment)</span>
+                        <ArrowRight className="w-5 h-5 ml-1" />
+                      </button>
                     </div>
-                  ) : (
-                    /* Self Assessment Form View */
-                    <div>
-                      {isSelfComplete && (
-                        <div className="mb-6 p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="w-7 h-7" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-emerald-950 dark:text-emerald-100">የግል ምዘናዎን በተሳካ ሁኔታ አጠናቀዋል!</h3>
-                            <p className="text-xs text-emerald-800 dark:text-emerald-300">የተመዘገበ የግል ውጤት (Self Score): <strong>{Number(selfAssessment?.score_10 || 0).toFixed(1)} / 10</strong></p>
-                          </div>
+                  </div>
+                ) : (
+                  /* Self Assessment Form View */
+                  <div>
+                    {isSelfComplete && (
+                      <div className="mb-6 p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-7 h-7" />
                         </div>
-                      )}
-                      <SelfAssessmentView
-                        periodId={period.id}
-                        existingData={selfAssessment}
-                        readOnly={isSelfComplete}
-                        onLocked={(savedData) => setSelfAssessment(savedData)}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
+                        <div>
+                          <h3 className="text-lg font-bold text-emerald-950 dark:text-emerald-100">የግል ምዘናዎን በተሳካ ሁኔታ አጠናቀዋል!</h3>
+                          <p className="text-xs text-emerald-800 dark:text-emerald-300">የተመዘገበ የግል ውጤት (Self Score): <strong>{Number(selfAssessment?.score_10 || 0).toFixed(1)} / 10</strong></p>
+                        </div>
+                      </div>
+                    )}
+                    <SelfAssessmentView
+                      periodId={period?.id || ''}
+                      existingData={selfAssessment}
+                      readOnly={isSelfComplete}
+                      onLocked={(savedData) => setSelfAssessment(savedData)}
+                    />
+                  </div>
+                )}
+              </div>
 
               {/* Tab 3: Yalefu Mzenawoch */}
-              {activeTab === 'history' && session?.user?.id && (
-                <div className="animate-in fade-in duration-200">
+              {session?.user?.id && (
+                <div className={activeTab === 'history' ? 'animate-in fade-in duration-200' : 'hidden'}>
                   <PreviousAssessmentsView userId={session.user.id} />
                 </div>
               )}
 
               {/* Tab 4: Evaluate Team */}
-              {activeTab === 'eval' && canEvaluate && (
-                <div className="animate-in fade-in duration-200">
+              {canEvaluate && period && (
+                <div className={activeTab === 'eval' ? 'animate-in fade-in duration-200' : 'hidden'}>
                   <LeadershipEvaluationView
                     periodId={period.id}
                     members={allMembers}
@@ -484,8 +482,8 @@ function AssessmentDashboardLayout({
               )}
 
               {/* Tab 5: Approver Dashboard */}
-              {activeTab === 'approve' && isApprover && (
-                <div className="animate-in fade-in duration-200">
+              {isApprover && period && (
+                <div className={activeTab === 'approve' ? 'animate-in fade-in duration-200' : 'hidden'}>
                   <ApproverDashboardView
                     periodId={period.id}
                   />

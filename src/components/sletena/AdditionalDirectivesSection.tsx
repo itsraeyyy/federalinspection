@@ -49,7 +49,7 @@ export const AdditionalDirectivesSection: React.FC<AdditionalDirectivesSectionPr
             </h3>
           </div>
           <p className="text-xs text-text-muted mt-1">
-            ተጨማሪ የስልጠና ፍላጎት ያለባቸውን መመሪያዎች ከተቆልቋዩ ዝርዝር (Dropdown) ይምረጡ::
+            ተጨማሪ የስልጠና ፍላጎት ያለባቸውን መመሪያዎች ከዝርዝር (Dropdown) ውስጥ ይምረጡ::
           </p>
         </div>
 

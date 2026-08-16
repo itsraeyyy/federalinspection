@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, User, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,7 @@ import { LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
 
 export function LeadershipEvaluationView({ periodId, members, evaluations }: { periodId: string, members: any[], evaluations: any[] }) {
   const router = useRouter();
+  const draftEvalKey = `draft_eval_${periodId}`;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,15 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
         }
       });
     });
+    if (typeof window !== 'undefined' && periodId) {
+      try {
+        const savedResp = localStorage.getItem(`${draftEvalKey}_resp`);
+        if (savedResp) {
+          const parsed = JSON.parse(savedResp);
+          return { ...parsed, ...initial };
+        }
+      } catch (e) {}
+    }
     return initial;
   });
 
@@ -65,8 +75,29 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
         }
       });
     });
+    if (typeof window !== 'undefined' && periodId) {
+      try {
+        const savedComm = localStorage.getItem(`${draftEvalKey}_comm`);
+        if (savedComm) {
+          const parsed = JSON.parse(savedComm);
+          return { ...parsed, ...initial };
+        }
+      } catch (e) {}
+    }
     return initial;
   });
+
+  // Auto-save local draft
+  useEffect(() => {
+    if (typeof window !== 'undefined' && periodId && !readOnly && Object.keys(responses).length > 0) {
+      try {
+        localStorage.setItem(`${draftEvalKey}_resp`, JSON.stringify(responses));
+        localStorage.setItem(`${draftEvalKey}_comm`, JSON.stringify(comments));
+      } catch (e) {
+        console.error('Failed to save local eval draft:', e);
+      }
+    }
+  }, [responses, comments, periodId, readOnly, draftEvalKey]);
 
   const handleScoreChange = (userId: string, qId: string, score: number) => {
     if (readOnly || lockedMemberIds.includes(userId)) return;
