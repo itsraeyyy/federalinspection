@@ -245,21 +245,42 @@ export async function resolveLoginEmail(identifier: string, portalRole?: 'repres
     return { email: `${e164Phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
   }
 
-  // 2. Check admin_profiles table next by phone matching
+  // 2. Check admin_profiles table next by username, email prefix, first/last name, or phone matching
   const { data: adminsList } = await supabaseAdmin
     .from('admin_profiles')
-    .select('email, phone');
+    .select('email, phone, first_name, last_name');
 
   if (adminsList && adminsList.length > 0) {
     const matchedAdmin = adminsList.find(a => {
-      if (!a.phone) return false;
-      const aDigits = a.phone.replace(/\D/g, '');
-      return (
-        (last9.length >= 7 && aDigits.endsWith(last9)) ||
-        a.phone === rawPhone ||
-        a.phone === e164Phone ||
-        a.phone === localPhone
-      );
+      if (!a.email) return false;
+      const emailPrefix = a.email.split('@')[0].toLowerCase();
+      const firstName = (a.first_name || '').toLowerCase();
+      const lastName = (a.last_name || '').toLowerCase();
+      const fullName = `${firstName} ${lastName}`.trim().toLowerCase();
+
+      // Match username, email prefix, first name, last name, or full name
+      if (
+        emailPrefix === lowerId ||
+        firstName === lowerId ||
+        lastName === lowerId ||
+        fullName === lowerId ||
+        a.email.toLowerCase() === lowerId
+      ) {
+        return true;
+      }
+
+      // Match phone if phone digits are present
+      if (a.phone && digitsOnly.length >= 7) {
+        const aDigits = a.phone.replace(/\D/g, '');
+        return (
+          aDigits.endsWith(last9) ||
+          a.phone === rawPhone ||
+          a.phone === e164Phone ||
+          a.phone === localPhone
+        );
+      }
+
+      return false;
     });
 
     if (matchedAdmin?.email) {
