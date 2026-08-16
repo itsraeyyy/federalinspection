@@ -215,43 +215,87 @@ export async function resolveLoginEmail(identifier: string, portalRole?: 'repres
   
   const rawPhone = identifier.trim();
   const digitsOnly = rawPhone.replace(/\D/g, '');
-  const e164Phone = rawPhone.startsWith('+') ? rawPhone : `+251${rawPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
-  const localPhone = rawPhone.startsWith('0') ? rawPhone : `0${rawPhone.replace(/^\+?251/, '').replace(/\s+/g, '')}`;
+  const last9 = digitsOnly.slice(-9); // Key 9 digits e.g. 911123456
 
-  // If logging in specifically from representative portal, check if user is a representative
+  const e164Phone = rawPhone.startsWith('+') 
+    ? rawPhone 
+    : `+251${rawPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+  const localPhone = rawPhone.startsWith('0') 
+    ? rawPhone 
+    : `0${rawPhone.replace(/^\+?251/, '').replace(/\s+/g, '')}`;
+
+  // 1. Check admin_profiles table first by robust phone matching
+  const { data: adminsList } = await supabaseAdmin
+    .from('admin_profiles')
+    .select('email, phone');
+
+  if (adminsList && adminsList.length > 0) {
+    const matchedAdmin = adminsList.find(a => {
+      if (!a.phone) return false;
+      const aDigits = a.phone.replace(/\D/g, '');
+      return (
+        (last9.length >= 7 && aDigits.endsWith(last9)) ||
+        a.phone === rawPhone ||
+        a.phone === e164Phone ||
+        a.phone === localPhone
+      );
+    });
+
+    if (matchedAdmin?.email) {
+      return { email: matchedAdmin.email };
+    }
+  }
+
+  // 2. Check if logging in specifically from representative portal
   if (portalRole === 'representative') {
-    const { data: userRec } = await supabaseAdmin
+    const { data: usersList } = await supabaseAdmin
       .from('users')
-      .select('id, phone_number')
-      .or(`phone_number.eq.${e164Phone},phone_number.eq.${localPhone},phone_number.eq.${rawPhone}`)
-      .maybeSingle();
+      .select('id, phone_number');
 
-    if (userRec) {
+    const matchedUser = usersList?.find(u => {
+      if (!u.phone_number) return false;
+      const uDigits = u.phone_number.replace(/\D/g, '');
+      return (last9.length >= 7 && uDigits.endsWith(last9)) || u.phone_number === rawPhone || u.phone_number === e164Phone || u.phone_number === localPhone;
+    });
+
+    if (matchedUser) {
       const { data: prof } = await supabaseAdmin
         .from('user_profiles')
         .select('system_role')
-        .eq('user_id', userRec.id)
+        .eq('user_id', matchedUser.id)
         .maybeSingle();
 
       if (prof?.system_role === 'representative') {
-        const cleanE164 = userRec.phone_number.startsWith('+') ? userRec.phone_number : `+251${userRec.phone_number.replace(/^0+/, '')}`;
+        const cleanE164 = matchedUser.phone_number.startsWith('+') ? matchedUser.phone_number : `+251${matchedUser.phone_number.replace(/^0+/, '')}`;
         return { email: `${cleanE164.replace(/\s+/g, '').replace('+', '')}@federal.local` };
       }
     }
   }
 
-  // Check if it's an admin first
-  const { data: adminData } = await supabaseAdmin
-    .from('admin_profiles')
-    .select('email')
-    .or(`phone.eq.${e164Phone},phone.eq.${localPhone},phone.eq.${rawPhone},phone.ilike.%${digitsOnly}%`)
-    .maybeSingle();
+  // 3. Fallback check on public.users to see if user is linked to an admin_profile
+  const { data: usersList } = await supabaseAdmin
+    .from('users')
+    .select('id, phone_number');
 
-  if (adminData?.email) {
-    return { email: adminData.email };
+  const matchedUser = usersList?.find(u => {
+    if (!u.phone_number) return false;
+    const uDigits = u.phone_number.replace(/\D/g, '');
+    return (last9.length >= 7 && uDigits.endsWith(last9)) || u.phone_number === rawPhone || u.phone_number === e164Phone;
+  });
+
+  if (matchedUser) {
+    const { data: adminProf } = await supabaseAdmin
+      .from('admin_profiles')
+      .select('email')
+      .eq('id', matchedUser.id)
+      .maybeSingle();
+
+    if (adminProf?.email) {
+      return { email: adminProf.email };
+    }
   }
 
-  // Fallback to synthetic email for regular users
+  // 4. Fallback to synthetic email for regular assessment users
   return { email: `${e164Phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
 }
 

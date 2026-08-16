@@ -30,9 +30,9 @@ const RATING_LABELS: Record<string, string> = {
   "excellent": "እጅግ በጣም ጥሩ",
   "very-good": "በጣም ጥሩ",
   "good": "ጥሩ",
-  "needs-improvement": "መስተካከል አለበት (*)",
-  "bad": "ውስንነት (ድሮ)",
-  "very-bad": "ከፍተኛ ውስንነት (ድሮ)",
+  "needs-improvement": "መሻሻል የሚፈልግ",
+  "bad": "መሻሻል የሚፈልግ",
+  "very-bad": "መሻሻል የሚፈልግ",
 };
 
 const RATING_COLORS: Record<string, string> = {
@@ -49,7 +49,7 @@ const ratingFilters: { id: RatingId | "all"; label: string }[] = [
   { id: "excellent", label: "እጅግ በጣም ጥሩ" },
   { id: "very-good", label: "በጣም ጥሩ" },
   { id: "good", label: "ጥሩ" },
-  { id: "needs-improvement", label: "መስተካከል አለበት" },
+  { id: "needs-improvement", label: "መሻሻል የሚፈልግ" },
 ];
 
 function RatingStars({ rating }: { rating: string }) {
@@ -105,13 +105,11 @@ export default function FeedbackPage() {
     "needs-improvement": feedbacks.filter((f) => f.rating === "needs-improvement").length,
   };
 
-
-
   const barData = [
-    { name: 'Excellent', count: counts["excellent"] },
-    { name: 'Very Good', count: counts["very-good"] },
-    { name: 'Good', count: counts.good },
-    { name: 'Needs Imp.', count: counts["needs-improvement"] },
+    { name: 'እጅግ በጣም ጥሩ', count: counts["excellent"] },
+    { name: 'በጣም ጥሩ', count: counts["very-good"] },
+    { name: 'ጥሩ', count: counts.good },
+    { name: 'መሻሻል የሚፈልግ', count: counts["needs-improvement"] },
   ];
 
   // Calculate category data
@@ -212,7 +210,7 @@ export default function FeedbackPage() {
                               item.sentiment === 'negative' ? 'bg-danger/10 text-danger' :
                               'bg-brand-blue/10 text-brand-blue'
                             }`}>
-                              {item.sentiment}
+                              {item.sentiment === 'positive' ? 'አወንታዊ' : item.sentiment === 'negative' ? 'አሉታዊ' : 'መካከለኛ'}
                             </span>
                           </div>
                         </div>

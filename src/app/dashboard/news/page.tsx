@@ -183,9 +183,13 @@ export default function NewsPage() {
                       }`}>
                       {article.status === 'Published' ? 'የታተመ' : 'ረቂቅ'}
                     </span>
-                    {article.article_type === 'Message' && (
+                    {article.article_type === 'Message' ? (
                       <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm bg-[#014BAA]/90 text-white w-fit">
                         መልዕክት
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm bg-[#014BAA]/90 text-white w-fit">
+                        {article.category || 'ዓበይት ዜናዎች'}
                       </span>
                     )}
                   </div>

@@ -39,6 +39,7 @@ export default function CreateNewsPage() {
     defaultValues: {
       title: "",
       language: "አማርኛ",
+      category: "ዓበይት ዜናዎች",
       body: "",
       status: "Published",
       article_type: "News"
@@ -103,6 +104,7 @@ export default function CreateNewsPage() {
       const payload = {
         title: data.title,
         lang: data.language,
+        category: data.category || 'ዓበይት ዜናዎች',
         status: data.status as any,
         content: data.body,
         article_type: data.article_type,
@@ -167,7 +169,7 @@ export default function CreateNewsPage() {
             {errors.title && <span className="text-xs text-danger">{errors.title.message}</span>}
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ቋንቋ</label>
               <select 
@@ -182,6 +184,20 @@ export default function CreateNewsPage() {
               </select>
               {errors.language && <span className="text-xs text-danger">{errors.language.message}</span>}
             </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ዘርፍ / ምድብ (Category)</label>
+              <select 
+                {...register("category")} 
+                className="w-full bg-surface-primary border border-border/50 rounded-xl p-4 text-sm text-text-primary focus:outline-none focus:border-brand-blue/50 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="ዓበይት ዜናዎች">ዓበይት ዜናዎች</option>
+                <option value="ሳምንታዊ ዜናዎች">ሳምንታዊ ዜናዎች</option>
+                <option value="የክልል ዜናዎች">የክልል ዜናዎች</option>
+                <option value="መልዕክቶች">መልዕክቶች</option>
+              </select>
+            </div>
+
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-widest">ዓይነት (Type)</label>
               <select 

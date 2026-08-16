@@ -183,6 +183,11 @@ export function NewsMessagesSection() {
                         <span className="text-xs font-medium text-slate-400">ፎቶ ያልተሰቀለ</span>
                       </div>
                     )}
+                    {activeTab === 'News' && (
+                      <div className="absolute left-3 top-3 bg-[#014BAA] text-white px-2.5 py-1 rounded-xl text-[0.65rem] font-extrabold uppercase tracking-wider shadow-md backdrop-blur-sm border border-white/20">
+                        {item.category || 'ዓበይት ዜናዎች'}
+                      </div>
+                    )}
                     {hasVideo && (
                       <div className="absolute left-3 bottom-3 bg-red-600/90 text-white px-2 py-1 rounded-lg text-[10px] font-bold shadow-md backdrop-blur-sm flex items-center gap-1">
                         <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
@@ -194,7 +199,7 @@ export function NewsMessagesSection() {
                     {index === 0 && (
                       <div
                         className="absolute right-3 top-3 rounded-full px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-white shadow-sm"
-                        style={{ backgroundColor: "#014BAA" }}
+                        style={{ backgroundColor: "#FFB800", color: "#1E293B" }}
                       >
                         አዲስ
                       </div>

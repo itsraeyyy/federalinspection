@@ -147,9 +147,16 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
                 
                 {/* Meta Header Row */}
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 rounded-full bg-[#014BAA]/5 px-4 py-1.5 border border-[#014BAA]/10">
-                    <CalendarDays className="size-3.5 text-[#014BAA]" aria-hidden="true" />
-                    <time dateTime={displayDate} className="text-xs font-bold text-[#014BAA]">{displayDate}</time>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-2 rounded-full bg-[#014BAA]/5 px-4 py-1.5 border border-[#014BAA]/10">
+                      <CalendarDays className="size-3.5 text-[#014BAA]" aria-hidden="true" />
+                      <time dateTime={displayDate} className="text-xs font-bold text-[#014BAA]">{displayDate}</time>
+                    </div>
+                    {item.article_type !== 'Message' && (
+                      <span className="px-3.5 py-1 rounded-full bg-[#014BAA] text-white text-xs font-extrabold shadow-sm">
+                        {item.category || 'ዓበይት ዜናዎች'}
+                      </span>
+                    )}
                   </div>
 
                   {/* Interactive Share Button */}

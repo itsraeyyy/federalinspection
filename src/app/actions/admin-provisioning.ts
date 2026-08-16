@@ -68,6 +68,16 @@ export async function provisionAdmin(data: any) {
       return { success: false, error: 'Profile creation failed: ' + profileError.message };
     }
 
+    // Upsert into users table for cross-table phone mapping
+    if (data.phone) {
+      const cleanPhone = data.phone.startsWith('+') ? data.phone.trim() : `+251${data.phone.trim().replace(/^0+/, '').replace(/\s+/g, '')}`;
+      await supabaseAdmin.from('users').upsert({
+        id: userId,
+        phone_number: cleanPhone,
+        full_name: data.name,
+      });
+    }
+
     // 3. Send welcome notification (email first for admins, SMS as fallback)
     await notifyAdminCreated({
       phone: data.phone,

@@ -85,6 +85,7 @@ export const newsService = {
     // Map from JS object to DB columns
     const dbData = {
       ...data,
+      category: data.category || 'ዓበይት ዜናዎች',
       video_url: data.videoUrl,
       images: data.images,
       excerpt: data.excerpt,
@@ -105,6 +106,7 @@ export const newsService = {
   updateArticle: async (id: string, data: Partial<NewsArticle>): Promise<void> => {
     const dbData = {
       ...data,
+      ...(data.category !== undefined && { category: data.category }),
       ...(data.videoUrl !== undefined && { video_url: data.videoUrl }),
       ...(data.article_type !== undefined && { article_type: data.article_type }),
     };
