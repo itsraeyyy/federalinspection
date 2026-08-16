@@ -63,27 +63,25 @@ export default function ChangePasswordPage() {
 
     try {
       const res = await changePasswordSelfAction(password);
-      if (res?.success) {
-        window.location.href = '/representative/dashboard';
-        return;
+      if (res?.error) {
+        throw new Error(res.error);
       }
 
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-        data: { force_password_change: false, requires_password_change: false }
-      });
-
-      if (error) {
-        if (error.message.includes('Auth session missing')) {
-          throw new Error('የመለያ ክፍለ ጊዜ አልተገኘም። እባክዎ ከገጹ ወጥተው እንደገና ይግቡ (Session expired. Please sign in again)');
-        }
-        throw error;
+      // Sync browser client session metadata and refresh JWT cookie token
+      try {
+        await supabase.auth.updateUser({
+          password: password,
+          data: { force_password_change: false, requires_password_change: false }
+        });
+        await supabase.auth.refreshSession();
+      } catch (clientErr) {
+        console.warn('Client session sync warning:', clientErr);
       }
       
-      // Successfully updated password, navigate to dashboard
+      // Successfully updated password, navigate to representative dashboard
       window.location.href = '/representative/dashboard';
     } catch (error: any) {
-      setErrorMsg(error.message || 'Failed to update password');
+      setErrorMsg(error.message || 'የይለፍ ቃል ማዘመን አልተቻለም');
     } finally {
       setLoading(false);
     }

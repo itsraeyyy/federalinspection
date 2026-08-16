@@ -58,39 +58,26 @@ export default function ChangePasswordPage() {
     setLoading(true);
 
     try {
-      // 1. Try server action first for maximum reliability
       const res = await changePasswordSelfAction(password);
-
-      if (res?.success) {
-        window.location.href = '/assessment';
-        return;
+      if (res?.error) {
+        throw new Error(res.error);
       }
 
-      // 2. Fallback to client-side auth update if server action was unauthenticated
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-        data: { force_password_change: false, requires_password_change: false }
-      });
-
-      if (error) {
-        if (error.message.includes('Auth session missing')) {
-          throw new Error('የመለያ ክፍለ ጊዜ አልተገኘም። እባክዎ ከገጹ ወጥተው እንደገና ይግቡ (Session expired. Please sign in again)');
-        }
-        throw error;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('admin_profiles')
-          .update({ requires_password_change: false })
-          .eq('id', user.id);
+      // Sync browser client session metadata and refresh JWT cookie token
+      try {
+        await supabase.auth.updateUser({
+          password: password,
+          data: { force_password_change: false, requires_password_change: false }
+        });
+        await supabase.auth.refreshSession();
+      } catch (clientErr) {
+        console.warn('Client session sync warning:', clientErr);
       }
       
-      // Successfully updated password, navigate to assessment
+      // Successfully updated password, navigate to assessment portal
       window.location.href = '/assessment';
     } catch (error: any) {
-      setErrorMsg(error.message || 'Failed to update password');
+      setErrorMsg(error.message || 'የይለፍ ቃል ማዘመን አልተቻለም');
     } finally {
       setLoading(false);
     }

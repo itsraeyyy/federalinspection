@@ -55,13 +55,13 @@ export default function AssessmentModulePage() {
         .select('*')
         .eq('period_id', activePeriod.id)
         .eq('user_id', currentSession.user.id)
-        .single();
+        .maybeSingle();
 
       const [selfRes, evalRes, apprRes, userRes] = await Promise.all([
-        supabase.from('self_assessments').select('*').eq('user_id', currentSession.user.id).eq('period_id', activePeriod.id).single(),
+        supabase.from('self_assessments').select('*').eq('user_id', currentSession.user.id).eq('period_id', activePeriod.id).maybeSingle(),
         supabase.from('evaluations').select('*, evaluator:users!evaluator_id(full_name)').eq('target_user_id', currentSession.user.id).eq('period_id', activePeriod.id),
-        supabase.from('approver_evaluations').select('*, approver:users!approver_id(full_name)').eq('target_user_id', currentSession.user.id).eq('period_id', activePeriod.id).single(),
-        supabase.from('users').select('*, user_profiles(*)').eq('id', currentSession.user.id).single()
+        supabase.from('approver_evaluations').select('*, approver:users!approver_id(full_name)').eq('target_user_id', currentSession.user.id).eq('period_id', activePeriod.id).maybeSingle(),
+        supabase.from('users').select('*, user_profiles(*)').eq('id', currentSession.user.id).maybeSingle()
       ]);
 
       if (fScore) {

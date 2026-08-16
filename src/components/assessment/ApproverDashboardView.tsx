@@ -465,9 +465,51 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const targetApproverScoreVal = expandedUser ? (approverScores[expandedUser] || 0) : 0;
   const targetTotalScore = parseFloat((targetSelfScore + targetEvalScoreVal + targetApproverScoreVal).toFixed(1));
 
-  const hasChanges = members.some(
-    m => (approverScores[m.user_id] || 0) !== (initialApproverScores[m.user_id] || 0)
-  );
+  const handleDownloadSummaryPDF = async () => {
+    setDownloadingPDF(true);
+    try {
+      const summaryRows: SummaryMemberRow[] = members.map(m => {
+        const userId = m.user_id;
+        const userObj = m.users || {};
+        const profileObj = userObj.user_profiles?.[0] || {};
+
+        const s10 = selfScores[userId]?.score || 0;
+        const e20 = evalScores[userId]?.score || 0;
+        const a70 = approverScores[userId] || 0;
+        const sum30 = s10 + e20;
+        const final100 = sum30 + a70;
+        const grade = getPerformanceGradeLabel(final100);
+
+        return {
+          id: userId,
+          full_name: userObj.full_name || 'ያልታወቀ',
+          phone_number: userObj.phone_number || '',
+          institution: profileObj.institution || '',
+          gov_responsibility: profileObj.gov_responsibility || '',
+          party_responsibility: profileObj.party_responsibility || '',
+          gender: profileObj.gender || '',
+          education_level: profileObj.education_level || '',
+          score10: s10,
+          score20: e20,
+          sum30: sum30,
+          score70: a70,
+          final100: final100,
+          grade: grade,
+          status: finalizedUserIds.includes(userId) || isFinalized ? 'ፀድቋል' : 'ያልፀደቀ'
+        };
+      });
+
+      const docEl = <SummaryReportPDF period={periodData} members={summaryRows} />;
+      const safePeriodName = (periodData?.name || 'Assessment').replace(/\s+/g, '_');
+      await downloadPDFDocument(docEl, `የ_${safePeriodName}_የአካቲቭ_ምዘና_ማጠቃለያ_ሪፖርት.pdf`);
+      showToast('ማጠቃለያ ፒዲኤፍ ሪፖርት በተሳካ ሁኔታ ወርዷል!', 'success');
+    } catch (err: any) {
+      console.error('Download summary PDF error:', err);
+      showToast(err.message || 'ማጠቃለያ ፒዲኤፍ ማውረድ አልተሳካም።', 'error');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
 
   return (
     <div className="flex-1 bg-background py-8 px-2 sm:px-6 lg:px-8 flex flex-col items-center relative">
@@ -479,8 +521,6 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           {toast.message}
         </div>
       )}
-
-      <div className="w-full max-w-[1400px] mx-auto flex-grow flex flex-col">
         {/* Page Title Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
