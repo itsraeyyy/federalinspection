@@ -2,7 +2,7 @@
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { supabase } from '@/lib/supabaseClient';
-import { PlusCircle, FileCheck, Trash2 } from 'lucide-react';
+import { PlusCircle, FileCheck, Trash2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -65,13 +65,22 @@ export default function AssessmentPage() {
             <h1 className="text-3xl font-heading text-text-primary mb-1">የምዘና ጊዜ</h1>
             <p className="text-text-secondary text-sm">የምዘና ጊዜዎችን ያስተዳድሩ እና ውጤቶችን ያፅድቁ።</p>
           </div>
-          <Link 
-            href="/dashboard/assessment/teams/new"
-            className="inline-flex items-center justify-center bg-brand-blue text-white px-5 py-2.5 rounded-xl font-medium transition-colors hover:bg-brand-blue/90 shadow-sm"
-          >
-            <PlusCircle className="w-5 h-5 mr-2" />
-            አዲስ የምዘና ጊዜ ፍጠር
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/dashboard/assessment/members"
+              className="inline-flex items-center justify-center bg-surface-secondary hover:bg-border/40 text-text-primary border border-border/60 px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm"
+            >
+              <Users className="w-5 h-5 mr-2 text-brand-blue" />
+              የምዘና አባላት (Assessment Members)
+            </Link>
+            <Link 
+              href="/dashboard/assessment/teams/new"
+              className="inline-flex items-center justify-center bg-brand-blue text-white px-5 py-2.5 rounded-xl font-medium transition-colors hover:bg-brand-blue/90 shadow-sm"
+            >
+              <PlusCircle className="w-5 h-5 mr-2" />
+              አዲስ የምዘና ጊዜ ፍጠር
+            </Link>
+          </div>
         </div>
 
         {loading ? (

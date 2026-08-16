@@ -25,25 +25,31 @@ export default function FormsLoginPage() {
 
     try {
       await verifyLoginAttempt();
-      const { email: authEmail } = await resolveLoginEmail(phone, 'representative');
+      const cleanPhone = phone.trim();
+      const { email: authEmail } = await resolveLoginEmail(cleanPhone, 'representative');
 
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: authEmail,
-        password,
+        password: password.trim(),
       });
 
-      if (signInError) throw signInError;
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          throw new Error("የተሳሳተ ስልክ ቁጥር ወይም የይለፍ ቃል (Invalid phone number or password).");
+        }
+        throw signInError;
+      }
 
       // Check if they are actually a representative
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('system_role')
         .eq('user_id', data.user.id)
-        .single();
+        .maybeSingle();
 
-      if (profile?.system_role !== 'representative') {
+      if (profile && profile.system_role !== 'representative') {
         await supabase.auth.signOut();
-        throw new Error("Access Denied: You are not a registered representative.");
+        throw new Error("መዳረሻ አልተፈቀደም፡ የተወካይ መለያ የለዎትም። (Access Denied: Not a representative)");
       }
 
       const needsPasswordChange = data.user.user_metadata?.force_password_change || data.user.user_metadata?.requires_password_change;
@@ -53,7 +59,7 @@ export default function FormsLoginPage() {
         router.push("/representative/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || "Invalid credentials. Please try again.");
+      setError(err.message || "መግባት አልተቻለም፡ እባክዎን መረጃዎን ያረጋግጡ።");
     } finally {
       setLoading(false);
     }

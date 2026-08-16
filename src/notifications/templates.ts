@@ -377,7 +377,7 @@ export function buildAdminWelcomeTemplates(opts: {
   const sms =
     `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
     `ክቡር/ርት ${opts.name}፣ በ ICODiS ሲስተም ላይ እንደ ${roleAmharic} የመግቢያ መለያዎ ተፈጥሯል።\n` +
-    `ስልክ/ኢሜይል: ${opts.phone || opts.email}\nየይለፍ ቃል: ${opts.password}\n` +
+    `ኢሜይል: ${opts.email}\nየይለፍ ቃል: ${opts.password}\n` +
     `👉 አሁኑኑ ገብተው የይለፍ ቃልዎን ለመቀየር: ${loginUrl}`;
 
   const html = wrapEmailTemplate(
@@ -386,7 +386,7 @@ export function buildAdminWelcomeTemplates(opts: {
     `<p>ሰላም ክቡር/ርት <strong>${opts.name}</strong>፣</p>
     <p>በብልፅግና የኢንስፔክሽንና የሥነ-ምግባር ኮሚሽን የኦንላይን ሲስተም (ICODiS) ላይ እንደ <strong>${roleAmharic}</strong> ሆነው መመደብዎን እንገልፃለን። የመግቢያ መረጃዎ ከዚህ በታች ቀርቧል፡</p>
     <div class="box">
-      <div class="label">መለያ (Username / Email)</div>
+      <div class="label">ኢሜይል (Email)</div>
       <div class="value">${opts.email}</div>
       <div class="label">ጊዜያዊ የይለፍ ቃል</div>
       <div class="code-badge">${opts.password}</div>
@@ -397,7 +397,7 @@ export function buildAdminWelcomeTemplates(opts: {
     </div>`
   );
 
-  const text = `ሰላም ${opts.name}፣ እንደ ${roleAmharic} ተመዝግበዋል!\nመለያ: ${opts.email}\nየይለፍ ቃል: ${opts.password}\nመግቢያ: ${loginUrl}`;
+  const text = `ሰላም ${opts.name}፣ እንደ ${roleAmharic} ተመዝግበዋል!\nኢሜይል: ${opts.email}\nየይለፍ ቃል: ${opts.password}\nመግቢያ: ${loginUrl}`;
 
   return { sms, html, text };
 }

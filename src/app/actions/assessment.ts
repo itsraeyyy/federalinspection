@@ -146,3 +146,93 @@ export async function notifyFinalApprovalAction(opts: {
     return { success: false, error: err?.message || 'Failed to send notification' };
   }
 }
+
+/** Update assessment user details */
+export async function updateAssessmentUserAction(data: {
+  userId: string;
+  fullName: string;
+  phone: string;
+  role?: string;
+  gender?: string;
+  institution?: string;
+  govResponsibility?: string;
+  partyResponsibility?: string;
+}) {
+  try {
+    const cleanPhone = data.phone.startsWith('+') ? data.phone.trim() : `+251${data.phone.trim().replace(/^0+/, '').replace(/\s+/g, '')}`;
+
+    // Update public.users
+    const { error: userErr } = await supabaseAdmin
+      .from('users')
+      .update({
+        full_name: data.fullName,
+        phone_number: cleanPhone,
+      })
+      .eq('id', data.userId);
+
+    if (userErr) throw userErr;
+
+    // Update Auth user metadata
+    await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      user_metadata: {
+        full_name: data.fullName,
+        phone: cleanPhone,
+      }
+    });
+
+    // Upsert into user_profiles
+    const profileUpdate: any = {};
+    if (data.gender) profileUpdate.gender = data.gender;
+    if (data.institution) profileUpdate.institution = data.institution;
+    if (data.govResponsibility) profileUpdate.gov_responsibility = data.govResponsibility;
+    if (data.partyResponsibility) profileUpdate.party_responsibility = data.partyResponsibility;
+
+    if (Object.keys(profileUpdate).length > 0) {
+      await supabaseAdmin
+        .from('user_profiles')
+        .upsert({
+          user_id: data.userId,
+          ...profileUpdate,
+        }, { onConflict: 'user_id' });
+    }
+
+    // Update period_members role if specified
+    if (data.role) {
+      await supabaseAdmin
+        .from('period_members')
+        .update({ role: data.role })
+        .eq('user_id', data.userId);
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('updateAssessmentUserAction error:', err);
+    return { success: false, error: err?.message || 'ተጠቃሚውን ማዘመን አልተሳካም።' };
+  }
+}
+
+/** Delete an assessment user from database and Auth */
+export async function deleteAssessmentUserAction(userId: string) {
+  try {
+    if (!userId) return { success: false, error: 'User ID is required' };
+
+    // 1. Delete from period_members
+    await supabaseAdmin.from('period_members').delete().eq('user_id', userId);
+
+    // 2. Delete from user_profiles
+    await supabaseAdmin.from('user_profiles').delete().eq('user_id', userId);
+
+    // 3. Delete from users table
+    await supabaseAdmin.from('users').delete().eq('id', userId);
+
+    // 4. Delete from Supabase Auth
+    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (authErr) console.warn('Warning deleting auth user:', authErr.message);
+
+    return { success: true, message: 'ተጠቃሚው በተሳካ ሁኔታ ተሰርዟል!' };
+  } catch (err: any) {
+    console.error('deleteAssessmentUserAction error:', err);
+    return { success: false, error: err?.message || 'ተጠቃሚውን መሰረዝ አልተሳካም።' };
+  }
+}
+

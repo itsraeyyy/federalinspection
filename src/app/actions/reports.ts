@@ -7,70 +7,121 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function createRepresentativeAction(formData: FormData) {
   try {
-    const fullName = formData.get('fullName') as string;
-    const rawPhone = formData.get('phone') as string;
+    const fullName = (formData.get('fullName') as string)?.trim();
+    const rawPhone = (formData.get('phone') as string)?.trim();
     const rawEmail = (formData.get('email') as string)?.trim() || undefined;
-    const region = formData.get('region') as string;
+    const region = (formData.get('region') as string)?.trim();
 
     if (!fullName || !rawPhone || !region) {
       return { error: 'Missing required fields' };
     }
 
-    const cleanPhone = rawPhone.trim();
-    const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
-
+    const cleanPhone = rawPhone.replace(/\s+/g, '');
+    const phone = cleanPhone.startsWith('+') 
+      ? cleanPhone 
+      : `+251${cleanPhone.replace(/^0+/, '')}`;
 
     const password = crypto.randomBytes(4).toString('hex'); // 8 characters
-    const syntheticEmail = `${phone.replace(/\s+/g, '').replace('+', '')}@federal.local`;
+    const digitsOnly = phone.replace('+', '');
+    const syntheticEmail = `${digitsOnly}@federal.local`;
 
     let userId: string | null = null;
 
-    // Check if user already exists in auth.users by email
-    const { data: usersList } = await supabaseAdmin.auth.admin.listUsers();
-    const existingAuthUser = usersList?.users?.find(u => u.email === syntheticEmail);
+    // 1. Check if user already exists in public.users by phone variations
+    const phoneNoPlus = phone.replace('+', '');
+    const phoneWith0 = `0${phone.replace(/^\+251/, '')}`;
+    const { data: existingUsers } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .in('phone_number', [phone, phoneNoPlus, phoneWith0, rawPhone]);
 
-    if (existingAuthUser) {
-      userId = existingAuthUser.id;
+    if (existingUsers && existingUsers.length > 0) {
+      userId = existingUsers[0].id;
+    }
+
+    if (!userId) {
+      // Check auth user using generateLink (bypasses listUsers 50 limit)
+      const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: syntheticEmail,
+      });
+      if (linkData?.user) {
+        userId = linkData.user.id;
+      }
+    }
+
+    if (userId) {
+      // User exists — update password and user_metadata
       const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         email: syntheticEmail,
         email_confirm: true,
         password: password,
-        user_metadata: { full_name: fullName, phone: phone, requires_password_change: true }
+        user_metadata: {
+          full_name: fullName,
+          phone: phone,
+          requires_password_change: true,
+          force_password_change: true
+        }
       });
       if (updateErr) {
         console.error("Failed to update rep password:", updateErr);
         return { error: 'Failed to update user password: ' + updateErr.message };
       }
     } else {
+      // Create new Auth user
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: syntheticEmail,
         email_confirm: true,
         password: password,
-        user_metadata: { full_name: fullName, phone: phone, requires_password_change: true }
+        user_metadata: {
+          full_name: fullName,
+          phone: phone,
+          requires_password_change: true,
+          force_password_change: true
+        }
       });
-      if (authError) return { error: authError.message };
-      userId = authData.user.id;
+
+      if (authError) {
+        if (authError.message.includes('already') || authError.message.includes('registered') || authError.message.includes('exists')) {
+          const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({ type: 'magiclink', email: syntheticEmail });
+          if (linkData?.user) {
+            userId = linkData.user.id;
+            await supabaseAdmin.auth.admin.updateUserById(userId, {
+              email: syntheticEmail,
+              email_confirm: true,
+              password: password,
+              user_metadata: { full_name: fullName, phone: phone, requires_password_change: true, force_password_change: true }
+            });
+          } else {
+            return { error: authError.message };
+          }
+        } else {
+          return { error: authError.message };
+        }
+      } else {
+        userId = authData.user.id;
+      }
     }
 
-    // Upsert user
+    // 2. Upsert public.users table
     await supabaseAdmin
       .from('users')
       .upsert({ id: userId, phone_number: phone, full_name: fullName });
 
-    // Update user profile with role and region
+    // 3. Upsert user_profiles table with role and region
     const { error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .upsert({
         user_id: userId,
         system_role: 'representative',
         region: region
-      });
+      }, { onConflict: 'user_id' });
 
     if (profileError) {
       return { error: 'Failed to update profile: ' + profileError.message };
     }
 
-    // Notify representative (SMS first → email fallback)
+    // 4. Notify representative (SMS first → email fallback)
     const notifyResult = await notifyRegistration({
       phone,
       email: rawEmail,

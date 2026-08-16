@@ -224,7 +224,28 @@ export async function resolveLoginEmail(identifier: string, portalRole?: 'repres
     ? rawPhone 
     : `0${rawPhone.replace(/^\+?251/, '').replace(/\s+/g, '')}`;
 
-  // 1. Check admin_profiles table first by robust phone matching
+  // 1. If portalRole is 'representative', prioritize representative lookup
+  if (portalRole === 'representative') {
+    const { data: usersList } = await supabaseAdmin
+      .from('users')
+      .select('id, phone_number');
+
+    const matchedUser = usersList?.find(u => {
+      if (!u.phone_number) return false;
+      const uDigits = u.phone_number.replace(/\D/g, '');
+      return (last9.length >= 7 && uDigits.endsWith(last9)) || u.phone_number === rawPhone || u.phone_number === e164Phone || u.phone_number === localPhone;
+    });
+
+    if (matchedUser) {
+      const cleanE164 = matchedUser.phone_number.startsWith('+') ? matchedUser.phone_number : `+251${matchedUser.phone_number.replace(/^0+/, '')}`;
+      return { email: `${cleanE164.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+    }
+
+    // Direct fallback for representative portal using e164Phone
+    return { email: `${e164Phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+  }
+
+  // 2. Check admin_profiles table next by phone matching
   const { data: adminsList } = await supabaseAdmin
     .from('admin_profiles')
     .select('email, phone');
@@ -243,32 +264,6 @@ export async function resolveLoginEmail(identifier: string, portalRole?: 'repres
 
     if (matchedAdmin?.email) {
       return { email: matchedAdmin.email };
-    }
-  }
-
-  // 2. Check if logging in specifically from representative portal
-  if (portalRole === 'representative') {
-    const { data: usersList } = await supabaseAdmin
-      .from('users')
-      .select('id, phone_number');
-
-    const matchedUser = usersList?.find(u => {
-      if (!u.phone_number) return false;
-      const uDigits = u.phone_number.replace(/\D/g, '');
-      return (last9.length >= 7 && uDigits.endsWith(last9)) || u.phone_number === rawPhone || u.phone_number === e164Phone || u.phone_number === localPhone;
-    });
-
-    if (matchedUser) {
-      const { data: prof } = await supabaseAdmin
-        .from('user_profiles')
-        .select('system_role')
-        .eq('user_id', matchedUser.id)
-        .maybeSingle();
-
-      if (prof?.system_role === 'representative') {
-        const cleanE164 = matchedUser.phone_number.startsWith('+') ? matchedUser.phone_number : `+251${matchedUser.phone_number.replace(/^0+/, '')}`;
-        return { email: `${cleanE164.replace(/\s+/g, '').replace('+', '')}@federal.local` };
-      }
     }
   }
 
