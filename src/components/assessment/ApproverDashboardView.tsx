@@ -23,6 +23,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const [approverScores, setApproverScores] = useState<Record<string, number>>({});
   const [initialApproverScores, setInitialApproverScores] = useState<Record<string, number>>({});
   const [approverRemarks, setApproverRemarks] = useState<Record<string, string>>({});
+  const [initialApproverRemarks, setInitialApproverRemarks] = useState<Record<string, string>>({});
   const [questionRemarks, setQuestionRemarks] = useState<Record<string, string>>({});
   const [finalizedUserIds, setFinalizedUserIds] = useState<string[]>([]);
   const [isFinalized, setIsFinalized] = useState(false);
@@ -59,7 +60,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           .from('assessment_periods')
           .select('*')
           .eq('id', periodId)
-          .single();
+          .maybeSingle();
         
         setPeriodData(pData);
 
@@ -146,6 +147,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
         setApproverScores(aScores);
         setInitialApproverScores(aScores);
         setApproverRemarks(aRemarks);
+        setInitialApproverRemarks(aRemarks);
 
         const { data: finalScoresData } = await supabase
           .from('final_scores')
@@ -335,6 +337,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
       if (!isFinalizing) {
         setInitialApproverScores({ ...approverScores });
+        setInitialApproverRemarks({ ...approverRemarks });
         showToast('ምዘናዎቹ በተሳካ ሁኔታ ተቀምጠዋል! (Saved successfully)', 'success');
       }
     } catch (err: any) {
@@ -465,6 +468,9 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const targetApproverScoreVal = expandedUser ? (approverScores[expandedUser] || 0) : 0;
   const targetTotalScore = parseFloat((targetSelfScore + targetEvalScoreVal + targetApproverScoreVal).toFixed(1));
 
+  const hasChanges = JSON.stringify(approverScores) !== JSON.stringify(initialApproverScores) ||
+    JSON.stringify(approverRemarks) !== JSON.stringify(initialApproverRemarks);
+
   const handleDownloadSummaryPDF = async () => {
     setDownloadingPDF(true);
     try {
@@ -481,25 +487,20 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
         const grade = getPerformanceGradeLabel(final100);
 
         return {
-          id: userId,
-          full_name: userObj.full_name || 'ያልታወቀ',
-          phone_number: userObj.phone_number || '',
+          userId: userId,
+          name: userObj.full_name || 'ያልታወቀ',
           institution: profileObj.institution || '',
-          gov_responsibility: profileObj.gov_responsibility || '',
-          party_responsibility: profileObj.party_responsibility || '',
-          gender: profileObj.gender || '',
-          education_level: profileObj.education_level || '',
-          score10: s10,
-          score20: e20,
-          sum30: sum30,
-          score70: a70,
-          final100: final100,
-          grade: grade,
-          status: finalizedUserIds.includes(userId) || isFinalized ? 'ፀድቋል' : 'ያልፀደቀ'
+          responsibilityGov: profileObj.gov_responsibility || '',
+          responsibilityCom: profileObj.party_responsibility || '',
+          s10: s10,
+          s20: e20,
+          s70: a70,
+          f100: final100,
+          grade: grade
         };
       });
 
-      const docEl = <SummaryReportPDF period={periodData} members={summaryRows} />;
+      const docEl = <SummaryReportPDF periodName={periodData?.name} members={summaryRows} />;
       const safePeriodName = (periodData?.name || 'Assessment').replace(/\s+/g, '_');
       await downloadPDFDocument(docEl, `የ_${safePeriodName}_የአካቲቭ_ምዘና_ማጠቃለያ_ሪፖርት.pdf`);
       showToast('ማጠቃለያ ፒዲኤፍ ሪፖርት በተሳካ ሁኔታ ወርዷል!', 'success');

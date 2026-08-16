@@ -92,7 +92,7 @@ export default function AssessmentModulePage() {
         .select('*')
         .eq('period_id', activePeriod.id)
         .eq('user_id', currentSession.user.id)
-        .single();
+        .maybeSingle();
 
       setSelfAssessment(sAssessment);
 

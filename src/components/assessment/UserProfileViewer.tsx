@@ -97,7 +97,7 @@ export function UserProfileViewer({ userId }: UserProfileViewerProps) {
           .from('users')
           .select('full_name, phone_number')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
           
         if (userData) setUser(userData);
 
@@ -105,7 +105,7 @@ export function UserProfileViewer({ userId }: UserProfileViewerProps) {
           .from('user_profiles')
           .select('*')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
         

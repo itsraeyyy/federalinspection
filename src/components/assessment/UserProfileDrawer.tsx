@@ -128,13 +128,13 @@ export function UserProfileDrawer({ isOpen, onClose, userId, periodId }: UserPro
 
     try {
       const evalsWithNames = await Promise.all((periodHistory.raw.evals || []).map(async (ev: any) => {
-        const { data: evaluator } = await supabase.from('users').select('full_name').eq('id', ev.evaluator_id).single();
+        const { data: evaluator } = await supabase.from('users').select('full_name').eq('id', ev.evaluator_id).maybeSingle();
         return { ...ev, evaluatorName: evaluator?.full_name };
       }));
 
       let approverName = null;
       if (periodHistory.raw.appr) {
-        const { data: approver } = await supabase.from('users').select('full_name').eq('id', periodHistory.raw.appr.approver_id).single();
+        const { data: approver } = await supabase.from('users').select('full_name').eq('id', periodHistory.raw.appr.approver_id).maybeSingle();
         approverName = approver?.full_name;
       }
 
