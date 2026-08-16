@@ -46,17 +46,17 @@ export default function PeriodManagePage() {
     setPdfLoadingUserId(targetUserId);
     try {
       const [userRes, selfRes, evalRes, apprRes] = await Promise.all([
-        supabase.from('users').select('*, user_profiles(*)').eq('id', targetUserId).single(),
-        supabase.from('self_assessments').select('*').eq('period_id', periodId).eq('user_id', targetUserId).maybeSingle(),
+        supabase.from('users').select('*, user_profiles(*)').eq('id', targetUserId).maybeSingle(),
+        supabase.from('self_assessments').select('*').eq('period_id', periodId).eq('user_id', targetUserId).order('created_at', { ascending: false }).limit(1),
         supabase.from('evaluations').select('*').eq('period_id', periodId).eq('target_user_id', targetUserId).eq('is_locked', true),
-        supabase.from('approver_evaluations').select('*').eq('period_id', periodId).eq('target_user_id', targetUserId).maybeSingle()
+        supabase.from('approver_evaluations').select('*').eq('period_id', periodId).eq('target_user_id', targetUserId).limit(1)
       ]);
 
       const userObj = userRes.data || member.users || {};
       const profileObj = userRes.data?.user_profiles?.[0] || {};
-      const selfData = selfRes.data;
+      const selfData = selfRes.data?.[0] || null;
       const evals = evalRes.data || [];
-      const apprData = apprRes.data;
+      const apprData = apprRes.data?.[0] || null;
 
       let peerTotalWeight = 0, peerTotalScore = 0;
       const evaluatorTotals = new Array(evals.length).fill(0);

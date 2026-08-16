@@ -50,28 +50,33 @@ export default function AssessmentModulePage() {
     setPeriod(activePeriod);
 
     if (activePeriod && activePeriod.status === 'finalized') {
-      const { data: fScore } = await supabase
+      const { data: fScores } = await supabase
         .from('final_scores')
         .select('*')
         .eq('period_id', activePeriod.id)
         .eq('user_id', currentSession.user.id)
-        .maybeSingle();
+        .limit(1);
 
       const [selfRes, evalRes, apprRes, userRes] = await Promise.all([
-        supabase.from('self_assessments').select('*').eq('user_id', currentSession.user.id).eq('period_id', activePeriod.id).maybeSingle(),
+        supabase.from('self_assessments').select('*').eq('user_id', currentSession.user.id).eq('period_id', activePeriod.id).order('created_at', { ascending: false }).limit(1),
         supabase.from('evaluations').select('*, evaluator:users!evaluator_id(full_name)').eq('target_user_id', currentSession.user.id).eq('period_id', activePeriod.id),
-        supabase.from('approver_evaluations').select('*, approver:users!approver_id(full_name)').eq('target_user_id', currentSession.user.id).eq('period_id', activePeriod.id).maybeSingle(),
-        supabase.from('users').select('*, user_profiles(*)').eq('id', currentSession.user.id).maybeSingle()
+        supabase.from('approver_evaluations').select('*, approver:users!approver_id(full_name)').eq('target_user_id', currentSession.user.id).eq('period_id', activePeriod.id).limit(1),
+        supabase.from('users').select('*, user_profiles(*)').eq('id', currentSession.user.id).limit(1)
       ]);
+
+      const fScore = fScores?.[0];
+      const selfData = selfRes.data?.[0] || null;
+      const apprData = apprRes.data?.[0] || null;
+      const userData = userRes.data?.[0] || null;
 
       if (fScore) {
         setFinalScore({
           ...fScore,
           details: {
-            self: selfRes.data,
+            self: selfData,
             evals: evalRes.data || [],
-            appr: apprRes.data,
-            user: userRes.data,
+            appr: apprData,
+            user: userData,
             period: activePeriod
           }
         });

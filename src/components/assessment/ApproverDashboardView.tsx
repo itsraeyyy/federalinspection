@@ -521,6 +521,8 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
           {toast.message}
         </div>
       )}
+
+      <div className="w-full max-w-[1400px] mx-auto flex-grow flex flex-col">
         {/* Page Title Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">

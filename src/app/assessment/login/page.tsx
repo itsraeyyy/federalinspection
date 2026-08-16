@@ -125,8 +125,8 @@ export default function AssessmentLoginPage() {
 
             <button
               type="submit"
-              disabled={loading || !phone || !password}
-              className="w-full flex items-center justify-center bg-brand-blue text-white px-4 py-3 rounded-xl font-medium transition-colors hover:bg-brand-blue/90 disabled:opacity-50 disabled:cursor-not-allowed mt-6 shadow-sm"
+              disabled={loading}
+              className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl font-bold text-base transition-all shadow-md active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed mt-6 cursor-pointer"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : 'ግባ (Sign In)'}
             </button>
