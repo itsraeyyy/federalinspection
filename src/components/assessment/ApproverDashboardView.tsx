@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, ShieldCheck, Save, Users, AlertCircle, Unlock, CheckCircle2, Eye, X, Printer } from 'lucide-react';
+import { Loader2, ShieldCheck, Save, Users, AlertCircle, Unlock, CheckCircle2, Eye, X, Printer, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LEADERSHIP_EVALUATION_QUESTIONS_20, getPerformanceGradeLabel } from '@/lib/assessment-data';
 import { notifyFinalApprovalAction } from '@/app/actions/assessment';
+import { downloadPDFDocument } from '@/lib/exportToPDF';
+import { SummaryReportPDF } from '@/components/assessment/SummaryReportPDF';
+import { SummaryMemberRow } from '@/components/assessment/EvaluationSummaryReport';
 
 export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const router = useRouter();
@@ -23,6 +26,8 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
   const [questionRemarks, setQuestionRemarks] = useState<Record<string, string>>({});
   const [finalizedUserIds, setFinalizedUserIds] = useState<string[]>([]);
   const [isFinalized, setIsFinalized] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [periodData, setPeriodData] = useState<any>(null);
 
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [allUsersMap, setAllUsersMap] = useState<Record<string, string>>({});
@@ -50,13 +55,15 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
         setLoading(true);
         setError(null);
 
-        const { data: periodData } = await supabase
+        const { data: pData } = await supabase
           .from('assessment_periods')
-          .select('status')
+          .select('*')
           .eq('id', periodId)
           .single();
         
-        if (periodData?.status === 'finalized') {
+        setPeriodData(pData);
+
+        if (pData?.status === 'finalized') {
           setIsFinalized(true);
         }
 
@@ -67,7 +74,7 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
 
         const { data: membersData, error: memErr } = await supabase
           .from('period_members')
-          .select('*, users(full_name)')
+          .select('*, users(*, user_profiles(*))')
           .eq('period_id', periodId);
 
         if (memErr) throw memErr;
@@ -508,10 +515,11 @@ export function ApproverDashboardView({ periodId }: { periodId: string }) {
                 {members.length} ተጠቃሚዎች
               </span>
               <button
-                onClick={() => router.push(`/dashboard/assessment/teams/${periodId}/print-all`)}
-                className="text-xs font-semibold text-white bg-brand-blue hover:bg-brand-blue/90 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+                onClick={handleDownloadSummaryPDF}
+                disabled={downloadingPDF}
+                className="text-xs font-semibold text-white bg-brand-blue hover:bg-brand-blue/90 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-60 cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5" />
+                {downloadingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                 <span>ማጠቃለያ ፒዲኤፍ (Summary PDF)</span>
               </button>
             </div>

@@ -115,6 +115,41 @@ export function buildDecisionApprovedAdminAlertTemplates(opts: {
   return { sms, html, text };
 }
 
+export function buildDecisionAcknowledgedLeaderAlertTemplates(opts: {
+  trackingCode: string;
+  submitterName: string;
+  dashboardUrl?: string;
+}) {
+  const dashboardUrl = opts.dashboardUrl || `${SITE_URL}/complaint/dashboard`;
+
+  const sms =
+    `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +
+    `የክቡር/ርት ${opts.submitterName} (ኮድ: ${opts.trackingCode}) የመጨረሻ ውሳኔ እንደደረሳቸው በሲስተሙ አረጋግጠዋል (ውሳኔ ደርሶኛል ብለዋል)።\n` +
+    `👉 ዳሽቦርድ: ${dashboardUrl}`;
+
+  const html = wrapEmailTemplate(
+    `የኮሚሽን ጽ/ቤት ሃላፊ ማሳወቂያ — አመልካች ውሳኔው እንደደረሳቸው አረጋግጠዋል (${opts.trackingCode})`,
+    "Decision Receipt Acknowledgment Alert",
+    `<p>ሰላም <strong>የኮሚሽን ጽ/ቤት ሃላፊ</strong>፣</p>
+    <p>አመልካች <strong>${opts.submitterName}</strong> የመከታተያ ኮድ <strong>${opts.trackingCode}</strong> የተሰጠው የመጨረሻ ውሳኔ በስኬት እንደደረሳቸው በሲስተሙ ላይ በይፋ አረጋግጠዋል (ውሳኔ ደርሶኛል ብለዋል)።</p>
+    <div class="box">
+      <div class="label">አመልካች</div>
+      <div class="value">${opts.submitterName}</div>
+      <div class="label">የመከታተያ ኮድ</div>
+      <div class="value">${opts.trackingCode}</div>
+      <div class="label">የተረጋገጠበት ሰዓት</div>
+      <div class="value">${new Date().toLocaleString('am-ET')}</div>
+    </div>
+    <div style="text-align:center">
+      <a href="${dashboardUrl}" class="btn">👉 ወደ ኮሚሽን ጽ/ቤት ሃላፊ ዳሽቦርድ ይግቡ</a>
+    </div>`
+  );
+
+  const text = `የአመልካች ${opts.submitterName} (ኮድ: ${opts.trackingCode}) የመጨረሻ ውሳኔ እንደደረሳቸው አረጋግጠዋል።`;
+
+  return { sms, html, text };
+}
+
 // ─── 2. Committee Assignment Templates ──────────────────────────────────────
 
 export function buildCommitteeAssignedTemplates(opts: {

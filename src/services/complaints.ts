@@ -816,4 +816,54 @@ export const complaintService = {
     }
     return true;
   },
+
+  acknowledgeDecisionBySubmitter: async (trackingCode: string): Promise<boolean> => {
+    try {
+      const { data: existing, error: fetchErr } = await supabase
+        .from('complaints')
+        .select('*')
+        .eq('tracking_code', trackingCode)
+        .single();
+
+      if (fetchErr || !existing) {
+        console.error('Error fetching complaint for acknowledgment:', fetchErr);
+        return false;
+      }
+
+      const ackTime = new Date().toISOString();
+      const updatedResolution = {
+        ...(typeof existing.resolution === 'object' ? existing.resolution : {}),
+        acknowledgedBySubmitter: true,
+        acknowledgedAt: ackTime,
+      };
+
+      const { error: updateErr } = await supabase
+        .from('complaints')
+        .update({
+          resolution: updatedResolution,
+          acknowledged_at: ackTime,
+        })
+        .eq('id', existing.id);
+
+      if (updateErr) {
+        console.error('Error updating complaint acknowledgment:', updateErr);
+        return false;
+      }
+
+      // Notify the የኮሚሽን ጽ/ቤት ሃላፊ (Head of Commission Office) that decision was acknowledged
+      try {
+        await notifyViaAPI('decision_acknowledged', {
+          trackingCode: existing.tracking_code,
+          submitterName: existing.name || 'አመልካች',
+        });
+      } catch (notifyErr) {
+        console.error('Failed sending decision_acknowledged notification:', notifyErr);
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Failed to acknowledge decision:', err);
+      return false;
+    }
+  },
 };

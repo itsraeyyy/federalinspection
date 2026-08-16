@@ -4,6 +4,7 @@ import {
   notifyComplaintStatusUpdate,
   notifyNewComplaintAdminAlert,
   notifyDecisionApprovedAdminAlert,
+  notifyDecisionAcknowledged,
   notifyCommitteeAssigned,
   notifyDecisionProposalSubmitted,
   notifyReportUpdate,
@@ -40,6 +41,9 @@ export async function POST(req: NextRequest) {
         break;
       case 'decision_approved_admin_alert':
         await notifyDecisionApprovedAdminAlert(opts);
+        break;
+      case 'decision_acknowledged':
+        await notifyDecisionAcknowledged(opts);
         break;
       case 'committee_assigned':
         await notifyCommitteeAssigned(opts);

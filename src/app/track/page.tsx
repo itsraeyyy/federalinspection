@@ -70,6 +70,10 @@ function TrackingContent() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   
+  // Acknowledgment state
+  const [isAcknowledged, setIsAcknowledged] = useState(false);
+  const [acknowledging, setAcknowledging] = useState(false);
+
   // Review form state
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
@@ -93,16 +97,33 @@ function TrackingContent() {
 
     const result = await complaintService.getComplaintByTrackingCode(trackingCode);
     setComplaint(result);
-    if (result && result.resolutionRating) {
-      setRating(result.resolutionRating);
-      setFeedback(result.resolutionFeedback || '');
-      setReviewSubmitted(true);
-    } else {
-      setRating(0);
-      setFeedback('');
-      setReviewSubmitted(false);
+    if (result) {
+      const acked = Boolean((result as any)?.acknowledgedAt || (result?.resolution as any)?.acknowledgedBySubmitter);
+      setIsAcknowledged(acked);
+
+      if (result.resolutionRating) {
+        setRating(result.resolutionRating);
+        setFeedback(result.resolutionFeedback || '');
+        setReviewSubmitted(true);
+      } else {
+        setRating(0);
+        setFeedback('');
+        setReviewSubmitted(false);
+      }
     }
     setLoading(false);
+  };
+
+  const handleAcknowledgeDecision = async () => {
+    if (!complaint) return;
+    setAcknowledging(true);
+    const success = await complaintService.acknowledgeDecisionBySubmitter(complaint.trackingCode);
+    if (success) {
+      setIsAcknowledged(true);
+      const updated = await complaintService.getComplaintByTrackingCode(complaint.trackingCode);
+      if (updated) setComplaint(updated);
+    }
+    setAcknowledging(false);
   };
 
   const handleSubmitReview = async () => {
@@ -270,198 +291,192 @@ function TrackingContent() {
           </div>
 
           {/* Resolution Details (if resolved/rejected) */}
-          {(complaint.resolution || complaint.assignedCommittee || (complaint as any).decisionIdeaFiles) && (
+          {(complaint.status === 'Resolved' || complaint.status === 'Rejected') && complaint.resolution && (
             <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-sm ring-1 ring-slate-100">
-              <h3 className="text-sm font-semibold text-slate-800 mb-4">
-                {complaint.status === 'Rejected' ? 'የውድቅ ምክንያት' : 'የተሰጠ ውሳኔ'}
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+                  {complaint.status === 'Rejected' ? 'የውድቅ ምክንያት' : 'የተሰጠ የመጨረሻ ውሳኔ'}
+                </h3>
+                {isAcknowledged && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-xs font-bold w-fit">
+                    <CheckCircle2 size={14} /> ውሳኔው መድረሱን አረጋግጠዋል
+                  </span>
+                )}
+              </div>
 
-              {/* Committee Group & Members Header */}
-              {(complaint.assignedCommittee || (complaint.resolution as any)?.assignedCommittee) && (
-                <div className="mb-4 p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                    <Users className="size-4 text-[#014BAA] shrink-0" />
-                    <span>የተመደበ አጣሪ ኮሚቴ፡</span>
-                    <span className="font-extrabold text-[#014BAA] bg-blue-100/60 px-2.5 py-1 rounded-lg border border-blue-200/60">
-                      {complaint.assignedCommittee || (complaint.resolution as any)?.assignedCommittee}
-                    </span>
+              {!isAcknowledged ? (
+                <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg space-y-5">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-400 shrink-0">
+                      <CheckCircle2 size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-extrabold text-white">የመጨረሻ ውሳኔዎ ዝግጁ ሆኗል!</h4>
+                      <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
+                        የተሰጠውን የመጨረሻ ውሳኔና ተያያዥ ሰነዶችን ሙሉ በሙሉ ለማየት እባክዎን <strong>"ውሳኔ ደርሶኛል"</strong> የሚለውን አዝራር ይጫኑ።
+                      </p>
+                    </div>
                   </div>
+
+                  <div className="pt-2 flex justify-center sm:justify-start">
+                    <button
+                      onClick={handleAcknowledgeDecision}
+                      disabled={acknowledging}
+                      className="w-full sm:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-sm rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      {acknowledging ? <Loader2 className="size-5 animate-spin" /> : <CheckCircle2 className="size-5" />}
+                      <span>ውሳኔ ደርሶኛል (Acknowledge Decision)</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Resolution Message */}
+                  {complaint.resolution && (
+                    <p className="text-sm text-slate-800 leading-relaxed bg-slate-50 rounded-xl p-5 border border-slate-200 font-medium whitespace-pre-wrap">
+                      {typeof complaint.resolution === 'string' ? complaint.resolution : (complaint.resolution.message || '')}
+                    </p>
+                  )}
+
+                  {/* Decision Files Grid */}
                   {(() => {
-                    const members: any[] = (complaint.resolution as any)?.committeeMembers || complaint.groupMembers || [];
-                    if (!members || members.length === 0) return null;
+                    const resolutionFiles: any[] = 
+                      (complaint.resolution as any)?.attachments ||
+                      (complaint.resolution as any)?.files ||
+                      [];
+
+                    if (resolutionFiles.length === 0) return null;
+
                     return (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[11px] font-bold text-slate-500">አባላት ({members.length}):</span>
-                        {members.map((m: any, idx: number) => {
-                          if (typeof m === 'string') {
+                      <div className="mt-6 space-y-3">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="size-4 text-[#014BAA]" /> ተያያዥ ውሳኔ ሰነዶች ({resolutionFiles.length})
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                          {resolutionFiles.map((file: any, idx: number) => {
+                            const fileUrl = complaintService.resolveFileUrl(file, complaint.trackingCode);
+                            const fileName = file.filename || file.name || `ውሳኔ ሰነድ ${idx + 1}`;
                             return (
-                              <span key={idx} className="text-[11px] font-bold px-2.5 py-0.5 bg-white text-slate-700 rounded-md border border-slate-200">
-                                {m}
-                              </span>
-                            );
-                          }
-                          return (
-                            <span key={idx} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 bg-white text-slate-700 rounded-md border border-slate-200">
-                              <span>{m.name}</span>
-                              {m.role && <span className="px-1.5 py-0.5 rounded bg-blue-50 text-[#014BAA] text-[10px] font-extrabold">{m.role}</span>}
-                              {(m.phone || m.email) && (
-                                <span className="text-slate-400 text-[10px] font-normal">
-                                  ({[m.phone, m.email].filter(Boolean).join(', ')})
+                              <div
+                                key={file.id || idx}
+                                className="flex items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 text-xs font-bold transition-all"
+                              >
+                                <FileText className="size-4 text-[#014BAA] shrink-0" />
+                                <span className="truncate flex-1 text-slate-800" title={fileName}>
+                                  {fileName}
                                 </span>
-                              )}
-                            </span>
-                          );
-                        })}
+                                {file.fileSize && <span className="text-[10px] text-slate-400">({file.fileSize})</span>}
+                                
+                                <div className="flex items-center gap-1 ml-1 border-l border-slate-200 pl-1.5">
+                                  {/* Open in Browser */}
+                                  <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      window.open(fileUrl, '_blank');
+                                    }}
+                                    className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-[#014BAA] transition-colors"
+                                    title="ክፈት (Open)"
+                                  >
+                                    <ExternalLink className="size-3.5" />
+                                  </a>
+                                  
+                                  {/* Download file */}
+                                  <a
+                                    href={fileUrl}
+                                    download={fileName}
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      try {
+                                        const res = await fetch(fileUrl);
+                                        const blob = await res.blob();
+                                        const blobUrl = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = blobUrl;
+                                        a.download = fileName;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                        URL.revokeObjectURL(blobUrl);
+                                      } catch {
+                                        window.open(fileUrl, '_blank');
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-green-600 transition-colors"
+                                    title="አውርድ (Download)"
+                                  >
+                                    <Download className="size-3.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}
+                </>
+              )}
+
+              {/* Review Section */}
+              {isAcknowledged && (
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                  <h3 className="text-sm font-semibold text-slate-800 mb-4">
+                    {reviewSubmitted ? 'የሰጡት አስተያየት እና ደረጃ' : 'የአገልግሎት እርካታዎን ይግለጹ'}
+                  </h3>
+                  
+                  {reviewSubmitted ? (
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                      <div className="flex items-center gap-1 mb-3">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`size-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
+                          />
+                        ))}
+                      </div>
+                      {feedback && (
+                        <p className="text-sm text-slate-700 italic">"{feedback}"</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-slate-600 mb-2">ለተሰጠዎት መፍትሄ ያለዎትን እርካታ ከ1 እስከ 5 ኮከብ ይስጡን።</p>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setRating(star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            className="p-1 focus:outline-none transition-transform hover:scale-110"
+                          >
+                            <Star 
+                              className={`size-8 ${(hoverRating || rating) >= star ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <textarea
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                        placeholder="ተጨማሪ አስተያየት ካለዎት እዚህ ይጻፉ (አማራጭ)..."
+                        className="w-full rounded-xl border border-slate-200 p-4 text-sm focus:border-[#014BAA] focus:ring-[#014BAA] focus:bg-white bg-slate-50 transition-colors"
+                        rows={3}
+                      />
+                      <button
+                        onClick={handleSubmitReview}
+                        disabled={submittingReview || rating === 0}
+                        className="bg-[#014BAA] hover:bg-[#014BAA]/90 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {submittingReview ? <Loader2 className="size-5 animate-spin" /> : 'አስተያየት ላክ'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Resolution Message */}
-              {complaint.resolution && (
-                <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 border border-slate-100">
-                  {typeof complaint.resolution === 'string' ? complaint.resolution : (complaint.resolution.message || complaint.resolution.decisionIdeaSummary || complaint.decisionIdeaSummary || '')}
-                </p>
-              )}
-
-              {/* Decision Files Grid */}
-              {(() => {
-                const resolutionFiles: any[] = 
-                  (complaint.resolution as any)?.attachments ||
-                  (complaint.resolution as any)?.decisionIdeaFiles ||
-                  (complaint.resolution as any)?.files ||
-                  complaint.decisionIdeaFiles ||
-                  [];
-
-                if (resolutionFiles.length === 0) return null;
-
-                return (
-                  <div className="mt-5 space-y-2">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <FileText className="size-4 text-[#014BAA]" /> ተያያዥ ውሳኔ ሰነዶች ({resolutionFiles.length})
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {resolutionFiles.map((file: any, idx: number) => {
-                        const fileUrl = complaintService.resolveFileUrl(file, complaint.trackingCode);
-                        const fileName = file.filename || file.name || `ውሳኔ ሰነድ ${idx + 1}`;
-                        return (
-                          <div
-                            key={file.id || idx}
-                            className="flex items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 text-xs font-bold transition-all"
-                          >
-                            <FileText className="size-4 text-[#014BAA] shrink-0" />
-                            <span className="truncate flex-1 text-slate-800" title={fileName}>
-                              {fileName}
-                            </span>
-                            {file.fileSize && <span className="text-[10px] text-slate-400">({file.fileSize})</span>}
-                            
-                            <div className="flex items-center gap-1 ml-1 border-l border-slate-200 pl-1.5">
-                              {/* Open in Browser */}
-                              <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  window.open(fileUrl, '_blank');
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-[#014BAA] transition-colors"
-                                title="ክፈት (Open)"
-                              >
-                                <ExternalLink className="size-3.5" />
-                              </a>
-                              
-                              {/* Download file */}
-                              <a
-                                href={fileUrl}
-                                download={fileName}
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  try {
-                                    const res = await fetch(fileUrl);
-                                    const blob = await res.blob();
-                                    const blobUrl = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = blobUrl;
-                                    a.download = fileName;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    a.remove();
-                                    URL.revokeObjectURL(blobUrl);
-                                  } catch {
-                                    window.open(fileUrl, '_blank');
-                                  }
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-green-600 transition-colors"
-                                title="አውርድ (Download)"
-                              >
-                                <Download className="size-3.5" />
-                              </a>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-              
-              {/* Review Section */}
-              <div className="mt-8 pt-6 border-t border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-800 mb-4">
-                  {reviewSubmitted ? 'የሰጡት አስተያየት እና ደረጃ' : 'የአገልግሎት እርካታዎን ይግለጹ'}
-                </h3>
-                
-                {reviewSubmitted ? (
-                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
-                    <div className="flex items-center gap-1 mb-3">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star 
-                          key={star} 
-                          className={`size-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
-                        />
-                      ))}
-                    </div>
-                    {feedback && (
-                      <p className="text-sm text-slate-700 italic">"{feedback}"</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-sm text-slate-600 mb-2">ለተሰጠዎት መፍትሄ ያለዎትን እርካታ ከ1 እስከ 5 ኮከብ ይስጡን።</p>
-                    <div className="flex items-center gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          onClick={() => setRating(star)}
-                          onMouseEnter={() => setHoverRating(star)}
-                          onMouseLeave={() => setHoverRating(0)}
-                          className="p-1 focus:outline-none transition-transform hover:scale-110"
-                        >
-                          <Star 
-                            className={`size-8 ${(hoverRating || rating) >= star ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <textarea
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      placeholder="ተጨማሪ አስተያየት ካለዎት እዚህ ይጻፉ (አማራጭ)..."
-                      className="w-full rounded-xl border border-slate-200 p-4 text-sm focus:border-[#014BAA] focus:ring-[#014BAA] focus:bg-white bg-slate-50 transition-colors"
-                      rows={3}
-                    />
-                    <button
-                      onClick={handleSubmitReview}
-                      disabled={submittingReview || rating === 0}
-                      className="bg-[#014BAA] hover:bg-[#014BAA]/90 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {submittingReview ? <Loader2 className="size-5 animate-spin" /> : 'አስተያየት ላክ'}
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           )}
 
@@ -481,12 +496,6 @@ function TrackingContent() {
                 <div>
                   <p className="text-slate-500 text-xs mb-0.5">አገልግሎት</p>
                   <p className="font-medium text-slate-800">{complaint.serviceName}</p>
-                </div>
-              )}
-              {complaint.assignedCommittee && (
-                <div>
-                  <p className="text-slate-500 text-xs mb-0.5">የተመደበለት ኮሚቴ</p>
-                  <p className="font-medium text-slate-800">{complaint.assignedCommittee}</p>
                 </div>
               )}
             </div>

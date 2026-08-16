@@ -10,6 +10,7 @@ import {
   buildComplaintSubmittedTemplates,
   buildNewComplaintAdminAlertTemplates,
   buildDecisionApprovedAdminAlertTemplates,
+  buildDecisionAcknowledgedLeaderAlertTemplates,
   buildCommitteeAssignedTemplates,
   buildDecisionProposalTemplates,
   buildComplaintStatusTemplates,
@@ -123,6 +124,25 @@ export async function notifyDecisionApprovedAdminAlert(opts: {
     opts.email,
     sms,
     `ICODiS — የውሳኔ ሀሳብ ጸድቋል (${opts.trackingCode})`,
+    html,
+    text
+  );
+}
+
+export async function notifyDecisionAcknowledged(opts: {
+  phone?: string;
+  email?: string;
+  trackingCode: string;
+  submitterName: string;
+}): Promise<NotifyResult> {
+  const leaderPhone = opts.phone || process.env.LEADER_NOTIFICATION_PHONE;
+  const leaderEmail = opts.email || process.env.LEADER_NOTIFICATION_EMAIL;
+  const { sms, html, text } = buildDecisionAcknowledgedLeaderAlertTemplates(opts);
+  return dispatchNotification(
+    leaderPhone,
+    leaderEmail,
+    sms,
+    `የኮሚሽን ጽ/ቤት ሃላፊ ማሳወቂያ — አመልካች ውሳኔው እንደደረሳቸው አረጋግጠዋል (${opts.trackingCode})`,
     html,
     text
   );

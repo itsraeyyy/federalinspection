@@ -226,15 +226,20 @@ export function SelfAssessmentReportPDF({
         <Text style={styles.sectionTitle}>{'የ 10% የራስ ምዘና መስፈርቶችና የተሰጠ የአፈጻጸም ደረጃ'}</Text>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={[styles.cell, { width: 35, fontWeight: 700 }]}>{'ተ.ቁ'}</Text>
+            <Text style={[styles.cell, { width: 25, fontWeight: 700 }]}>{'ተ.ቁ'}</Text>
             <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700 }]}>{'የምዘና መስፈርቶች'}</Text>
-            <Text style={[styles.cellBold, { width: 110, borderRight: 'none' }]}>{'የአፈጻጸም ደረጃ (Result)'}</Text>
+            <Text style={[styles.cell, { width: 26, fontWeight: 700 }]}>{'1'}</Text>
+            <Text style={[styles.cell, { width: 26, fontWeight: 700 }]}>{'2'}</Text>
+            <Text style={[styles.cell, { width: 26, fontWeight: 700 }]}>{'3'}</Text>
+            <Text style={[styles.cell, { width: 26, fontWeight: 700 }]}>{'4'}</Text>
+            <Text style={[styles.cell, { width: 26, fontWeight: 700 }]}>{'5'}</Text>
+            <Text style={[styles.cellBold, { width: 75, borderRight: 'none' }]}>{'የተመረጠ ውጤት'}</Text>
           </View>
 
           {SELF_ASSESSMENT_QUESTIONS.map((cat) => (
             <React.Fragment key={cat.category_id}>
               <View style={styles.categoryRow}>
-                <Text style={[styles.cellBold, { width: 35 }]}>{cat.category_id}</Text>
+                <Text style={[styles.cellBold, { width: 25 }]}>{cat.category_id}</Text>
                 <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700, borderRight: 'none' }]}>
                   {`${cat.category_id}. ${cat.category_name}`}
                 </Text>
@@ -246,10 +251,25 @@ export function SelfAssessmentReportPDF({
 
                 return (
                   <View key={q.question_id} style={styles.tableRow}>
-                    <Text style={[styles.cell, { width: 35 }]}>{q.question_id}</Text>
+                    <Text style={[styles.cell, { width: 25 }]}>{q.question_id}</Text>
                     <Text style={[styles.cellLeft, { flex: 1 }]}>{q.criteria}</Text>
-                    <Text style={[styles.cellBold, { width: 110, borderRight: 'none', color: '#0369a1' }]}>
-                      {ratingText}
+                    <Text style={[styles.cell, { width: 26, backgroundColor: scoreNum === 1 ? '#fee2e2' : 'transparent', fontWeight: scoreNum === 1 ? 700 : 400 }]}>
+                      {scoreNum === 1 ? '✓' : '-'}
+                    </Text>
+                    <Text style={[styles.cell, { width: 26, backgroundColor: scoreNum === 2 ? '#fef3c7' : 'transparent', fontWeight: scoreNum === 2 ? 700 : 400 }]}>
+                      {scoreNum === 2 ? '✓' : '-'}
+                    </Text>
+                    <Text style={[styles.cell, { width: 26, backgroundColor: scoreNum === 3 ? '#e0f2fe' : 'transparent', fontWeight: scoreNum === 3 ? 700 : 400 }]}>
+                      {scoreNum === 3 ? '✓' : '-'}
+                    </Text>
+                    <Text style={[styles.cell, { width: 26, backgroundColor: scoreNum === 4 ? '#dcfce7' : 'transparent', fontWeight: scoreNum === 4 ? 700 : 400 }]}>
+                      {scoreNum === 4 ? '✓' : '-'}
+                    </Text>
+                    <Text style={[styles.cell, { width: 26, backgroundColor: scoreNum === 5 ? '#d1fae5' : 'transparent', fontWeight: scoreNum === 5 ? 700 : 400 }]}>
+                      {scoreNum === 5 ? '✓' : '-'}
+                    </Text>
+                    <Text style={[styles.cellBold, { width: 75, borderRight: 'none', color: '#0284c7' }]}>
+                      {scoreNum ? `${scoreNum} (${ratingText})` : '-'}
                     </Text>
                   </View>
                 );
@@ -258,38 +278,45 @@ export function SelfAssessmentReportPDF({
           ))}
         </View>
 
-        {/* Summary Block & Grade Scale (Moved to Page 2 cleanly) */}
+        {/* Summary Block & Grade Scale */}
         <View break wrap={false}>
           <View style={styles.totalBlock}>
             <View>
-              <Text style={styles.totalTitle}>{'የ 10% የራስ ምዘና አጠቃላይ ውጤት (Total 10% Score)'}</Text>
-              <Text style={{ fontSize: 8, color: '#4b5563', marginTop: 2 }}>
-                {`ደረጃ: ${getOverallGrade(score10)}`}
+              <Text style={styles.totalTitle}>{'የ 10% የራስ ምዘና አጠቃላይ ውጤት (Total 10% Average Score)'}</Text>
+              <Text style={{ fontSize: 8.5, color: '#4b5563', marginTop: 3 }}>
+                {`የበላይ ደረጃ: ${getOverallGrade(score10)} (${((score10 / 10) * 100).toFixed(1)}%)`}
               </Text>
             </View>
-            <Text style={styles.totalScore}>{`${score10.toFixed(1)} / 10`}</Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.totalScore}>{`${score10.toFixed(1)} / 10`}</Text>
+              <Text style={{ fontSize: 7.5, color: '#6b7280' }}>{'ከ 10% የተሰጠ አማካይ ውጤት'}</Text>
+            </View>
           </View>
 
           {/* Grade Legend */}
           <View style={styles.gradeScaleTable}>
             <View style={[styles.gradeRow, { backgroundColor: '#f3f4f6' }]}>
-              <Text style={[styles.gradeLabel, { fontWeight: 700, width: '100%' }]}>{'የውጤት አሰጣጥ መመሪያ (Legend)'}</Text>
+              <Text style={[styles.gradeLabel, { fontWeight: 700, width: '100%' }]}>{'የ 10% ውጤት አሰጣጥ መመሪያ (Legend)'}</Text>
             </View>
             <View style={styles.gradeRow}>
-              <Text style={styles.gradeLabel}>{'5. በጣም ከፍተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'9.0 - 10.0 (Very High)'}</Text>
+              <Text style={styles.gradeLabel}>{'1. በጣም ከፍተኛ'}</Text>
+              <Text style={styles.gradeValue}>{'ከ 9.5 በላይ (> 9.5)'}</Text>
             </View>
             <View style={styles.gradeRow}>
-              <Text style={styles.gradeLabel}>{'4. ከፍተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'8.0 - 8.9 (High)'}</Text>
+              <Text style={styles.gradeLabel}>{'2. ከፍተኛ'}</Text>
+              <Text style={styles.gradeValue}>{'8.5 - 9.5'}</Text>
             </View>
             <View style={styles.gradeRow}>
               <Text style={styles.gradeLabel}>{'3. መካከለኛ'}</Text>
-              <Text style={styles.gradeValue}>{'7.0 - 7.9 (Medium)'}</Text>
+              <Text style={styles.gradeValue}>{'6.5 - 8.5'}</Text>
+            </View>
+            <View style={styles.gradeRow}>
+              <Text style={styles.gradeLabel}>{'4. ዝቅተኛ'}</Text>
+              <Text style={styles.gradeValue}>{'5.0 - 6.5'}</Text>
             </View>
             <View style={[styles.gradeRow, { borderBottom: 'none' }]}>
-              <Text style={styles.gradeLabel}>{'1-2. ዝቅተኛ / በጣም ዝቅተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'ከ 7.0 በታች (Low / Very Low)'}</Text>
+              <Text style={styles.gradeLabel}>{'5. በጣም ዝቅተኛ'}</Text>
+              <Text style={styles.gradeValue}>{'ከ 5.0 በታች (< 5.0)'}</Text>
             </View>
           </View>
         </View>
