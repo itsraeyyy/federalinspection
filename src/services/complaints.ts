@@ -389,13 +389,14 @@ export const complaintService = {
           }
         }
 
-        const existingAttachments = (existing?.resolution as any)?.attachments || (existing?.resolution as any)?.decisionIdeaFiles || [];
-        const combinedAttachments = [...existingAttachments, ...resolutionAttachments];
+        const existingAttachments = (existing?.resolution as any)?.attachments || (existing?.resolution as any)?.finalDecisionFiles || [];
+        const finalAttachments = resolutionAttachments.length > 0 ? resolutionAttachments : existingAttachments;
 
         updates.resolution = {
           ...(existing?.resolution as any || {}),
           message: resolution.message,
-          attachments: combinedAttachments,
+          attachments: finalAttachments,
+          finalDecisionFiles: finalAttachments,
           resolvedAt: new Date().toISOString(),
           resolvedBy: adminName,
         };

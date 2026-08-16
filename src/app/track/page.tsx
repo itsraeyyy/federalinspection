@@ -340,10 +340,20 @@ function TrackingContent() {
 
                   {/* Decision Files Grid */}
                   {(() => {
-                    const resolutionFiles: any[] =
+                    const ideaFiles: any[] = (complaint.resolution as any)?.decisionIdeaFiles || (complaint as any).decisionIdeaFiles || [];
+                    const ideaKeys = new Set(ideaFiles.map((f: any) => (f.filename || f.name || f.filePath || f.url || '').toLowerCase()));
+
+                    const rawFiles: any[] =
+                      (complaint.resolution as any)?.finalDecisionFiles ||
                       (complaint.resolution as any)?.attachments ||
                       (complaint.resolution as any)?.files ||
                       [];
+
+                    // Filter out any proposal/draft decision files strictly
+                    const resolutionFiles = rawFiles.filter((file: any) => {
+                      const key = (file.filename || file.name || file.filePath || file.url || '').toLowerCase();
+                      return !ideaKeys.has(key);
+                    });
 
                     if (resolutionFiles.length === 0) return null;
 
