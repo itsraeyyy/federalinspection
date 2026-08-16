@@ -9,10 +9,11 @@ interface UserProfileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   userId: string | null;
-  periodId: string;
+  periodId?: string;
+  onSave?: () => void;
 }
 
-export function UserProfileDrawer({ isOpen, onClose, userId, periodId }: UserProfileDrawerProps) {
+export function UserProfileDrawer({ isOpen, onClose, userId, periodId, onSave }: UserProfileDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -242,6 +243,7 @@ export function UserProfileDrawer({ isOpen, onClose, userId, periodId }: UserPro
       });
 
       setIsEditing(false);
+      onSave?.();
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Failed to save profile changes.');

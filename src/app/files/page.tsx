@@ -15,19 +15,6 @@ export default function FilesPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PublicFileCategory | 'ሁሉም'>('ሁሉም');
   const [searchQuery, setSearchQuery] = useState('');
-  const [approvedRequestId, setApprovedRequestId] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      const savedAccess = JSON.parse(localStorage.getItem('approvedAccess') || '[]');
-      const confAccess = savedAccess.find((a: any) => a.target === 'የኮሚሽኑ ሚስጥራዊ ሰነዶች');
-      if (confAccess) {
-        setApprovedRequestId(confAccess.requestId);
-      }
-    } catch (e) {
-      console.error('Error reading localStorage', e);
-    }
-  }, []);
 
   useEffect(() => {
     loadFiles();
@@ -120,18 +107,6 @@ export default function FilesPage() {
                     {category}
                   </button>
                 ))}
-                {approvedRequestId && (
-                  <button
-                    onClick={() => setActiveTab('የኮሚሽኑ ሚስጥራዊ ሰነዶች')}
-                    className={`rounded-xl px-5 py-2.5 text-sm font-bold shadow-sm transition-all ${
-                      activeTab === 'የኮሚሽኑ ሚስጥራዊ ሰነዶች'
-                        ? 'bg-[#014BAA] text-white hover:bg-[#013a85]'
-                        : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    የኮሚሽኑ ሚስጥራዊ ሰነዶች
-                  </button>
-                )}
               </div>
             </div>
 
@@ -151,7 +126,7 @@ export default function FilesPage() {
                 {filteredFiles.map((doc) => (
                   <a
                     key={doc.id}
-                    href={doc.category === 'የኮሚሽኑ ሚስጥራዊ ሰነዶች' && approvedRequestId ? `/api/confidential-download?fileId=${doc.id}&requestId=${approvedRequestId}` : doc.file_url}
+                    href={doc.file_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group flex flex-col items-start gap-4 rounded-3xl bg-white p-5 ring-1 ring-slate-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-8px_rgba(1,75,170,0.12)] hover:ring-[#014BAA]/20 sm:flex-row sm:items-center sm:p-6 cursor-pointer"
