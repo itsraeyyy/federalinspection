@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconHistory, IconEye, IconCalendar, IconCheck, IconChecks, IconAlertCircle } from "@tabler/icons-react";
 import { formatECDate } from "@/lib/date-formatter";
+import { RepLogoutButton } from "@/components/layout/rep-logout-button";
 
 export default async function RepHistoryPage() {
   const supabase = await createClient();
@@ -66,11 +67,9 @@ export default async function RepHistoryPage() {
             የሪፖርት ታሪክ (History)
           </Link>
         </div>
-        <form action="/auth/signout" method="post">
-          <button type="submit" className="text-sm font-medium text-text-secondary hover:text-brand-blue px-4 py-2 rounded-lg hover:bg-surface-secondary transition-all">
-            ዘግተው ይውጡ (Sign Out)
-          </button>
-        </form>
+        <RepLogoutButton className="text-sm font-medium text-text-secondary hover:text-brand-blue px-4 py-2 rounded-lg hover:bg-surface-secondary transition-all w-auto">
+          ዘግተው ይውጡ (Sign Out)
+        </RepLogoutButton>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

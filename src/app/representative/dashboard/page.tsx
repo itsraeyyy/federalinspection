@@ -2,6 +2,7 @@ import { FormsRepView } from "@/components/dashboard/forms/FormsRepView";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { RepLogoutButton } from "@/components/layout/rep-logout-button";
 
 export default async function RepDashboardPage() {
   const supabase = await createClient();
@@ -59,11 +60,9 @@ export default async function RepDashboardPage() {
             የሪፖርት ታሪክ (History)
           </Link>
         </div>
-        <form action="/auth/signout" method="post">
-          <button type="submit" className="text-sm font-medium text-text-secondary hover:text-brand-blue px-4 py-2 rounded-lg hover:bg-surface-secondary transition-all">
-            ዘግተው ይውጡ (Sign Out)
-          </button>
-        </form>
+        <RepLogoutButton className="text-sm font-medium text-text-secondary hover:text-brand-blue px-4 py-2 rounded-lg hover:bg-surface-secondary transition-all w-auto">
+          ዘግተው ይውጡ (Sign Out)
+        </RepLogoutButton>
       </div>
       <FormsRepView userProfile={profile} initialReports={currentReports || []} initialSchemas={sortedSchemas} />
     </div>

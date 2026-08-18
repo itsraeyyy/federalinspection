@@ -5,6 +5,8 @@ import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { ReportPeriod } from "@/lib/et-calendar";
 
+import { RepLogoutButton } from "@/components/layout/rep-logout-button";
+
 export default async function RepHistoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -62,11 +64,9 @@ export default async function RepHistoryDetailPage({ params }: { params: Promise
             ወደ ታሪክ ተመለስ (Back to History)
           </Link>
         </div>
-        <form action="/auth/signout" method="post">
-          <button type="submit" className="text-sm font-medium text-text-secondary hover:text-brand-blue px-4 py-2 rounded-lg hover:bg-surface-secondary transition-all">
-            ዘግተው ይውጡ (Sign Out)
-          </button>
-        </form>
+        <RepLogoutButton className="text-sm font-medium text-text-secondary hover:text-brand-blue px-4 py-2 rounded-lg hover:bg-surface-secondary transition-all w-auto">
+          ዘግተው ይውጡ (Sign Out)
+        </RepLogoutButton>
       </div>
 
       {/* Warning banner indicating they are viewing history */}

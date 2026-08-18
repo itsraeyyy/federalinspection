@@ -2,6 +2,20 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/rep",
+        destination: "/representative/login",
+        permanent: false,
+      },
+      {
+        source: "/rep/:path*",
+        destination: "/representative/:path*",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {
