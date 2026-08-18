@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { saveReportFormAction, submitReportAction } from "@/app/actions/reports";
+import { saveReportFormAction, submitReportAction, uploadReportAttachmentAction } from "@/app/actions/reports";
 import { ReportPeriod } from "@/lib/et-calendar";
 import { IconDeviceFloppy, IconSend, IconLoader2, IconFileUpload, IconX, IconFileText } from "@tabler/icons-react";
-import { supabase } from "@/lib/supabaseClient";
 
 interface NarrationReportFormProps {
   userId?: string;
@@ -63,23 +62,17 @@ export function NarrationReportForm({
   const uploadAttachment = async (): Promise<string | null> => {
     if (!file) return attachmentUrl;
 
-    const fileExt = file.name.split('.').pop() || '';
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const storagePath = `${year}/${region}/${fileName}`;
+    const formData = new FormData();
+    formData.append('file', file);
+    if (year) formData.append('year', year.toString());
+    if (region) formData.append('region', region);
 
-    const { data, error } = await supabase.storage
-      .from('report_attachments')
-      .upload(storagePath, file, { upsert: true });
-
-    if (error) {
-      throw new Error(`ፋይል ማያያዝ አልተቻለም (Upload failed): ${error.message}`);
+    const res = await uploadReportAttachmentAction(formData);
+    if (res.error || !res.url) {
+      throw new Error(`ፋይል ማያያዝ አልተቻለም (Upload failed): ${res.error || 'Upload failed'}`);
     }
 
-    const { data: publicData } = supabase.storage
-      .from('report_attachments')
-      .getPublicUrl(storagePath);
-
-    return publicData.publicUrl;
+    return res.url;
   };
 
   const handleSave = async () => {

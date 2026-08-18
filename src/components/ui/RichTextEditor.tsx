@@ -18,7 +18,7 @@ import {
   IconX
 } from '@tabler/icons-react';
 import { useRef, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { uploadFeedbackAttachmentAction } from '@/app/actions/reports';
 
 export interface RichTextValue {
   html: string;
@@ -104,21 +104,16 @@ export function RichTextEditor({ value, onChange, placeholder = "እዚህ ይ�
       setIsUploading(true);
 
       try {
-        const fileExt = selectedFile.name.split('.').pop() || '';
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const storagePath = `feedback_attachments/${fileName}`;
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('folder', 'feedback_attachments');
 
-        const { error: uploadError } = await supabase.storage
-          .from('report_attachments')
-          .upload(storagePath, selectedFile, { upsert: true });
+        const res = await uploadFeedbackAttachmentAction(formData);
+        if (res.error || !res.url) {
+          throw new Error(res.error || 'Upload failed');
+        }
 
-        if (uploadError) throw new Error(uploadError.message);
-
-        const { data: publicData } = supabase.storage
-          .from('report_attachments')
-          .getPublicUrl(storagePath);
-
-        const url = publicData.publicUrl;
+        const url = res.url;
         const name = selectedFile.name;
         
         setAttachmentUrl(url);

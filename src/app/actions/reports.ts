@@ -349,3 +349,148 @@ export async function approveReportAction(reportId: string) {
     return { error: error.message };
   }
 }
+
+export async function uploadReportAttachmentAction(formData: FormData): Promise<{ url?: string; error?: string }> {
+  try {
+    const file = formData.get('file') as File;
+    const year = (formData.get('year') as string) || 'general';
+    const region = (formData.get('region') as string) || 'all';
+
+    if (!file || file.size === 0) {
+      return { error: 'No file provided' };
+    }
+
+    const fileExt = file.name.split('.').pop() || '';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const storagePath = `${year}/${region}/${fileName}`;
+
+    const candidateBuckets = ['report_attachments', 'documents', 'public_files', 'complaints'];
+
+    // Try creating report_attachments bucket if not exists
+    try {
+      const { data: bucketData } = await supabaseAdmin.storage.getBucket('report_attachments');
+      if (!bucketData) {
+        await supabaseAdmin.storage.createBucket('report_attachments', {
+          public: true,
+          fileSizeLimit: 52428800 // 50MB
+        });
+      }
+    } catch (e) {
+      console.warn("Could not get/create report_attachments bucket:", e);
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Try uploading to candidate buckets in order
+    for (const bucket of candidateBuckets) {
+      try {
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(bucket)
+          .upload(storagePath, buffer, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: true,
+          });
+
+        if (!uploadError) {
+          const { data: publicData } = supabaseAdmin.storage
+            .from(bucket)
+            .getPublicUrl(storagePath);
+
+          if (publicData?.publicUrl) {
+            return { url: publicData.publicUrl };
+          }
+        } else {
+          console.warn(`Upload to bucket ${bucket} failed:`, uploadError.message);
+          if (uploadError.message.includes('not found') || uploadError.message.includes('Bucket')) {
+            try {
+              await supabaseAdmin.storage.createBucket(bucket, { public: true });
+              const { error: retryError } = await supabaseAdmin.storage
+                .from(bucket)
+                .upload(storagePath, buffer, {
+                  contentType: file.type || 'application/octet-stream',
+                  upsert: true,
+                });
+              if (!retryError) {
+                const { data: retryPublic } = supabaseAdmin.storage
+                  .from(bucket)
+                  .getPublicUrl(storagePath);
+                if (retryPublic?.publicUrl) {
+                  return { url: retryPublic.publicUrl };
+                }
+              }
+            } catch (createErr) {
+              console.warn(`Could not create bucket ${bucket}:`, createErr);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(`Exception uploading to ${bucket}:`, err);
+      }
+    }
+
+    return { error: 'ፋይል ማስቀመጥ አልተቻለም፡ እባክዎ እንደገና ይሞክሩ (Failed to upload file to storage)' };
+  } catch (err: any) {
+    return { error: err.message || 'Unknown upload error' };
+  }
+}
+
+export async function uploadFeedbackAttachmentAction(formData: FormData): Promise<{ url?: string; error?: string }> {
+  try {
+    const file = formData.get('file') as File;
+    const folder = (formData.get('folder') as string) || 'feedback_attachments';
+
+    if (!file || file.size === 0) {
+      return { error: 'No file provided' };
+    }
+
+    const fileExt = file.name.split('.').pop() || '';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const storagePath = `${folder}/${fileName}`;
+
+    const candidateBuckets = ['report_attachments', 'documents', 'public_files', 'complaints'];
+
+    try {
+      const { data: bucketData } = await supabaseAdmin.storage.getBucket('report_attachments');
+      if (!bucketData) {
+        await supabaseAdmin.storage.createBucket('report_attachments', {
+          public: true,
+          fileSizeLimit: 52428800
+        });
+      }
+    } catch (e) {
+      console.warn("Could not get/create report_attachments bucket:", e);
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    for (const bucket of candidateBuckets) {
+      try {
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from(bucket)
+          .upload(storagePath, buffer, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: true,
+          });
+
+        if (!uploadError) {
+          const { data: publicData } = supabaseAdmin.storage
+            .from(bucket)
+            .getPublicUrl(storagePath);
+
+          if (publicData?.publicUrl) {
+            return { url: publicData.publicUrl };
+          }
+        }
+      } catch (err) {
+        console.warn(`Upload to ${bucket} failed:`, err);
+      }
+    }
+
+    return { error: 'ፋይል ማስቀመጥ አልተቻለም' };
+  } catch (err: any) {
+    return { error: err.message || 'Upload error' };
+  }
+}
+
