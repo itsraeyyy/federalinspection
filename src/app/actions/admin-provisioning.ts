@@ -15,7 +15,22 @@ function generateTempPassword(length = 6) {
 
 export async function provisionAdmin(data: any) {
   try {
-    const role = data.accessLevel === 'all' ? 'super_admin' : 'admin';
+    let role = data.accessLevel === 'all' ? 'super_admin' : 'admin';
+    let modules = data.modules || [];
+
+    if (data.accessLevel === 'specific') {
+      if (data.specificRoleType === 'committee_leader' || data.role === 'committee_leader') {
+        role = 'committee_leader';
+        modules = Array.from(new Set([...modules, 'complaints', 'committee-leader', 'abetuta', 'tikoma']));
+      } else if (data.specificRoleType === 'complaint_receiver') {
+        role = 'admin';
+        modules = Array.from(new Set([...modules, 'complaints']));
+      }
+    } else if (data.accessLevel === 'all') {
+      role = 'super_admin';
+      modules = [];
+    }
+
     const email = data.email;
     const tempPassword = generateTempPassword();
 
@@ -58,7 +73,7 @@ export async function provisionAdmin(data: any) {
       phone: data.phone,
       access_level: data.accessLevel,
       groups: [],
-      modules: data.modules || [],
+      modules: modules,
       status: data.status,
       requires_password_change: true,
     });

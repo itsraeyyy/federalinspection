@@ -605,36 +605,56 @@ export default function ComplaintsPage() {
                   )}
 
                   {selectedTicket.assignedCommittee && (
-                    <div className="col-span-2 p-4 bg-brand-blue/5 rounded-2xl border border-brand-blue/20 space-y-2 mt-2">
+                    <div className="col-span-2 p-4 bg-brand-blue/5 rounded-2xl border border-brand-blue/20 space-y-2.5 mt-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-brand-blue uppercase tracking-wide flex items-center gap-1.5">
-                          <IconUsers size={16} /> የተመደበለት ኮሚቴ፦ {selectedTicket.assignedCommittee}
+                          <IconUsers size={16} /> የተመደበለት ኮሚቴ፦ <span className="font-extrabold text-brand-blue text-sm">{selectedTicket.assignedCommittee}</span>
                         </span>
                       </div>
-                      {((selectedTicket.resolution as any)?.committeeMembers || (selectedTicket.groupMembers && selectedTicket.groupMembers.length > 0)) && (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {((selectedTicket.resolution as any)?.committeeMembers || selectedTicket.groupMembers || []).map((m: any, idx: number) => {
-                            if (typeof m === 'string') {
-                              return (
-                                <span key={idx} className="px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
-                                  • {m}
-                                </span>
-                              );
-                            }
-                            return (
-                              <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
-                                <span className="font-bold">{m.name}</span>
-                                {m.role && <span className="px-1.5 py-0.5 rounded-md bg-brand-blue/10 text-brand-blue text-[10px] font-extrabold">{m.role}</span>}
-                                {(m.phone || m.email) && (
-                                  <span className="text-text-muted text-[11px] font-normal">
-                                    ({[m.phone, m.email].filter(Boolean).join(', ')})
+                      {(() => {
+                        const rawMembers = selectedTicket.committeeMembers || (selectedTicket.resolution as any)?.committeeMembers || selectedTicket.groupMembers || [];
+                        const members = Array.isArray(rawMembers) ? rawMembers : [];
+                        
+                        if (members.length === 0) {
+                          return (
+                            <div className="text-xs text-text-muted italic pt-1 flex items-center gap-1">
+                              <span>የኮሚቴው አባላት ዝርዝር አልተሞላም (No committee member names listed)</span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="space-y-1.5 pt-1">
+                            <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">
+                              የኮሚቴ አባላት ዝርዝር ({members.length})፦
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {members.map((m: any, idx: number) => {
+                                if (typeof m === 'string') {
+                                  return (
+                                    <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-brand-blue shrink-0"></span>
+                                      <span>{m}</span>
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-primary text-text-primary rounded-xl text-xs font-semibold border border-border/40 shadow-2xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-brand-blue shrink-0"></span>
+                                    <span className="font-bold">{m.name}</span>
+                                    {m.role && <span className="px-1.5 py-0.5 rounded-md bg-brand-blue/10 text-brand-blue text-[10px] font-extrabold">{m.role}</span>}
+                                    {(m.phone || m.email) && (
+                                      <span className="text-text-muted text-[11px] font-normal">
+                                        ({[m.phone, m.email].filter(Boolean).join(', ')})
+                                      </span>
+                                    )}
                                   </span>
-                                )}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

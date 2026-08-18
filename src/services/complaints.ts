@@ -110,6 +110,7 @@ function mapRowToComplaint(item: any): Complaint {
     status: item.status,
     resolution: rawResolution,
     groupMembers: item.group_members || [],
+    committeeMembers: (item.resolution as any)?.committeeMembers || [],
     assignedCommittee: item.assigned_committee || (item.resolution as any)?.assignedCommittee || undefined,
     serviceName: item.service_name,
     resolutionRating: item.resolution_rating,

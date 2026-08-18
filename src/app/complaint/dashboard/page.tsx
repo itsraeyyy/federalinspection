@@ -693,14 +693,32 @@ export default function CommitteeLeaderDashboard() {
                         <span>በኮሚቴ በማጣራት ላይ ይገኛል (Under Investigation)</span>
                       </div>
 
-                      <div className="space-y-1 text-sm">
-                        <p className="text-text-primary font-bold flex items-center gap-2">
-                          <IconUser size={18} className="text-amber-600 dark:text-amber-400" />
-                          <span>የተመደቡ አጣሪ ኮሚቴዎች፡</span>
-                          <span className="font-extrabold text-amber-700 dark:text-amber-300 bg-amber-500/15 px-3 py-1 rounded-xl border border-amber-500/30">
-                            {selectedTicket.assignedCommittee || 'አልተመደበም'}
-                          </span>
-                        </p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex flex-col gap-1.5">
+                          <p className="text-text-primary font-bold flex items-center gap-2">
+                            <IconUser size={18} className="text-amber-600 dark:text-amber-400" />
+                            <span>የተመደቡ አጣሪ ኮሚቴዎች፡</span>
+                            <span className="font-extrabold text-amber-700 dark:text-amber-300 bg-amber-500/15 px-3 py-1 rounded-xl border border-amber-500/30">
+                              {selectedTicket.assignedCommittee || 'አልተመደበም'}
+                            </span>
+                          </p>
+
+                          {(() => {
+                            const rawMembers = selectedTicket.committeeMembers || (selectedTicket.resolution as any)?.committeeMembers || selectedTicket.groupMembers || [];
+                            const members = Array.isArray(rawMembers) ? rawMembers : [];
+                            if (members.length === 0) return null;
+                            return (
+                              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                <span className="text-xs font-bold text-amber-800 dark:text-amber-300">አባላት ({members.length})፦</span>
+                                {members.map((m: any, idx: number) => (
+                                  <span key={idx} className="px-2.5 py-0.5 bg-amber-500/10 text-amber-900 dark:text-amber-200 rounded-lg text-xs font-semibold border border-amber-500/20">
+                                    {typeof m === 'string' ? m : `${m.name}${m.role ? ` [${m.role}]` : ''}`}
+                                  </span>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                        </div>
 
                         <p className="text-text-secondary text-xs flex items-center gap-2 pt-1 font-semibold">
                           <IconCalendar size={15} className="text-amber-500" />
@@ -743,8 +761,9 @@ export default function CommitteeLeaderDashboard() {
 
                   {/* Committee Members Sub-Bar */}
                   {(() => {
-                    const members: any[] = (selectedTicket.resolution as any)?.committeeMembers || [];
-                    if (!members || members.length === 0) return null;
+                    const rawMembers = selectedTicket.committeeMembers || (selectedTicket.resolution as any)?.committeeMembers || selectedTicket.groupMembers || [];
+                    const members = Array.isArray(rawMembers) ? rawMembers : [];
+                    if (members.length === 0) return null;
                     return (
                       <div className="mb-4 p-3 rounded-2xl bg-surface-primary/80 border border-sky-500/20 flex items-center gap-2 flex-wrap text-xs">
                         <span className="font-bold text-text-muted flex items-center gap-1">

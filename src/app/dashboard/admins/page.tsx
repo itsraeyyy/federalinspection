@@ -1,7 +1,7 @@
 'use client';
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { IconUserPlus, IconSearch, IconEdit, IconTrash, IconShield, IconShieldCheck, IconShieldHalf } from "@tabler/icons-react";
+import { IconUserPlus, IconSearch, IconEdit, IconTrash, IconShield, IconShieldCheck, IconShieldHalf, IconScale, IconInbox } from "@tabler/icons-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/ui/data-table";
@@ -10,15 +10,26 @@ import { adminService } from "@/services/admins";
 import { Admin, PERMISSION_GROUPS, ALL_MODULES } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
-// @BACKEND: This component displays admins from the mock service.
-// Once the API is live, all CRUD operations flow through adminService.
-
 function getRoleLabel(admin: Admin): { label: string; icon: React.ReactNode; color: string } {
-  if (admin.accessLevel === 'all') {
+  if (admin.role === 'committee_leader') {
     return {
-      label: 'ሙሉ መዳረሻ',
+      label: 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)',
+      icon: <IconScale size={14} />,
+      color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20',
+    };
+  }
+  if (admin.accessLevel === 'all' || admin.role === 'super_admin') {
+    return {
+      label: 'ሙሉ መዳረሻ (Super Admin)',
       icon: <IconShieldCheck size={14} />,
-      color: 'bg-success/10 text-success',
+      color: 'bg-success/10 text-success border border-success/20',
+    };
+  }
+  if (admin.modules?.includes('complaints') && (admin.modules.length === 1 || (admin.modules.length <= 4 && admin.modules.includes('committee-leader')))) {
+    return {
+      label: 'አቤቱታ ተቀባይ (Officer)',
+      icon: <IconInbox size={14} />,
+      color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
     };
   }
   if (admin.accessLevel === 'group') {
@@ -26,14 +37,14 @@ function getRoleLabel(admin: Admin): { label: string; icon: React.ReactNode; col
     return {
       label: names || 'የቡድን መዳረሻ',
       icon: <IconShieldHalf size={14} />,
-      color: 'bg-brand-blue/10 text-brand-blue',
+      color: 'bg-brand-blue/10 text-brand-blue border border-brand-blue/20',
     };
   }
   const names = admin.modules.map(m => ALL_MODULES.find(mod => mod.id === m)?.labelAm || m).join(', ');
   return {
     label: names || 'የተወሰነ መዳረሻ',
     icon: <IconShield size={14} />,
-    color: 'bg-warning/10 text-warning',
+    color: 'bg-warning/10 text-warning border border-warning/20',
   };
 }
 

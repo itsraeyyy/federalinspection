@@ -371,8 +371,11 @@ export function buildAdminWelcomeTemplates(opts: {
   role: string;
   loginUrl?: string;
 }) {
-  const loginUrl = opts.loginUrl || `${SITE_URL}/auth/login`;
-  const roleAmharic = opts.role === "super_admin" ? "ዋና አስተዳዳሪ (Super Admin)" : "አስተዳዳሪ (Admin)";
+  const isCommitteeLeader = opts.role === "committee_leader";
+  const loginUrl = opts.loginUrl || (isCommitteeLeader ? `${SITE_URL}/complaint/login` : `${SITE_URL}/auth/login`);
+  const roleAmharic = opts.role === "super_admin" 
+    ? "ዋና አስተዳዳሪ (Super Admin)" 
+    : (isCommitteeLeader ? "የኮሚሽን ጽ/ቤት ሃላፊ (Committee Leader)" : "አስተዳዳሪ (Admin)");
 
   const sms =
     `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +

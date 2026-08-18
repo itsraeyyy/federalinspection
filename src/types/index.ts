@@ -45,6 +45,7 @@ export interface Admin {
   email: string;
   phone: string;
   role?: 'super_admin' | 'admin' | 'committee_leader';
+  specificRoleType?: 'committee_leader' | 'complaint_receiver' | 'custom';
   avatar?: string;
   accessLevel: AccessLevel;
   groups: PermissionGroupId[];
@@ -190,6 +191,7 @@ export interface Complaint {
   status: ComplaintStatus;
   resolution?: ComplaintResolution;
   groupMembers?: string[];
+  committeeMembers?: any[];
   assignedCommittee?: string;
   serviceName?: string;
   resolutionRating?: number;

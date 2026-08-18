@@ -42,6 +42,8 @@ export const adminSchema = z.object({
   email: z.string().email('Invalid email address.'),
   phone: z.string().min(9, 'Phone number is too short.'),
   accessLevel: z.enum(['all', 'specific', 'group']),
+  role: z.enum(['super_admin', 'admin', 'committee_leader']).optional(),
+  specificRoleType: z.enum(['committee_leader', 'complaint_receiver', 'custom']).optional(),
   modules: z.array(z.string()).optional(),
   status: z.enum(['Active', 'Inactive']).optional(),
 });
