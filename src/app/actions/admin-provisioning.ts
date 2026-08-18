@@ -25,6 +25,23 @@ export async function provisionAdmin(data: any) {
       } else if (data.specificRoleType === 'complaint_receiver') {
         role = 'admin';
         modules = Array.from(new Set([...modules, 'complaints']));
+      } else if (data.specificRoleType === 'content_manager') {
+        role = 'admin';
+        modules = Array.from(new Set([...modules, 'news', 'documents']));
+      } else if (data.specificRoleType === 'assessment_coordinator') {
+        role = 'admin';
+        modules = Array.from(new Set([...modules, 'assessment', 'personnel', 'statistics']));
+      } else if (data.specificRoleType === 'reports_officer') {
+        role = 'admin';
+        modules = Array.from(new Set([...modules, 'forms', 'admin_forms', 'statistics', 'map']));
+      } else if (data.specificRoleType === 'training_coordinator') {
+        role = 'admin';
+        modules = Array.from(new Set([...modules, 'sletena', 'feedback', 'qr-access']));
+      } else if (data.specificRoleType === 'personnel_manager') {
+        role = 'admin';
+        modules = Array.from(new Set([...modules, 'personnel', 'qr-access']));
+      } else {
+        role = 'admin';
       }
     } else if (data.accessLevel === 'all') {
       role = 'super_admin';

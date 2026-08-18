@@ -43,7 +43,7 @@ export const adminSchema = z.object({
   phone: z.string().min(9, 'Phone number is too short.'),
   accessLevel: z.enum(['all', 'specific', 'group']),
   role: z.enum(['super_admin', 'admin', 'committee_leader']).optional(),
-  specificRoleType: z.enum(['committee_leader', 'complaint_receiver', 'custom']).optional(),
+  specificRoleType: z.string().optional(),
   modules: z.array(z.string()).optional(),
   status: z.enum(['Active', 'Inactive']).optional(),
 });

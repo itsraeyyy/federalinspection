@@ -9,6 +9,11 @@ import {
   IconShield,
   IconScale,
   IconInbox,
+  IconNews,
+  IconClipboardCheck,
+  IconChartBar,
+  IconSchool,
+  IconUsers,
   IconAdjustmentsHorizontal,
   IconCheck
 } from "@tabler/icons-react";
@@ -24,18 +29,26 @@ import { Admin, ALL_MODULES } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 type AdminFormValues = z.infer<typeof adminSchema>;
-type SpecificRoleType = 'committee_leader' | 'complaint_receiver' | 'custom';
+type SpecificRoleType =
+  | 'committee_leader'
+  | 'complaint_receiver'
+  | 'content_manager'
+  | 'assessment_coordinator'
+  | 'reports_officer'
+  | 'training_coordinator'
+  | 'personnel_manager'
+  | 'custom';
 
 const ACCESS_OPTIONS = [
   {
     value: 'specific' as const,
-    label: 'የተወሰነ መዳረሻ (Specific Access)',
-    desc: 'የኮሚሽን ጽ/ቤት ሃላፊ፣ አቤቱታ ተቀባይ ወይም የተወሰኑ የስርዓት ሞጁሎችን ይምረጡ።',
+    label: 'የተወሰነ መዳረሻ',
+    desc: 'የኮሚሽን ጽ/ቤት ሃላፊ፣ አቤቱታ ተቀባይ ወይም ሌሎች የተወሰኑ የስራ ሚናዎችን ይምረጡ።',
     icon: IconShield,
   },
   {
     value: 'all' as const,
-    label: 'ሙሉ መዳረሻ (Super Admin)',
+    label: 'ሙሉ መዳረሻ',
     desc: 'ሁሉንም ሞጁሎች እና የስርዓት ቅንብሮች ሙሉ በሙሉ ማስተዳደር የሚችል ጠቅላላ አስተዳዳሪ።',
     icon: IconShieldCheck,
   },
@@ -51,16 +64,51 @@ const SPECIFIC_ROLE_OPTIONS = [
   },
   {
     id: 'complaint_receiver' as SpecificRoleType,
-    title: '2. የአቤቱታ ተቀባይ / አስተናጋጅ (Complaint Accepter)',
+    title: '2. የአቤቱታ ተቀባይ / አስተናጋጅ',
     badge: 'አስተዳዳሪ ዴስክ — /dashboard/complaints',
     desc: 'አዳዲስ አቤቱታዎችንና ጥቆማዎችን ይቀበላል፣ አጣሪ ኮሚቴ ይመድባል፣ ምርመራ አካሂዶ ረቂቅ ውሳኔ ያዘጋጃል።',
     icon: IconInbox,
   },
   {
+    id: 'content_manager' as SpecificRoleType,
+    title: '3. የይዘት እና ሚዲያ አስተዳዳሪ',
+    badge: 'አስተዳዳሪ ዴስክ — /dashboard/news',
+    desc: 'ዜናዎችን፣ መግለጫዎችን፣ የኮሚሽኑን መልዕክቶች እና ይፋዊ ሰነዶችን ያትማል፣ ያስተዳድራል።',
+    icon: IconNews,
+  },
+  {
+    id: 'assessment_coordinator' as SpecificRoleType,
+    title: '4. የምዘና አስተባባሪ',
+    badge: 'አስተዳዳሪ ዴስክ — /dashboard/assessment',
+    desc: 'የምዘና ጊዜዎችን፣ የምዘና ቡድኖችን፣ አባላትን፣ የ 360° አፈጻጸም ምዘናዎችንና ውጤቶችን ያስተዳድራል።',
+    icon: IconClipboardCheck,
+  },
+  {
+    id: 'reports_officer' as SpecificRoleType,
+    title: '5. የሪፖርት እና ስታቲስቲክስ ሃላፊ',
+    badge: 'አስተዳዳሪ ዴስክ — /dashboard/forms',
+    desc: 'የክልል ተወካዮች ሪፖርቶችን፣ የቅጽ አሞላል ሁኔታዎችን፣ የስታቲስቲክስ ዳታና ግራፎችን ይከታተላል፣ ያጸድቃል።',
+    icon: IconChartBar,
+  },
+  {
+    id: 'training_coordinator' as SpecificRoleType,
+    title: '6. የስልጠና እና አቅም ግንባታ አስተባባሪ',
+    badge: 'አስተዳዳሪ ዴስክ — /dashboard/sletena',
+    desc: 'የስልጠና ፍላጎት ዳሰሳዎችን፣ የተሳታፊዎችን የስልጠና እርካታ እና የክህሎት ማጎልበቻ ፕሮግራሞችን ያስተዳድራል።',
+    icon: IconSchool,
+  },
+  {
+    id: 'personnel_manager' as SpecificRoleType,
+    title: '7. የአመራር አካላት አስተባባሪ',
+    badge: 'አስተዳዳሪ ዴስክ — /dashboard/personnel',
+    desc: 'የኮሚሽኑን የአመራር አካላት ፕሮፋይል፣ የኃላፊነት ደረጃና አደረጃጀት ያስተዳድራል።',
+    icon: IconUsers,
+  },
+  {
     id: 'custom' as SpecificRoleType,
-    title: '3. ብጁ መዳረሻ (Custom Modules)',
+    title: '8. ብጁ የተመረጡ ሞጁሎች',
     badge: 'የተመረጡ ሞጁሎች',
-    desc: 'የሚፈለጉትን ሌሎች ሞጁሎች (ዜና፣ ሰነዶች፣ ሪፖርቶች፣ ምዘና፣ ስታቲስቲክስ ወዘተ) በተናጠል ይምረጡ።',
+    desc: 'ከተዘረዘሩት ሞጁሎች መካከል የሚፈለጉትን የተወሰኑ ሞጁሎች በተናጠል መርጦ የመስጠት አማራጭ።',
     icon: IconAdjustmentsHorizontal,
   },
 ];
@@ -106,6 +154,18 @@ export default function EditAdminPage() {
         } else if (data.modules?.includes('complaints') && data.modules?.length === 1) {
           setSpecificRole('complaint_receiver');
           setValue('specificRoleType', 'complaint_receiver');
+        } else if (data.modules?.includes('news') && data.modules?.includes('documents') && data.modules?.length === 2) {
+          setSpecificRole('content_manager');
+          setValue('specificRoleType', 'content_manager');
+        } else if (data.modules?.includes('assessment') && data.modules?.includes('personnel')) {
+          setSpecificRole('assessment_coordinator');
+          setValue('specificRoleType', 'assessment_coordinator');
+        } else if (data.modules?.includes('forms')) {
+          setSpecificRole('reports_officer');
+          setValue('specificRoleType', 'reports_officer');
+        } else if (data.modules?.includes('sletena')) {
+          setSpecificRole('training_coordinator');
+          setValue('specificRoleType', 'training_coordinator');
         } else {
           setSpecificRole('custom');
           setValue('specificRoleType', 'custom');
@@ -137,6 +197,21 @@ export default function EditAdminPage() {
     } else if (roleType === 'complaint_receiver') {
       setValue('role', 'admin');
       setValue('modules', ['complaints'], { shouldValidate: true });
+    } else if (roleType === 'content_manager') {
+      setValue('role', 'admin');
+      setValue('modules', ['news', 'documents'], { shouldValidate: true });
+    } else if (roleType === 'assessment_coordinator') {
+      setValue('role', 'admin');
+      setValue('modules', ['assessment', 'personnel', 'statistics'], { shouldValidate: true });
+    } else if (roleType === 'reports_officer') {
+      setValue('role', 'admin');
+      setValue('modules', ['forms', 'admin_forms', 'statistics', 'map'], { shouldValidate: true });
+    } else if (roleType === 'training_coordinator') {
+      setValue('role', 'admin');
+      setValue('modules', ['sletena', 'feedback', 'qr-access'], { shouldValidate: true });
+    } else if (roleType === 'personnel_manager') {
+      setValue('role', 'admin');
+      setValue('modules', ['personnel', 'qr-access'], { shouldValidate: true });
     } else {
       setValue('role', 'admin');
     }
@@ -170,6 +245,21 @@ export default function EditAdminPage() {
         } else if (specificRole === 'complaint_receiver') {
           payload.role = 'admin';
           payload.modules = ['complaints'];
+        } else if (specificRole === 'content_manager') {
+          payload.role = 'admin';
+          payload.modules = ['news', 'documents'];
+        } else if (specificRole === 'assessment_coordinator') {
+          payload.role = 'admin';
+          payload.modules = ['assessment', 'personnel', 'statistics'];
+        } else if (specificRole === 'reports_officer') {
+          payload.role = 'admin';
+          payload.modules = ['forms', 'admin_forms', 'statistics', 'map'];
+        } else if (specificRole === 'training_coordinator') {
+          payload.role = 'admin';
+          payload.modules = ['sletena', 'feedback', 'qr-access'];
+        } else if (specificRole === 'personnel_manager') {
+          payload.role = 'admin';
+          payload.modules = ['personnel', 'qr-access'];
         } else {
           payload.role = 'admin';
           payload.modules = selectedModules;
