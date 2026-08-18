@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { notifyRegistration, notifyPasswordReset, notifyReportUpdate } from '@/lib/notify';
 import { canSubmitReport, ReportPeriod } from '@/lib/et-calendar';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { createClient } from '@/utils/supabase/server';
 
 export async function createRepresentativeAction(formData: FormData) {
   try {
@@ -211,29 +212,49 @@ export async function saveReportFormAction(
     // Fetch current form schemas to snapshot
     const { data: schemas } = await supabaseAdmin.from('form_schemas').select('*');
 
-    const { error } = await supabaseAdmin
-      .from('reports')
-      .upsert({
-        user_id: userId,
-        submitter_id: userId,
-        title: `የ${region} ክልል ${period} ሪፖርት`,
-        report_type: 'numerical',
-        budget_year: String(year),
-        period_category: getPeriodCategory(period),
-        submitter_level: 'region',
-        region_name: region,
-        region,
-        year,
-        period,
-        forms_data: formsData,
-        numerical_data: formsData,
-        schema_snapshot: schemas || [],
-        status: 'draft'
-      }, {
-        onConflict: 'region, year, period'
-      });
+    const payload = {
+      user_id: userId,
+      submitter_id: userId,
+      title: `የ${region} ክልል ${period} ሪፖርት`,
+      report_type: 'numerical',
+      budget_year: String(year),
+      period_category: getPeriodCategory(period),
+      submitter_level: 'region',
+      region_name: region,
+      region,
+      year,
+      period,
+      forms_data: formsData,
+      numerical_data: formsData,
+      schema_snapshot: schemas || [],
+      status: 'draft',
+      updated_at: new Date().toISOString()
+    };
 
-    if (error) return { error: error.message };
+    // 1. Check if report already exists for (region, year, period)
+    const { data: existingReports } = await supabaseAdmin
+      .from('reports')
+      .select('id')
+      .eq('region', region)
+      .eq('year', year)
+      .eq('period', period)
+      .limit(1);
+
+    if (existingReports && existingReports.length > 0) {
+      const { error: updateError } = await supabaseAdmin
+        .from('reports')
+        .update(payload)
+        .eq('id', existingReports[0].id);
+
+      if (updateError) return { error: updateError.message };
+    } else {
+      const { error: insertError } = await supabaseAdmin
+        .from('reports')
+        .insert(payload);
+
+      if (insertError) return { error: insertError.message };
+    }
+
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
@@ -255,30 +276,50 @@ export async function submitReportAction(
     // Fetch current form schemas to snapshot
     const { data: schemas } = await supabaseAdmin.from('form_schemas').select('*');
 
-    const { error } = await supabaseAdmin
-      .from('reports')
-      .upsert({
-        user_id: userId,
-        submitter_id: userId,
-        title: `የ${region} ክልል ${period} ሪፖርት`,
-        report_type: 'numerical',
-        budget_year: String(year),
-        period_category: getPeriodCategory(period),
-        submitter_level: 'region',
-        region_name: region,
-        region,
-        year,
-        period,
-        forms_data: formsData,
-        numerical_data: formsData,
-        schema_snapshot: schemas || [],
-        status: 'submitted_to_federal',
-        submitted_at: new Date().toISOString()
-      }, {
-        onConflict: 'region, year, period'
-      });
+    const payload = {
+      user_id: userId,
+      submitter_id: userId,
+      title: `የ${region} ክልል ${period} ሪፖርት`,
+      report_type: 'numerical',
+      budget_year: String(year),
+      period_category: getPeriodCategory(period),
+      submitter_level: 'region',
+      region_name: region,
+      region,
+      year,
+      period,
+      forms_data: formsData,
+      numerical_data: formsData,
+      schema_snapshot: schemas || [],
+      status: 'submitted',
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-    if (error) return { error: error.message };
+    // 1. Check if report already exists for (region, year, period)
+    const { data: existingReports } = await supabaseAdmin
+      .from('reports')
+      .select('id')
+      .eq('region', region)
+      .eq('year', year)
+      .eq('period', period)
+      .limit(1);
+
+    if (existingReports && existingReports.length > 0) {
+      const { error: updateError } = await supabaseAdmin
+        .from('reports')
+        .update(payload)
+        .eq('id', existingReports[0].id);
+
+      if (updateError) return { error: updateError.message };
+    } else {
+      const { error: insertError } = await supabaseAdmin
+        .from('reports')
+        .insert(payload);
+
+      if (insertError) return { error: insertError.message };
+    }
+
     return { success: true };
   } catch (error: any) {
     return { error: error.message };
@@ -360,76 +401,71 @@ export async function uploadReportAttachmentAction(formData: FormData): Promise<
       return { error: 'No file provided' };
     }
 
-    const fileExt = file.name.split('.').pop() || '';
+    const sanitizeSegment = (str: string) => {
+      return encodeURIComponent((str || '').trim())
+        .replace(/%/g, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_') || 'default';
+    };
+
+    const safeYear = sanitizeSegment(year);
+    const safeRegion = sanitizeSegment(region);
+    const fileExt = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const storagePath = `${year}/${region}/${fileName}`;
-
-    const candidateBuckets = ['report_attachments', 'documents', 'public_files', 'complaints'];
-
-    // Try creating report_attachments bucket if not exists
-    try {
-      const { data: bucketData } = await supabaseAdmin.storage.getBucket('report_attachments');
-      if (!bucketData) {
-        await supabaseAdmin.storage.createBucket('report_attachments', {
-          public: true,
-          fileSizeLimit: 52428800 // 50MB
-        });
-      }
-    } catch (e) {
-      console.warn("Could not get/create report_attachments bucket:", e);
-    }
+    const storagePath = `${safeYear}/${safeRegion}/${fileName}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const contentType = file.type || 'application/octet-stream';
 
-    // Try uploading to candidate buckets in order
+    let lastError: string = '';
+
+    // 1. Try server client with user session
+    try {
+      const serverSupabase = await createClient();
+      const { error: userUploadError } = await serverSupabase.storage
+        .from('report_attachments')
+        .upload(storagePath, buffer, {
+          contentType,
+          upsert: true,
+        });
+
+      if (!userUploadError) {
+        const { data } = serverSupabase.storage
+          .from('report_attachments')
+          .getPublicUrl(storagePath);
+        if (data?.publicUrl) return { url: data.publicUrl };
+      } else {
+        lastError = userUploadError.message;
+      }
+    } catch (e: any) {
+      lastError = e?.message || String(e);
+    }
+
+    // 2. Try supabaseAdmin with candidate buckets
+    const candidateBuckets = ['report_attachments', 'documents', 'public_files', 'complaints'];
     for (const bucket of candidateBuckets) {
       try {
-        const { error: uploadError } = await supabaseAdmin.storage
+        const { error: adminUploadError } = await supabaseAdmin.storage
           .from(bucket)
           .upload(storagePath, buffer, {
-            contentType: file.type || 'application/octet-stream',
+            contentType,
             upsert: true,
           });
 
-        if (!uploadError) {
-          const { data: publicData } = supabaseAdmin.storage
+        if (!adminUploadError) {
+          const { data } = supabaseAdmin.storage
             .from(bucket)
             .getPublicUrl(storagePath);
-
-          if (publicData?.publicUrl) {
-            return { url: publicData.publicUrl };
-          }
+          if (data?.publicUrl) return { url: data.publicUrl };
         } else {
-          console.warn(`Upload to bucket ${bucket} failed:`, uploadError.message);
-          if (uploadError.message.includes('not found') || uploadError.message.includes('Bucket')) {
-            try {
-              await supabaseAdmin.storage.createBucket(bucket, { public: true });
-              const { error: retryError } = await supabaseAdmin.storage
-                .from(bucket)
-                .upload(storagePath, buffer, {
-                  contentType: file.type || 'application/octet-stream',
-                  upsert: true,
-                });
-              if (!retryError) {
-                const { data: retryPublic } = supabaseAdmin.storage
-                  .from(bucket)
-                  .getPublicUrl(storagePath);
-                if (retryPublic?.publicUrl) {
-                  return { url: retryPublic.publicUrl };
-                }
-              }
-            } catch (createErr) {
-              console.warn(`Could not create bucket ${bucket}:`, createErr);
-            }
-          }
+          lastError = adminUploadError.message;
         }
-      } catch (err) {
-        console.warn(`Exception uploading to ${bucket}:`, err);
+      } catch (err: any) {
+        lastError = err?.message || String(err);
       }
     }
 
-    return { error: 'ፋይል ማስቀመጥ አልተቻለም፡ እባክዎ እንደገና ይሞክሩ (Failed to upload file to storage)' };
+    return { error: lastError || 'Failed to upload attachment' };
   } catch (err: any) {
     return { error: err.message || 'Unknown upload error' };
   }
@@ -444,51 +480,63 @@ export async function uploadFeedbackAttachmentAction(formData: FormData): Promis
       return { error: 'No file provided' };
     }
 
-    const fileExt = file.name.split('.').pop() || '';
+    const fileExt = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const storagePath = `${folder}/${fileName}`;
 
-    const candidateBuckets = ['report_attachments', 'documents', 'public_files', 'complaints'];
-
-    try {
-      const { data: bucketData } = await supabaseAdmin.storage.getBucket('report_attachments');
-      if (!bucketData) {
-        await supabaseAdmin.storage.createBucket('report_attachments', {
-          public: true,
-          fileSizeLimit: 52428800
-        });
-      }
-    } catch (e) {
-      console.warn("Could not get/create report_attachments bucket:", e);
-    }
-
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const contentType = file.type || 'application/octet-stream';
 
+    let lastError: string = '';
+
+    // 1. Try server client with user session
+    try {
+      const serverSupabase = await createClient();
+      const { error: userUploadError } = await serverSupabase.storage
+        .from('report_attachments')
+        .upload(storagePath, buffer, {
+          contentType,
+          upsert: true,
+        });
+
+      if (!userUploadError) {
+        const { data } = serverSupabase.storage
+          .from('report_attachments')
+          .getPublicUrl(storagePath);
+        if (data?.publicUrl) return { url: data.publicUrl };
+      } else {
+        lastError = userUploadError.message;
+      }
+    } catch (e: any) {
+      lastError = e?.message || String(e);
+    }
+
+    // 2. Try supabaseAdmin with candidate buckets
+    const candidateBuckets = ['report_attachments', 'documents', 'public_files', 'complaints'];
     for (const bucket of candidateBuckets) {
       try {
-        const { error: uploadError } = await supabaseAdmin.storage
+        const { error: adminUploadError } = await supabaseAdmin.storage
           .from(bucket)
           .upload(storagePath, buffer, {
-            contentType: file.type || 'application/octet-stream',
+            contentType,
             upsert: true,
           });
 
-        if (!uploadError) {
-          const { data: publicData } = supabaseAdmin.storage
+        if (!adminUploadError) {
+          const { data } = supabaseAdmin.storage
             .from(bucket)
             .getPublicUrl(storagePath);
-
-          if (publicData?.publicUrl) {
-            return { url: publicData.publicUrl };
-          }
+          if (data?.publicUrl) return { url: data.publicUrl };
+        } else {
+          lastError = adminUploadError.message;
         }
-      } catch (err) {
-        console.warn(`Upload to ${bucket} failed:`, err);
+      } catch (err: any) {
+        lastError = err?.message || String(err);
       }
     }
 
-    return { error: 'ፋይል ማስቀመጥ አልተቻለም' };
+    return { error: lastError || 'Failed to upload attachment' };
   } catch (err: any) {
     return { error: err.message || 'Upload error' };
   }

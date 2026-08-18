@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { saveReportFormAction, submitReportAction, uploadReportAttachmentAction } from "@/app/actions/reports";
 import { ReportPeriod } from "@/lib/et-calendar";
 import { IconDeviceFloppy, IconSend, IconLoader2, IconFileUpload, IconX, IconFileText } from "@tabler/icons-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface NarrationReportFormProps {
   userId?: string;
@@ -15,6 +16,7 @@ interface NarrationReportFormProps {
   onChange?: (data: any) => void;
   onSuccess?: () => void;
   isReadOnly?: boolean;
+  hideActions?: boolean;
 }
 
 export function NarrationReportForm({
@@ -26,27 +28,93 @@ export function NarrationReportForm({
   initialData,
   onChange,
   onSuccess,
-  isReadOnly = false
+  isReadOnly = false,
+  hideActions = false
 }: NarrationReportFormProps) {
   const [narrationText, setNarrationText] = useState(initialData?.text || existingData?.narration_report?.text || "");
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(initialData?.attachment_url || existingData?.narration_report?.attachment_url || null);
   const [attachmentName, setAttachmentName] = useState<string | null>(initialData?.attachment_name || existingData?.narration_report?.attachment_name || null);
 
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState<'save' | 'submit' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-      if (selectedFile.size > 50 * 1024 * 1024) { // 50MB
-        setError("የፋይሉ መጠን ከ50MB መብለጥ የለበትም (File size must not exceed 50MB)");
+  const sanitizeSegment = (str: string) => {
+    return encodeURIComponent((str || '').trim())
+      .replace(/%/g, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_') || 'default';
+  };
+
+  const handleTextChange = (text: string) => {
+    setNarrationText(text);
+    onChange?.({ text, attachment_url: attachmentUrl, attachment_name: attachmentName });
+  };
+
+  const uploadFileDirectly = async (selectedFile: File): Promise<string | null> => {
+    const safeYear = sanitizeSegment(year ? year.toString() : 'general');
+    const safeRegion = sanitizeSegment(region || 'all');
+    const fileExt = selectedFile.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const storagePath = `${safeYear}/${safeRegion}/${fileName}`;
+
+    let uploadedUrl: string | null = null;
+
+    // 1. Try client-side upload
+    try {
+      const { data, error: clientErr } = await supabase.storage
+        .from('report_attachments')
+        .upload(storagePath, selectedFile, { upsert: true });
+
+      if (!clientErr) {
+        const { data: publicData } = supabase.storage
+          .from('report_attachments')
+          .getPublicUrl(storagePath);
+        if (publicData?.publicUrl) uploadedUrl = publicData.publicUrl;
+      }
+    } catch (clientEx) {
+      console.warn("Client upload exception:", clientEx);
+    }
+
+    // 2. Fallback to Server Action
+    if (!uploadedUrl) {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      if (year) formData.append('year', year.toString());
+      if (region) formData.append('region', region);
+
+      const res = await uploadReportAttachmentAction(formData);
+      if (res.url) uploadedUrl = res.url;
+      else throw new Error(res.error || 'Upload failed');
+    }
+
+    return uploadedUrl;
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setError("የፋይል መጠኑ ከ 50MB መብለጥ የለበትም (File size must be under 50MB)");
         return;
       }
       setFile(selectedFile);
       setAttachmentName(selectedFile.name);
       setError(null);
+      setIsUploading(true);
+
+      try {
+        const url = await uploadFileDirectly(selectedFile);
+        setAttachmentUrl(url);
+        onChange?.({ text: narrationText, attachment_url: url, attachment_name: selectedFile.name });
+      } catch (err: any) {
+        setError(`ፋይል ማያያዝ አልተቻለም: ${err.message}`);
+        setFile(null);
+        setAttachmentName(null);
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -57,29 +125,18 @@ export function NarrationReportForm({
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
-
-  const uploadAttachment = async (): Promise<string | null> => {
-    if (!file) return attachmentUrl;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    if (year) formData.append('year', year.toString());
-    if (region) formData.append('region', region);
-
-    const res = await uploadReportAttachmentAction(formData);
-    if (res.error || !res.url) {
-      throw new Error(`ፋይል ማያያዝ አልተቻለም (Upload failed): ${res.error || 'Upload failed'}`);
-    }
-
-    return res.url;
+    onChange?.({ text: narrationText, attachment_url: null, attachment_name: null });
   };
 
   const handleSave = async () => {
     setLoading('save');
     setError(null);
     try {
-      const url = await uploadAttachment();
+      let url = attachmentUrl;
+      if (file && !url) {
+        url = await uploadFileDirectly(file);
+        setAttachmentUrl(url);
+      }
       const narrationData = { text: narrationText, attachment_url: url, attachment_name: attachmentName };
       onChange?.(narrationData);
 
@@ -88,16 +145,14 @@ export function NarrationReportForm({
         const res = await saveReportFormAction(userId, region, year, period, fullData);
         if (res.error) setError(res.error);
         else alert("በተሳካ ሁኔታ ተቀምጧል! (Saved successfully)");
-
-        if (!res.error && url && url !== attachmentUrl) {
-          setAttachmentUrl(url);
-          setFile(null);
-        }
+      } else {
+        alert("በተሳካ ሁኔታ ተቀምጧል! (Saved locally)");
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Save error');
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   const handleSubmit = async () => {
@@ -111,7 +166,11 @@ export function NarrationReportForm({
     setLoading('submit');
     setError(null);
     try {
-      const url = await uploadAttachment();
+      let url = attachmentUrl;
+      if (file && !url) {
+        url = await uploadFileDirectly(file);
+        setAttachmentUrl(url);
+      }
       const narrationData = { text: narrationText, attachment_url: url, attachment_name: attachmentName };
       onChange?.(narrationData);
 
@@ -120,7 +179,6 @@ export function NarrationReportForm({
         const res = await submitReportAction(userId, region, year, period, fullData);
         if (res.error) {
           setError(res.error);
-          setLoading(null);
         } else {
           alert("በተሳካ ሁኔታ ተልኳል! (Submitted successfully)");
           onSuccess?.();
@@ -129,7 +187,8 @@ export function NarrationReportForm({
         onSuccess?.();
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Submit error');
+    } finally {
       setLoading(null);
     }
   };
@@ -149,18 +208,19 @@ export function NarrationReportForm({
         </label>
         <textarea
           value={narrationText}
-          onChange={(e) => setNarrationText(e.target.value)}
+          onChange={(e) => handleTextChange(e.target.value)}
           placeholder={isReadOnly ? "" : "እባክዎ የጽሁፍ ሪፖርትዎን እዚህ ላይ ይፃፉ..."}
+          rows={10}
           disabled={isReadOnly}
-          className={`w-full min-h-[200px] px-5 py-4 bg-surface-secondary/50 border border-border-medium rounded-xl focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue outline-none transition-all text-sm text-text-primary resize-y leading-relaxed ${isReadOnly ? 'opacity-90 cursor-not-allowed' : ''}`}
+          className="w-full p-4 bg-surface-secondary border border-border-medium rounded-xl text-text-primary focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all resize-y text-base leading-relaxed disabled:opacity-80"
         />
 
-        <div className="mt-6 border-t border-border-light pt-6">
-          <label className="block text-sm font-semibold text-text-primary mb-3">
+        <div className="mt-6 pt-6 border-t border-border-light">
+          <label className="block text-sm font-semibold text-text-primary mb-2">
             አባሪ ፋይል (Attachment) - እስከ 50MB (Optional)
           </label>
 
-          {!file && !attachmentUrl && !isReadOnly ? (
+          {!isReadOnly && !attachmentUrl && !file ? (
             <div
               className="border-2 border-dashed border-border-medium hover:border-brand-blue/50 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer bg-surface-secondary/30 hover:bg-brand-blue/5 transition-all group"
               onClick={() => fileInputRef.current?.click()}
@@ -175,12 +235,16 @@ export function NarrationReportForm({
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-brand-blue/5 border border-brand-blue/20 rounded-xl gap-4">
               <div className="flex items-center gap-3 overflow-hidden">
                 <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">
-                  <IconFileText size={20} className="text-brand-blue" />
+                  {isUploading ? (
+                    <IconLoader2 size={20} className="text-brand-blue animate-spin" />
+                  ) : (
+                    <IconFileText size={20} className="text-brand-blue" />
+                  )}
                 </div>
                 <div className="truncate">
                   <p className="text-sm font-medium text-text-primary truncate">{attachmentName || "Attached File"}</p>
                   <p className="text-xs text-brand-blue font-medium mt-0.5">
-                    {file ? 'አዲስ ፋይል (New File)' : 'የተያያዘ (Already attached)'}
+                    {isUploading ? 'በመጫን ላይ... (Uploading...)' : attachmentUrl ? 'የተያያዘ (Attached)' : 'አዲስ ፋይል'}
                   </p>
                 </div>
               </div>
@@ -195,7 +259,7 @@ export function NarrationReportForm({
                     አውርድ (Download)
                   </a>
                 )}
-                {!isReadOnly && (
+                {!isReadOnly && !isUploading && (
                   <button
                     onClick={clearFile}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white text-text-secondary hover:text-status-error transition-all shrink-0 shadow-sm"
@@ -216,16 +280,16 @@ export function NarrationReportForm({
             ref={fileInputRef}
             onChange={handleFileChange}
             className="hidden"
-            disabled={isReadOnly}
+            disabled={isReadOnly || isUploading}
           />
         </div>
       </div>
 
-      {!isReadOnly && (
+      {!isReadOnly && !hideActions && (
         <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-border-light">
           <button
             onClick={handleSave}
-            disabled={loading !== null}
+            disabled={loading !== null || isUploading}
             className="flex-1 px-4 py-3 bg-surface-secondary hover:bg-border-light text-text-secondary font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 border border-border-medium shadow-sm"
           >
             {loading === 'save' ? <IconLoader2 size={20} className="animate-spin" /> : <IconDeviceFloppy size={20} />}
@@ -233,7 +297,7 @@ export function NarrationReportForm({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading !== null || !narrationText.trim()}
+            disabled={loading !== null || isUploading || !narrationText.trim()}
             className="flex-1 px-4 py-3 bg-brand-blue text-white font-bold rounded-xl hover:bg-brand-blue/90 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading === 'submit' ? <IconLoader2 size={20} className="animate-spin" /> : <IconSend size={20} />}

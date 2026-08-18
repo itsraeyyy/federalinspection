@@ -1,5 +1,6 @@
 import { FormsRepView } from "@/components/dashboard/forms/FormsRepView";
 import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
@@ -16,14 +17,37 @@ export default async function RepHistoryDetailPage({ params }: { params: Promise
     redirect('/representative/login');
   }
 
-  const { data: profile } = await supabase
+  let profile: any = null;
+  const { data: userProfile } = await supabase
     .from('user_profiles')
     .select('system_role, region, user_id')
     .eq('user_id', userData.user.id)
-    .single();
+    .maybeSingle();
 
-  if (profile?.system_role !== 'representative') {
-    redirect('/');
+  if (userProfile?.system_role === 'representative') {
+    profile = userProfile;
+  } else {
+    const { data: adminProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('system_role, region, user_id')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+
+    if (adminProfile?.system_role === 'representative') {
+      profile = adminProfile;
+    }
+  }
+
+  if (!profile && (userData.user.user_metadata?.role === 'representative' || userData.user.user_metadata?.system_role === 'representative')) {
+    profile = {
+      system_role: 'representative',
+      region: userData.user.user_metadata?.region || 'አዲስ አበባ',
+      user_id: userData.user.id,
+    };
+  }
+
+  if (!profile || profile.system_role !== 'representative') {
+    redirect('/representative/login?error=access_denied');
   }
 
   // Fetch the specific report

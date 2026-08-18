@@ -18,7 +18,7 @@ import {
   IconX
 } from '@tabler/icons-react';
 import { useRef, useState, useEffect } from 'react';
-import { uploadFeedbackAttachmentAction } from '@/app/actions/reports';
+import { supabase } from '@/lib/supabaseClient';
 
 export interface RichTextValue {
   html: string;
@@ -104,18 +104,45 @@ export function RichTextEditor({ value, onChange, placeholder = "እዚህ ይ�
       setIsUploading(true);
 
       try {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('folder', 'feedback_attachments');
+        const fileExt = selectedFile.name.split('.').pop() || '';
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const storagePath = `feedback_attachments/${fileName}`;
 
-        const res = await uploadFeedbackAttachmentAction(formData);
-        if (res.error || !res.url) {
-          throw new Error(res.error || 'Upload failed');
+        let url: string | null = null;
+
+        // 1. Try client upload
+        try {
+          const { data, error: clientErr } = await supabase.storage
+            .from('report_attachments')
+            .upload(storagePath, selectedFile, { upsert: true });
+
+          if (!clientErr) {
+            const { data: publicData } = supabase.storage
+              .from('report_attachments')
+              .getPublicUrl(storagePath);
+            if (publicData?.publicUrl) {
+              url = publicData.publicUrl;
+            }
+          }
+        } catch (clientEx) {
+          console.warn("Client upload failed, trying server action:", clientEx);
         }
 
-        const url = res.url;
+        // 2. Fallback to server action if client upload didn't succeed
+        if (!url) {
+          const { uploadFeedbackAttachmentAction } = await import('@/app/actions/reports');
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          formData.append('folder', 'feedback_attachments');
+
+          const res = await uploadFeedbackAttachmentAction(formData);
+          if (res.error || !res.url) {
+            throw new Error(res.error || 'Upload failed');
+          }
+          url = res.url;
+        }
+
         const name = selectedFile.name;
-        
         setAttachmentUrl(url);
         setAttachmentName(name);
         notifyChange(url, name);

@@ -21,7 +21,7 @@ export default async function AdminHistoryPage() {
   const { data: reports } = await supabase
     .from('reports')
     .select('*')
-    .in('status', ['submitted', 'reviewed', 'approved'])
+    .in('status', ['submitted', 'submitted_to_federal', 'reviewed', 'approved'])
     .order('year', { ascending: false })
     .order('created_at', { ascending: false });
     

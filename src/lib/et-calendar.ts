@@ -49,20 +49,10 @@ const periodReportMonths: Record<ReportPeriod, number> = {
 /**
  * Checks if the current Ethiopian date falls within the acceptable submission window
  * for the given period.
- * Rule: Submission is ONLY allowed between the 20th and 25th day of the report month.
+ * NOTE: 20-25 date restriction temporarily disabled per requirement.
  */
 export function canSubmitReport(period: ReportPeriod): boolean {
-  const current = getCurrentEtDate();
-  const reportMonth = periodReportMonths[period];
-
-  if (current.month !== reportMonth) {
-    return false;
-  }
-
-  if (current.day < 20 || current.day > 25) {
-    return false;
-  }
-
+  // Date requirement (20th-25th) is currently disabled.
   return true;
 }
 

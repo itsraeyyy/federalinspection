@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconHistory, IconEye, IconCalendar, IconCheck, IconChecks, IconAlertCircle } from "@tabler/icons-react";
@@ -13,14 +14,37 @@ export default async function RepHistoryPage() {
     redirect('/representative/login');
   }
 
-  const { data: profile } = await supabase
+  let profile: any = null;
+  const { data: userProfile } = await supabase
     .from('user_profiles')
     .select('system_role, region, user_id')
     .eq('user_id', userData.user.id)
-    .single();
+    .maybeSingle();
 
-  if (profile?.system_role !== 'representative') {
-    redirect('/');
+  if (userProfile?.system_role === 'representative') {
+    profile = userProfile;
+  } else {
+    const { data: adminProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('system_role, region, user_id')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+
+    if (adminProfile?.system_role === 'representative') {
+      profile = adminProfile;
+    }
+  }
+
+  if (!profile && (userData.user.user_metadata?.role === 'representative' || userData.user.user_metadata?.system_role === 'representative')) {
+    profile = {
+      system_role: 'representative',
+      region: userData.user.user_metadata?.region || 'አዲስ አበባ',
+      user_id: userData.user.id,
+    };
+  }
+
+  if (!profile || profile.system_role !== 'representative') {
+    redirect('/representative/login?error=access_denied');
   }
 
   // Fetch only submitted/reviewed/approved reports for this region
@@ -28,13 +52,14 @@ export default async function RepHistoryPage() {
     .from('reports')
     .select('*')
     .eq('region', profile.region)
-    .in('status', ['submitted', 'reviewed', 'approved'])
+    .in('status', ['submitted', 'submitted_to_federal', 'reviewed', 'approved'])
     .order('year', { ascending: false })
     .order('created_at', { ascending: false });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'submitted': return <IconCheck size={18} className="text-brand-blue" />;
+      case 'submitted':
+      case 'submitted_to_federal': return <IconCheck size={18} className="text-brand-blue" />;
       case 'reviewed': return <IconChecks size={18} className="text-status-warning" />;
       case 'approved': return <IconChecks size={18} className="text-status-success" />;
       default: return <IconAlertCircle size={18} className="text-text-muted" />;

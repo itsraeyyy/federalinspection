@@ -19,6 +19,7 @@ interface FormTableRendererProps {
   onChange: (data: any) => void;
   isCompleted?: boolean;
   compact?: boolean;
+  readOnly?: boolean;
 }
 
 function toPrimitiveString(val: any): string {
@@ -36,7 +37,7 @@ function toPrimitiveString(val: any): string {
   return String(val);
 }
 
-export function FormTableRenderer({ schema, initialData = {}, onChange, isCompleted, compact = false }: FormTableRendererProps) {
+export function FormTableRenderer({ schema, initialData = {}, onChange, isCompleted, compact = false, readOnly = false }: FormTableRendererProps) {
   const [isOpen, setIsOpen] = useState(compact ? true : false);
   
   // Automatically calculate totals, differences, and percentages on the fly
@@ -184,14 +185,16 @@ export function FormTableRenderer({ schema, initialData = {}, onChange, isComple
                               </span>
                               <input
                                 type={isComputed && (subKey.includes("%") || col.key === "ያዋቀሩ%") ? "text" : "number"}
-                                readOnly={isComputed}
-                                disabled={isComputed}
+                                readOnly={isComputed || readOnly}
+                                disabled={isComputed || readOnly}
                                 value={displayVal}
-                                onChange={(e) => !isComputed && handleInputChange(col.key, subKey, e.target.value)}
+                                onChange={(e) => !isComputed && !readOnly && handleInputChange(col.key, subKey, e.target.value)}
                                 className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
                                   isComputed
                                     ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
-                                    : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
+                                    : readOnly
+                                      ? 'bg-surface-secondary/80 border border-border-light text-text-primary font-medium cursor-default'
+                                      : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
                                 }`}
                                 placeholder={isComputed ? "0" : "0"}
                               />
@@ -212,15 +215,17 @@ export function FormTableRenderer({ schema, initialData = {}, onChange, isComple
                       return (
                         <div className="relative group">
                           <input
-                            type={isComputed ? "text" : "text"}
-                            readOnly={isComputed}
-                            disabled={isComputed}
+                            type="text"
+                            readOnly={isComputed || readOnly}
+                            disabled={isComputed || readOnly}
                             value={displayVal}
-                            onChange={(e) => !isComputed && handleInputChange(col.key, '', e.target.value)}
+                            onChange={(e) => !isComputed && !readOnly && handleInputChange(col.key, '', e.target.value)}
                             className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all ${
                               isComputed
                                 ? 'bg-brand-blue/10 dark:bg-brand-blue/20 border border-brand-blue/30 text-brand-blue font-bold shadow-sm cursor-not-allowed select-none text-center'
-                                : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
+                                : readOnly
+                                  ? 'bg-surface-secondary/80 border border-border-light text-text-primary font-medium cursor-default'
+                                  : 'bg-surface-primary border border-border-medium text-text-primary focus:outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue'
                             }`}
                             placeholder={isComputed ? "0" : "-"}
                           />

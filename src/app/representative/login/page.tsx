@@ -54,9 +54,9 @@ export default function FormsLoginPage() {
 
       const needsPasswordChange = data.user.user_metadata?.force_password_change || data.user.user_metadata?.requires_password_change;
       if (needsPasswordChange) {
-        router.push("/representative/change-password");
+        window.location.href = "/representative/change-password";
       } else {
-        router.push("/representative/dashboard");
+        window.location.href = "/representative/dashboard";
       }
     } catch (err: any) {
       setError(err.message || "መግባት አልተቻለም፡ እባክዎን መረጃዎን ያረጋግጡ።");

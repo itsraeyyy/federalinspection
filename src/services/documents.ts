@@ -161,9 +161,17 @@ export const documentService = {
     year: string;
   }, file: File): Promise<Document> => {
     
-    const fileExt = file.name.split('.').pop() || '';
-    const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
-    const storagePath = `${docData.office}/${docData.year}/${fileName}`;
+    const sanitizeSegment = (str: string) => {
+      return encodeURIComponent((str || '').trim())
+        .replace(/%/g, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_') || 'default';
+    };
+
+    const fileExt = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const safeOffice = sanitizeSegment(docData.office);
+    const safeYear = sanitizeSegment(docData.year);
+    const storagePath = `${safeOffice}/${safeYear}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('documents')

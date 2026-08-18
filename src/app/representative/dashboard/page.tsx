@@ -1,5 +1,6 @@
 import { FormsRepView } from "@/components/dashboard/forms/FormsRepView";
 import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { RepLogoutButton } from "@/components/layout/rep-logout-button";
@@ -12,19 +13,43 @@ export default async function RepDashboardPage() {
     redirect('/representative/login');
   }
 
-  // Get user profile to determine role
-  const { data: profile } = await supabase
+  // Get user profile to determine role (with supabaseAdmin fallback to ensure RLS doesn't block legitimate reps)
+  let profile: any = null;
+  const { data: userProfile } = await supabase
     .from('user_profiles')
     .select('system_role, region, user_id')
     .eq('user_id', userData.user.id)
-    .single();
+    .maybeSingle();
 
-  if (profile?.system_role !== 'representative') {
-    redirect('/');
+  if (userProfile?.system_role === 'representative') {
+    profile = userProfile;
+  } else {
+    const { data: adminProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('system_role, region, user_id')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+
+    if (adminProfile?.system_role === 'representative') {
+      profile = adminProfile;
+    }
+  }
+
+  // Fallback: check user_metadata for role & region if profile table row is missing
+  if (!profile && (userData.user.user_metadata?.role === 'representative' || userData.user.user_metadata?.system_role === 'representative')) {
+    profile = {
+      system_role: 'representative',
+      region: userData.user.user_metadata?.region || 'አዲስ አበባ',
+      user_id: userData.user.id,
+    };
+  }
+
+  if (!profile || profile.system_role !== 'representative') {
+    redirect('/representative/login?error=access_denied');
   }
 
   // If force password reset is required, redirect to the reset page
-  if (userData.user.user_metadata?.requires_password_change) {
+  if (userData.user.user_metadata?.requires_password_change || userData.user.user_metadata?.force_password_change) {
     redirect('/representative/change-password');
   }
 

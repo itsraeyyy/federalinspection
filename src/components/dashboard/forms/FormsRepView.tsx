@@ -121,7 +121,7 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas, defa
   
   // They can only view if it's submitted/reviewed. 
   // If window is closed and it's not submitted, they can't edit either.
-  const isReadOnly = ['submitted', 'reviewed', 'approved'].includes(activeReport?.status);
+  const isReadOnly = ['submitted', 'submitted_to_federal', 'reviewed', 'approved'].includes(activeReport?.status);
 
   const handleSaveDraft = async () => {
     setIsSaving(true);
@@ -223,7 +223,7 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas, defa
       </div>
 
       {/* Status banner */}
-      {!isWindowOpen && !['submitted', 'reviewed', 'approved'].includes(activeReport?.status) && (
+      {!isWindowOpen && !['submitted', 'submitted_to_federal', 'reviewed', 'approved'].includes(activeReport?.status) && (
         <div className="bg-status-error/10 border border-status-error/20 rounded-xl p-4 flex items-start gap-3">
           <IconAlertCircle className="text-status-error shrink-0 mt-0.5" />
           <div>
@@ -235,7 +235,7 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas, defa
         </div>
       )}
 
-      {['submitted', 'reviewed', 'approved'].includes(activeReport?.status) && (
+      {['submitted', 'submitted_to_federal', 'reviewed', 'approved'].includes(activeReport?.status) && (
         <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-4 flex items-start gap-3">
           <IconAlertCircle className="text-brand-blue shrink-0 mt-0.5" />
           <div>
@@ -315,13 +315,14 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas, defa
             {schemas.map(schema => {
               const isCompleted = formData[schema.id] && Object.keys(formData[schema.id]).length > 0;
               return (
-                <div key={schema.id} className={isReadOnly ? "opacity-90 pointer-events-none" : ""}>
+                <div key={schema.id}>
                   <FormTableRenderer 
                     schema={schema}
                     initialData={formData[schema.id] || {}}
                     onChange={(data) => handleFormChange(schema.id, data)}
                     isCompleted={isCompleted}
                     compact={false}
+                    readOnly={isReadOnly}
                   />
                 </div>
               );
@@ -330,13 +331,14 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas, defa
         )}
 
         {activeTab === 'narration' && (
-          <div className={`animate-in fade-in slide-in-from-bottom-2 duration-300 ${isReadOnly ? "opacity-90 pointer-events-none" : ""}`}>
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <NarrationReportForm
               initialData={formData['narration_report'] || {}}
               onChange={(data: any) => handleFormChange('narration_report', data)}
               isReadOnly={isReadOnly}
               year={currentYear}
               region={userProfile?.region}
+              hideActions={true}
             />
           </div>
         )}
