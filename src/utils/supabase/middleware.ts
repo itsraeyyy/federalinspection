@@ -34,13 +34,22 @@ export async function updateSession(request: NextRequest) {
 
   const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || 
                            (request.nextUrl.pathname.startsWith('/assessment') && !request.nextUrl.pathname.includes('/login') && !request.nextUrl.pathname.includes('/reset-password')) ||
-                           (request.nextUrl.pathname.startsWith('/representative') && !request.nextUrl.pathname.includes('/login') && !request.nextUrl.pathname.includes('/reset-password'))
+                           (request.nextUrl.pathname.startsWith('/representative') && !request.nextUrl.pathname.includes('/login') && !request.nextUrl.pathname.includes('/reset-password')) ||
+                           (request.nextUrl.pathname.startsWith('/complaint') && !request.nextUrl.pathname.includes('/login') && !request.nextUrl.pathname.includes('/reset-password'))
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth/login')
 
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    if (request.nextUrl.pathname.startsWith('/representative')) {
+      url.pathname = '/representative/login'
+    } else if (request.nextUrl.pathname.startsWith('/assessment')) {
+      url.pathname = '/assessment/login'
+    } else if (request.nextUrl.pathname.startsWith('/complaint')) {
+      url.pathname = '/complaint/login'
+    } else {
+      url.pathname = '/auth/login'
+    }
     return NextResponse.redirect(url)
   }
 

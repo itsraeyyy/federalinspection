@@ -13,7 +13,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 function getRoleLabel(admin: Admin): { label: string; icon: React.ReactNode; color: string } {
   if (admin.role === 'committee_leader') {
     return {
-      label: 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)',
+      label: 'የኮሚሽን ጽ/ቤት ሃላፊ',
       icon: <IconScale size={14} />,
       color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20',
     };

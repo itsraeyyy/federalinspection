@@ -5,11 +5,13 @@ import { Download, Printer, Loader2 } from 'lucide-react';
 import { SELF_ASSESSMENT_QUESTIONS, LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
 import { PrintableReport } from './PrintableReport';
 import { AssessmentReportPDF } from './AssessmentReportPDF';
+import { CumulativePeerReportPDF } from './CumulativePeerReportPDF';
 import { downloadPDFDocument } from '@/lib/exportToPDF';
 
 export function FinalRevealView({ data }: { data: any }) {
   const printRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloading20, setDownloading20] = useState(false);
 
   if (!data || !data.details) {
     return <div className="p-8 text-center text-text-muted">No data available</div>;
@@ -135,6 +137,54 @@ export function FinalRevealView({ data }: { data: any }) {
     }
   };
 
+  const handleDownload20PercentPDF = async () => {
+    setDownloading20(true);
+    try {
+      const qData: Record<string, { avgScore: number; comments: string[] }> = {};
+      LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(cat => {
+        cat.questions.forEach(q => {
+          let sumScore = 0;
+          let countScore = 0;
+          const distinctComments: string[] = [];
+
+          evaluators.forEach((ev: any) => {
+            const resp = ev.responses || {};
+            const s = resp[q.question_id];
+            const c = (resp[`${q.question_id}_comment`] || (typeof resp[q.question_id] === 'object' ? resp[q.question_id]?.comment : '') || '').trim();
+
+            if (typeof s === 'number') {
+              sumScore += s;
+              countScore++;
+            }
+            if (c && !distinctComments.includes(c)) {
+              distinctComments.push(c);
+            }
+          });
+
+          qData[q.question_id] = {
+            avgScore: countScore > 0 ? sumScore / countScore : 0,
+            comments: distinctComments
+          };
+        });
+      });
+
+      const fileName = `${user?.full_name?.replace(/\s+/g, '_') || 'Member'}_20Percent_Peer_Report.pdf`;
+      const docElement = (
+        <CumulativePeerReportPDF
+          user={user}
+          profile={profile}
+          period={period}
+          evaluatorsCount={evaluators.length}
+          questionData={qData}
+          score20={parseFloat(peer20.toFixed(1))}
+        />
+      );
+      await downloadPDFDocument(docElement, fileName);
+    } finally {
+      setDownloading20(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* Controls - Hidden on Print */}
@@ -142,12 +192,21 @@ export function FinalRevealView({ data }: { data: any }) {
         <h2 className="text-xl font-heading font-semibold text-text-primary">የግምገማ ሪፖርት ማውረጃ (Report Export)</h2>
         <div className="flex flex-wrap gap-3">
           <button 
+            onClick={handleDownload20PercentPDF} 
+            disabled={downloading20}
+            className="flex items-center gap-2 bg-surface-secondary hover:bg-border text-brand-blue border border-border/80 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm active:scale-95 disabled:opacity-50"
+          >
+            {downloading20 ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 text-brand-blue" />}
+            {downloading20 ? '20% በመዘጋጀት ላይ...' : 'የ 20% ምዘና PDF አውርድ'}
+          </button>
+
+          <button 
             onClick={handleDownloadPDF} 
             disabled={downloading}
             className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue/90 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md active:scale-95 disabled:opacity-50"
           >
             {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {downloading ? 'ፒዲኤፍ በመዘጋጀት ላይ... (Generating PDF...)' : 'PDF አውርድ (Export PDF)'}
+            {downloading ? 'ፒዲኤፍ በመዘጋጀት ላይ...' : 'ሙሉ ሪፖርት PDF (100%)'}
           </button>
 
           <button 

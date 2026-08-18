@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, User, MessageSquare } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Info, User, MessageSquare, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
+import { CumulativePeerReportPDF } from './CumulativePeerReportPDF';
+import { downloadPDFDocument } from '@/lib/exportToPDF';
 
 export function LeadershipEvaluationView({ periodId, members, evaluations }: { periodId: string, members: any[], evaluations: any[] }) {
   const router = useRouter();
   const draftEvalKey = `draft_eval_${periodId}`;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmittedLocal, setIsSubmittedLocal] = useState(false);
@@ -306,6 +309,95 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
     }
   };
 
+  const handleDownload20PercentPDF = async (targetMember: any) => {
+    if (!targetMember) return;
+    setDownloadingPDF(true);
+    try {
+      const targetUserId = targetMember.user_id;
+
+      // 1. Fetch user & profile info & period info & evaluations
+      const [uRes, pRes, perRes, evalsRes] = await Promise.all([
+        supabase.from('users').select('*').eq('id', targetUserId).maybeSingle(),
+        supabase.from('user_profiles').select('*').eq('user_id', targetUserId).maybeSingle(),
+        periodId ? supabase.from('assessment_periods').select('*').eq('id', periodId).maybeSingle() : Promise.resolve({ data: null }),
+        periodId ? supabase.from('evaluations').select('*').eq('period_id', periodId).eq('target_user_id', targetUserId) : Promise.resolve({ data: [] })
+      ]);
+
+      const uData = uRes.data || targetMember.users;
+      const pData = pRes.data || targetMember.user_profiles?.[0];
+      const periodData = perRes.data;
+      const allTargetEvals = evalsRes.data && evalsRes.data.length > 0 ? evalsRes.data : (evaluations || []).filter(e => e.target_user_id === targetUserId);
+
+      // Build questionData by aggregating scores and comments from all evaluators
+      const qData: Record<string, { avgScore: number; comments: string[] }> = {};
+      let totalRaw = 0;
+
+      LEADERSHIP_EVALUATION_QUESTIONS_20.forEach(cat => {
+        cat.questions.forEach(q => {
+          let sumScore = 0;
+          let countScore = 0;
+          const distinctComments: string[] = [];
+
+          if (allTargetEvals.length > 0) {
+            allTargetEvals.forEach((ev: any) => {
+              const resp = ev.responses || {};
+              const s = resp[q.question_id];
+              const c = (resp[`${q.question_id}_comment`] || (typeof resp[q.question_id] === 'object' ? resp[q.question_id]?.comment : '') || '').trim();
+
+              if (typeof s === 'number') {
+                sumScore += s;
+                countScore++;
+              }
+              if (c && !distinctComments.includes(c)) {
+                distinctComments.push(c);
+              }
+            });
+          }
+
+          // If local responses exist and not in target evals yet, include them
+          const localScore = responses[targetUserId]?.[q.question_id];
+          const localComm = (comments[targetUserId]?.[q.question_id] || '').trim();
+          if (countScore === 0 && localScore !== undefined) {
+            sumScore = localScore;
+            countScore = 1;
+          }
+          if (localComm && !distinctComments.includes(localComm)) {
+            distinctComments.push(localComm);
+          }
+
+          const avg = countScore > 0 ? sumScore / countScore : 0;
+          totalRaw += q.weight * avg;
+          qData[q.question_id] = {
+            avgScore: avg,
+            comments: distinctComments
+          };
+        });
+      });
+
+      const calcScore20 = totalRaw / 5;
+      const fileName = `${uData?.full_name?.replace(/\s+/g, '_') || 'Member'}_20Percent_Peer_Report.pdf`;
+
+      const docElement = (
+        <CumulativePeerReportPDF
+          user={uData}
+          profile={pData}
+          period={periodData}
+          evaluatorsCount={allTargetEvals.length || 1}
+          questionData={qData}
+          score20={parseFloat(calcScore20.toFixed(1))}
+        />
+      );
+
+      await downloadPDFDocument(docElement, fileName);
+      showToast('የ 20% ምዘና ሪፖርት በተሳካ ሁኔታ ወርዷል', 'success');
+    } catch (err: any) {
+      console.error('Error downloading 20% PDF:', err);
+      showToast('PDF ለማውረድ አልተቻለም', 'error');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   if (members.length === 0) {
     return (
       <div className="flex-1 bg-background flex flex-col items-center justify-center p-4">
@@ -429,11 +521,24 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
               </span>
             </div>
 
-            {/* Live Score Badge out of 20 */}
-            <div className="flex items-center gap-1.5 bg-brand-blue/10 border border-brand-blue/30 px-3 py-1 rounded-xl shrink-0">
-              <span className="text-[11px] text-text-secondary hidden sm:inline font-medium">የአሁኑ ውጤት:</span>
-              <span className="text-sm sm:text-base font-extrabold font-heading text-brand-blue">{displayScore}</span>
-              <span className="text-[10px] text-brand-blue/80 font-bold">/ 20</span>
+            {/* Live Score Badge out of 20 & PDF Download */}
+            <div className="flex items-center gap-2">
+              {(isCurrentMemberLocked || readOnly) && (
+                <button
+                  onClick={() => handleDownload20PercentPDF(currentMember)}
+                  disabled={downloadingPDF}
+                  className="flex items-center gap-1 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue border border-brand-blue/30 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                  title="የዚህ አባል የ 20% ድምር ምዘና PDF አውርድ"
+                >
+                  {downloadingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">20% PDF አውርድ</span>
+                </button>
+              )}
+              <div className="flex items-center gap-1.5 bg-brand-blue/10 border border-brand-blue/30 px-3 py-1 rounded-xl shrink-0">
+                <span className="text-[11px] text-text-secondary hidden sm:inline font-medium">የአሁኑ ውጤት:</span>
+                <span className="text-sm sm:text-base font-extrabold font-heading text-brand-blue">{displayScore}</span>
+                <span className="text-[10px] text-brand-blue/80 font-bold">/ 20</span>
+              </div>
             </div>
           </div>
         </div>
@@ -581,9 +686,19 @@ export function LeadershipEvaluationView({ periodId, members, evaluations }: { p
           </button>
 
           {isCurrentMemberLocked ? (
-            <div className="flex-[2] flex items-center justify-center rounded-xl bg-success/10 text-success font-semibold border border-success/20 text-xs sm:text-sm py-3 px-2">
-              <CheckCircle2 className="w-4 h-4 mr-1.5 shrink-0" />
-              <span>የ {currentMember?.users?.full_name?.split(' ')[0]} ምዘና ተልኳል (Submitted)</span>
+            <div className="flex-[2] flex flex-wrap items-center justify-center gap-2 rounded-xl bg-success/10 text-success font-semibold border border-success/20 text-xs sm:text-sm py-2 px-2">
+              <div className="flex items-center">
+                <CheckCircle2 className="w-4 h-4 mr-1.5 shrink-0" />
+                <span>የ {currentMember?.users?.full_name?.split(' ')[0]} ምዘና ተልኳል</span>
+              </div>
+              <button
+                onClick={() => handleDownload20PercentPDF(currentMember)}
+                disabled={downloadingPDF}
+                className="flex items-center gap-1 bg-brand-blue text-white hover:bg-brand-blue/90 px-3 py-1 rounded-lg text-xs font-medium transition-all shadow-sm disabled:opacity-50 ml-2"
+              >
+                {downloadingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                <span>PDF አውርድ (20%)</span>
+              </button>
             </div>
           ) : (
             <button

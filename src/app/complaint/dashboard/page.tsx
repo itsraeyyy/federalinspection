@@ -109,7 +109,7 @@ export default function CommitteeLeaderDashboard() {
   // Editable Decision State
   const [editableDecision, setEditableDecision] = useState('');
 
-  const leaderName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'የኮሚሽን ጽ/ቤት ሃላፊ (Leader)' : 'የኮሚሽን ጽ/ቤት ሃላፊ';
+  const leaderName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'የኮሚሽን ጽ/ቤት ሃላፊ' : 'የኮሚሽን ጽ/ቤት ሃላፊ';
 
   useEffect(() => {
     if (!profileLoading && !profile) {

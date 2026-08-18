@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
-import { SELF_ASSESSMENT_QUESTIONS } from '@/lib/assessment-data';
+import { LEADERSHIP_EVALUATION_QUESTIONS_20 } from '@/lib/assessment-data';
 
 // Register Benaiah font
 Font.register({
@@ -104,6 +104,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 700,
   },
+  commentBox: {
+    marginTop: 3,
+    padding: '2.5pt 4pt',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 2,
+    borderLeft: '1.5pt solid #0284c7',
+  },
+  commentTitle: {
+    fontSize: 6.5,
+    fontWeight: 700,
+    color: '#0369a1',
+    marginBottom: 1.5,
+  },
+  commentItem: {
+    fontSize: 6.5,
+    color: '#374151',
+    marginBottom: 1,
+    lineHeight: 1.2,
+  },
   totalBlock: {
     border: '1pt solid #000000',
     padding: 8,
@@ -147,7 +166,8 @@ const styles = StyleSheet.create({
 
 const getScoreText = (score?: number): string => {
   if (!score) return '-';
-  switch (score) {
+  const rounded = Math.round(score);
+  switch (rounded) {
     case 5:
       return 'በጣም ከፍተኛ';
     case 4:
@@ -163,36 +183,37 @@ const getScoreText = (score?: number): string => {
   }
 };
 
-const getOverallGrade = (score10: number): string => {
-  if (score10 > 9.5) return 'በጣም ከፍተኛ';
-  if (score10 >= 8.5) return 'ከፍተኛ';
-  if (score10 >= 6.5) return 'መካከለኛ';
-  if (score10 >= 5.0) return 'ዝቅተኛ';
+const getOverallGrade20 = (score20: number): string => {
+  const pct = (score20 / 20) * 100;
+  if (pct > 95) return 'በጣም ከፍተኛ';
+  if (pct >= 85) return 'ከፍተኛ';
+  if (pct >= 65) return 'መካከለኛ';
+  if (pct >= 50) return 'ዝቅተኛ';
   return 'በጣም ዝቅተኛ';
 };
 
-interface SelfAssessmentReportPDFProps {
+interface CumulativePeerReportPDFProps {
   user?: any;
   profile?: any;
   period?: any;
-  responses: Record<string, number>;
-  score10: number;
+  evaluatorsCount?: number;
+  questionData?: Record<string, { avgScore: number; comments: string[] }>;
+  score20: number;
 }
 
-export function SelfAssessmentReportPDF({
+export function CumulativePeerReportPDF({
   user,
   profile,
   period,
-  responses = {},
-  score10 = 0,
-}: SelfAssessmentReportPDFProps) {
-  const today = new Date().toLocaleDateString('en-GB');
-
+  evaluatorsCount = 0,
+  questionData = {},
+  score20 = 0,
+}: CumulativePeerReportPDFProps) {
   return (
-    <Document title={`${user?.full_name || 'Self_Assessment'}_10Percent_Report`} author="Federal Inspection">
+    <Document title={`${user?.full_name || 'Member'}_20Percent_Peer_Report`} author="Federal Inspection">
       <Page size="A4" orientation="portrait" style={styles.page}>
-        <Text style={styles.title}>{'የ 10% የራስ አፈጻጸም ምዘና ሪፖርት'}</Text>
-        <Text style={styles.subtitle}>{'ቅፅ-1: የራስ ምዘና ዝርዝር ውጤት'}</Text>
+        <Text style={styles.title}>{'የ 20% የአቻዎች/አመራር ድምር ምዘና ሪፖርት'}</Text>
+        <Text style={styles.subtitle}>{'ቅፅ-2: የአቻዎች ምዘና ዝርዝር ውጤት እና ሂስ ማጠቃለያ'}</Text>
 
         {/* User Information Table */}
         <View style={styles.infoTable}>
@@ -217,26 +238,26 @@ export function SelfAssessmentReportPDF({
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabelCell, { borderBottom: 'none' }]}>{'የምዘና ጊዜ'}</Text>
             <Text style={[styles.infoValueCell, { borderBottom: 'none' }]}>{period?.name || 'ዓመታዊ ምዘና'}</Text>
-            <Text style={[styles.infoLabelCell, { borderBottom: 'none' }]}>{'የተመዘነበት ቀን'}</Text>
-            <Text style={[styles.infoValueCell, { borderRight: 'none', borderBottom: 'none' }]}>{today}</Text>
+            <Text style={[styles.infoLabelCell, { borderBottom: 'none' }]}>{'የገመገሙ አቻዎች ብዛት'}</Text>
+            <Text style={[styles.infoValueCell, { borderRight: 'none', borderBottom: 'none' }]}>{evaluatorsCount > 0 ? `${evaluatorsCount} አባላት` : 'የተጠናቀቀ'}</Text>
           </View>
         </View>
 
-        {/* Questions and Verbal Ratings Table */}
-        <Text style={styles.sectionTitle}>{'የ 10% የራስ ምዘና መስፈርቶችና የተሰጠ የአፈጻጸም ደረጃ'}</Text>
+        {/* Questions and Verbal Ratings Table with 'ሂስ' */}
+        <Text style={styles.sectionTitle}>{'የ 20% የምዘና መስፈርቶች፣ የተሰጠ የአፈጻጸም ደረጃ እና የተሰጡ ሂሶች'}</Text>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
             <Text style={[styles.cell, { width: 22, fontWeight: 700 }]}>{'ተ.ቁ'}</Text>
-            <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700 }]}>{'የምዘና መስፈርቶች'}</Text>
+            <Text style={[styles.cellLeft, { flex: 1, fontWeight: 700 }]}>{'የምዘና መስፈርቶች እና የተሰጡ ሂሶች'}</Text>
             <Text style={[styles.cell, { width: 44, fontSize: 6.5, fontWeight: 700 }]}>{'በጣም ዝቅተኛ\n(1)'}</Text>
             <Text style={[styles.cell, { width: 36, fontSize: 6.5, fontWeight: 700 }]}>{'ዝቅተኛ\n(2)'}</Text>
             <Text style={[styles.cell, { width: 36, fontSize: 6.5, fontWeight: 700 }]}>{'መካከለኛ\n(3)'}</Text>
             <Text style={[styles.cell, { width: 36, fontSize: 6.5, fontWeight: 700 }]}>{'ከፍተኛ\n(4)'}</Text>
             <Text style={[styles.cell, { width: 44, fontSize: 6.5, fontWeight: 700 }]}>{'በጣም ከፍተኛ\n(5)'}</Text>
-            <Text style={[styles.cellBold, { width: 68, borderRight: 'none', fontSize: 6.5 }]}>{'የተመረጠ ውጤት'}</Text>
+            <Text style={[styles.cellBold, { width: 68, borderRight: 'none', fontSize: 6.5 }]}>{'አማካይ ውጤት'}</Text>
           </View>
 
-          {SELF_ASSESSMENT_QUESTIONS.map((cat) => (
+          {LEADERSHIP_EVALUATION_QUESTIONS_20.map((cat) => (
             <React.Fragment key={cat.category_id}>
               <View style={styles.categoryRow}>
                 <Text style={[styles.cellBold, { width: 22 }]}>{cat.category_id}</Text>
@@ -246,30 +267,45 @@ export function SelfAssessmentReportPDF({
               </View>
 
               {cat.questions.map((q) => {
-                const scoreNum = responses[q.question_id];
-                const ratingText = getScoreText(scoreNum);
+                const item = questionData[q.question_id];
+                const avgScore = item?.avgScore || 0;
+                const roundedScore = Math.round(avgScore);
+                const comments = item?.comments || [];
+                const ratingText = getScoreText(avgScore);
 
                 return (
                   <View key={q.question_id} style={styles.tableRow}>
                     <Text style={[styles.cell, { width: 22 }]}>{q.question_id}</Text>
-                    <Text style={[styles.cellLeft, { flex: 1 }]}>{q.criteria}</Text>
-                    <Text style={[styles.cell, { width: 44, backgroundColor: scoreNum === 1 ? '#fee2e2' : 'transparent', fontWeight: scoreNum === 1 ? 700 : 400 }]}>
-                      {scoreNum === 1 ? '✓' : ''}
+                    <View style={[styles.cellLeft, { flex: 1 }]}>
+                      <Text style={{ fontSize: 7 }}>{q.criteria}</Text>
+                      {comments.length > 0 && (
+                        <View style={styles.commentBox}>
+                          <Text style={styles.commentTitle}>{'💬 የተሰጡ ሂሶች / አስተያየቶች፦'}</Text>
+                          {comments.map((comm, cIdx) => (
+                            <Text key={cIdx} style={styles.commentItem}>
+                              {`• ${comm}`}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.cell, { width: 44, backgroundColor: roundedScore === 1 ? '#fee2e2' : 'transparent', fontWeight: roundedScore === 1 ? 700 : 400 }]}>
+                      {roundedScore === 1 ? '✓' : ''}
                     </Text>
-                    <Text style={[styles.cell, { width: 36, backgroundColor: scoreNum === 2 ? '#fef3c7' : 'transparent', fontWeight: scoreNum === 2 ? 700 : 400 }]}>
-                      {scoreNum === 2 ? '✓' : ''}
+                    <Text style={[styles.cell, { width: 36, backgroundColor: roundedScore === 2 ? '#fef3c7' : 'transparent', fontWeight: roundedScore === 2 ? 700 : 400 }]}>
+                      {roundedScore === 2 ? '✓' : ''}
                     </Text>
-                    <Text style={[styles.cell, { width: 36, backgroundColor: scoreNum === 3 ? '#e0f2fe' : 'transparent', fontWeight: scoreNum === 3 ? 700 : 400 }]}>
-                      {scoreNum === 3 ? '✓' : ''}
+                    <Text style={[styles.cell, { width: 36, backgroundColor: roundedScore === 3 ? '#e0f2fe' : 'transparent', fontWeight: roundedScore === 3 ? 700 : 400 }]}>
+                      {roundedScore === 3 ? '✓' : ''}
                     </Text>
-                    <Text style={[styles.cell, { width: 36, backgroundColor: scoreNum === 4 ? '#dcfce7' : 'transparent', fontWeight: scoreNum === 4 ? 700 : 400 }]}>
-                      {scoreNum === 4 ? '✓' : ''}
+                    <Text style={[styles.cell, { width: 36, backgroundColor: roundedScore === 4 ? '#dcfce7' : 'transparent', fontWeight: roundedScore === 4 ? 700 : 400 }]}>
+                      {roundedScore === 4 ? '✓' : ''}
                     </Text>
-                    <Text style={[styles.cell, { width: 44, backgroundColor: scoreNum === 5 ? '#d1fae5' : 'transparent', fontWeight: scoreNum === 5 ? 700 : 400 }]}>
-                      {scoreNum === 5 ? '✓' : ''}
+                    <Text style={[styles.cell, { width: 44, backgroundColor: roundedScore === 5 ? '#d1fae5' : 'transparent', fontWeight: roundedScore === 5 ? 700 : 400 }]}>
+                      {roundedScore === 5 ? '✓' : ''}
                     </Text>
                     <Text style={[styles.cellBold, { width: 68, borderRight: 'none', color: '#0284c7', fontSize: 6.5 }]}>
-                      {scoreNum ? `${scoreNum} (${ratingText})` : ''}
+                      {avgScore > 0 ? `${avgScore.toFixed(1)} (${ratingText})` : ''}
                     </Text>
                   </View>
                 );
@@ -278,45 +314,45 @@ export function SelfAssessmentReportPDF({
           ))}
         </View>
 
-        {/* Summary Block & Grade Scale (Follows immediately without forced page break) */}
+        {/* Summary Block & Grade Scale (Follows immediately without page break) */}
         <View wrap={false} style={{ marginTop: 4 }}>
           <View style={styles.totalBlock}>
             <View>
-              <Text style={styles.totalTitle}>{'የ 10% የራስ ምዘና አጠቃላይ ውጤት (Total 10% Average Score)'}</Text>
+              <Text style={styles.totalTitle}>{'የ 20% የአቻዎች ምዘና ድምር ውጤት (Cumulative 20% Score)'}</Text>
               <Text style={{ fontSize: 8.5, color: '#4b5563', marginTop: 3 }}>
-                {`የበላይ ደረጃ: ${getOverallGrade(score10)} (${((score10 / 10) * 100).toFixed(1)}%)`}
+                {`የበላይ ደረጃ: ${getOverallGrade20(score20)} (${((score20 / 20) * 100).toFixed(1)}%)`}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.totalScore}>{`${score10.toFixed(1)} / 10`}</Text>
-              <Text style={{ fontSize: 7.5, color: '#6b7280' }}>{'ከ 10% የተሰጠ አማካይ ውጤት'}</Text>
+              <Text style={styles.totalScore}>{`${score20.toFixed(1)} / 20`}</Text>
+              <Text style={{ fontSize: 7.5, color: '#6b7280' }}>{'ከ 20% የተሰጠ አማካይ ውጤት'}</Text>
             </View>
           </View>
 
           {/* Grade Legend */}
           <View style={styles.gradeScaleTable}>
             <View style={[styles.gradeRow, { backgroundColor: '#f3f4f6' }]}>
-              <Text style={[styles.gradeLabel, { fontWeight: 700, width: '100%' }]}>{'የ 10% ውጤት አሰጣጥ መመሪያ (Legend)'}</Text>
+              <Text style={[styles.gradeLabel, { fontWeight: 700, width: '100%' }]}>{'የ 20% ውጤት አሰጣጥ መመሪያ (Legend)'}</Text>
             </View>
             <View style={styles.gradeRow}>
               <Text style={styles.gradeLabel}>{'1. በጣም ከፍተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'ከ 9.5 በላይ (> 9.5)'}</Text>
+              <Text style={styles.gradeValue}>{'ከ 19.0 በላይ (> 19.0)'}</Text>
             </View>
             <View style={styles.gradeRow}>
               <Text style={styles.gradeLabel}>{'2. ከፍተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'8.5 - 9.5'}</Text>
+              <Text style={styles.gradeValue}>{'17.0 - 19.0'}</Text>
             </View>
             <View style={styles.gradeRow}>
               <Text style={styles.gradeLabel}>{'3. መካከለኛ'}</Text>
-              <Text style={styles.gradeValue}>{'6.5 - 8.5'}</Text>
+              <Text style={styles.gradeValue}>{'13.0 - 17.0'}</Text>
             </View>
             <View style={styles.gradeRow}>
               <Text style={styles.gradeLabel}>{'4. ዝቅተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'5.0 - 6.5'}</Text>
+              <Text style={styles.gradeValue}>{'10.0 - 13.0'}</Text>
             </View>
             <View style={[styles.gradeRow, { borderBottom: 'none' }]}>
               <Text style={styles.gradeLabel}>{'5. በጣም ዝቅተኛ'}</Text>
-              <Text style={styles.gradeValue}>{'ከ 5.0 በታች (< 5.0)'}</Text>
+              <Text style={styles.gradeValue}>{'ከ 10.0 በታች (< 10.0)'}</Text>
             </View>
           </View>
         </View>

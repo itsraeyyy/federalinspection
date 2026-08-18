@@ -375,7 +375,7 @@ export function buildAdminWelcomeTemplates(opts: {
   const loginUrl = opts.loginUrl || (isCommitteeLeader ? `${SITE_URL}/complaint/login` : `${SITE_URL}/auth/login`);
   const roleAmharic = opts.role === "super_admin" 
     ? "ዋና አስተዳዳሪ (Super Admin)" 
-    : (isCommitteeLeader ? "የኮሚሽን ጽ/ቤት ሃላፊ (Committee Leader)" : "አስተዳዳሪ (Admin)");
+    : (isCommitteeLeader ? "የኮሚሽን ጽ/ቤት ሃላፊ" : "አስተዳዳሪ (Admin)");
 
   const sms =
     `[የብልፅግና ኢንስፔክሽንና ሥነ-ምግባር ኮሚሽን]\n` +

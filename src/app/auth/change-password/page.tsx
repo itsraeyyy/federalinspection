@@ -39,14 +39,18 @@ export default function AdminChangePasswordPage() {
         session.user?.user_metadata?.force_password_change || 
         session.user?.user_metadata?.requires_password_change;
 
-      if (!needsPasswordChange) {
-        const { data: profile } = await supabase
-          .from('admin_profiles')
-          .select('requires_password_change')
-          .eq('id', session.user.id)
-          .maybeSingle();
+      const { data: profile } = await supabase
+        .from('admin_profiles')
+        .select('requires_password_change, role')
+        .eq('id', session.user.id)
+        .maybeSingle();
 
-        if (!profile?.requires_password_change) {
+      const profileNeedsChange = profile?.requires_password_change;
+
+      if (!needsPasswordChange && !profileNeedsChange) {
+        if (profile?.role === 'committee_leader') {
+          router.push('/complaint/dashboard');
+        } else {
           router.push('/dashboard');
         }
       }
@@ -72,13 +76,27 @@ export default function AdminChangePasswordPage() {
     setLoading(true);
 
     try {
+      // Determine destination route based on admin role
+      const { data: { user } } = await supabase.auth.getUser();
+      let targetUrl = '/dashboard';
+      if (user) {
+        const { data: profile } = await supabase
+          .from('admin_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profile?.role === 'committee_leader') {
+          targetUrl = '/complaint/dashboard';
+        }
+      }
+
       // 1. Try server action first for maximum reliability
       const res = await changePasswordSelfAction(password);
 
       if (res?.success) {
         setSuccessMsg('የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል። ወደ ዳሽቦርድ በመግባት ላይ... (Password updated successfully! Redirecting...)');
         setTimeout(() => {
-          window.location.href = '/dashboard';
+          window.location.href = targetUrl;
         }, 1200);
         return;
       }
@@ -97,7 +115,6 @@ export default function AdminChangePasswordPage() {
       }
 
       // 3. Update admin_profiles table
-      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase
           .from('admin_profiles')
@@ -108,7 +125,7 @@ export default function AdminChangePasswordPage() {
       setSuccessMsg('የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል። ወደ ዳሽቦርድ በመግባት ላይ... (Password updated successfully! Redirecting...)');
 
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.href = targetUrl;
       }, 1200);
 
     } catch (error: any) {

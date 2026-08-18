@@ -282,8 +282,8 @@ export function AssessmentReportPDF({
           </View>
         </View>
 
-        {/* 3 & 4. Overall Summary Score Block & Grade Scale (Moved to Page 2 cleanly) */}
-        <View break wrap={false}>
+        {/* 3 & 4. Overall Summary Score Block & Grade Scale */}
+        <View wrap={false} style={{ marginTop: 6 }}>
           <View wrap={false} style={{ border: '1pt solid #000000', marginBottom: 8, backgroundColor: '#ffffff' }}>
             <View style={{ backgroundColor: '#f3f4f6', padding: '3pt 6pt', borderBottom: '1pt solid #000000' }}>
               <Text style={{ fontSize: 7.5, fontWeight: 700 }}>{'የአፈጻጸም ማጠቃለያ ውጤት (Overall Evaluation Score Summary)'}</Text>
