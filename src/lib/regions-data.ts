@@ -134,5 +134,8 @@ export const regionsData: Record<string, string[]> = {
     "ልደታ",
     "ንፋስ ስልክ-ላፍቶ",
     "የካ"
+  ],
+  "ድሬዳዋ": [
+    "ድሬዳዋ ከተማ"
   ]
 };

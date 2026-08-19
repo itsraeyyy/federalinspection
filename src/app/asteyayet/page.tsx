@@ -39,7 +39,7 @@ const REGIONS = [
   { label: "ደቡብ ኢ/ያ", value: "ደቡብ ኢ/ያ" },
   { label: "ማዕ/ኢ/ያ", value: "ማዕ/ኢ/ያ" },
   { label: "አዲስ አበባ", value: "አዲስ አበባ" },
-  { label: "ድሬ ዳዋ", value: "ድሬ ዳዋ" },
+  { label: "ድሬዳዋ", value: "ድሬዳዋ" },
   { label: "ፌዴራል ተቋማት", value: "ፌዴራል ተቋማት" }
 ];
 

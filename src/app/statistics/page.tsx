@@ -44,7 +44,7 @@ const regionalData: RegionRow[] = [
   { id: 10, name: "ደ/ኢ/ያ",    regions: 1, zones: 165, woredas: 777,  kebeles: 7885,   union: 51640,  members: 60482,  officials: 15 },
   { id: 11, name: "ማዕ/ኢ/",    regions: 1, zones: 104, woredas: 586,  kebeles: 6585,   union: 23010,  members: 30297,  officials: 12 },
   { id: 12, name: "አዲስ አበባ",  regions: 1, zones: 126, woredas: 918,  kebeles: 0,      union: 22840,  members: 23896,  officials: 12 },
-  { id: 13, name: "ድሬ ደዋ",    regions: 1, zones: 0,   woredas: 65,   kebeles: 0,      union: 1660,   members: 1736,   officials: 11 },
+  { id: 13, name: "ድሬዳዋ",    regions: 1, zones: 0,   woredas: 65,   kebeles: 0,      union: 1660,   members: 1736,   officials: 11 },
   { id: 14, name: "ፌዴራል ተአ",  regions: 1, zones: 24,  woredas: 113,  kebeles: 0,      union: 850,    members: 1015,   officials: 8  },
 ];
 

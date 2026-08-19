@@ -5,7 +5,7 @@ import { IconPlus, IconPhone, IconMapPin, IconLoader2, IconCheck, IconTrash, Ico
 import { createRepresentativeAction } from "@/app/actions/reports";
 
 const ETHIOPIA_REGIONS = [
-  'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤን-ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬ ዳዋ', 'ፌዴራል ተቋማት'
+  'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤን-ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬዳዋ', 'ፌዴራል ተቋማት'
 ];
 
 export function RepresentativesManager({ initialRepresentatives }: { initialRepresentatives: any[] }) {

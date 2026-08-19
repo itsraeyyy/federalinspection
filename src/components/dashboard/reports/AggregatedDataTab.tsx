@@ -14,7 +14,7 @@ interface AggregatedDataTabProps {
 
 const REGIONS = [
   'ኦሮሚያ', 'አማራ', 'ሶማሌ', 'አፋር', 'ቤን-ጉሙዝ', 'ጋምቤላ', 'ሐረሪ', 'ሲዳማ', 
-  'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬ ዳዋ', 'ፌዴራል ተቋማት'
+  'ደ/ም/ኢ/ያ', 'ደቡብ ኢ/ያ', 'ማዕ/ኢ/ያ', 'አዲስ አበባ', 'ድሬዳዋ', 'ፌዴራል ተቋማት'
 ];
 
 export function AggregatedDataTab({ reports, schemas, year, period }: AggregatedDataTabProps) {
