@@ -6,6 +6,7 @@ import { canSubmitReport, ReportPeriod } from '@/lib/et-calendar';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createClient } from '@/utils/supabase/server';
 import { sortFormSchemas } from '@/utils/schemaSort';
+import { normalizePhoneToE164 } from '@/app/actions/auth';
 
 export async function createRepresentativeAction(formData: FormData) {
   try {
@@ -18,14 +19,10 @@ export async function createRepresentativeAction(formData: FormData) {
       return { error: 'Missing required fields' };
     }
 
-    const cleanPhone = rawPhone.replace(/\s+/g, '');
-    const phone = cleanPhone.startsWith('+') 
-      ? cleanPhone 
-      : `+251${cleanPhone.replace(/^0+/, '')}`;
+    const phone = normalizePhoneToE164(rawPhone);
+    const syntheticEmail = `${phone.replace('+', '')}@federal.local`;
 
     const password = crypto.randomBytes(4).toString('hex'); // 8 characters
-    const digitsOnly = phone.replace('+', '');
-    const syntheticEmail = `${digitsOnly}@federal.local`;
 
     let userId: string | null = null;
 

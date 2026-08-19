@@ -3,6 +3,7 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { revalidatePath } from 'next/cache';
 import { notifyAdminCreated } from '@/lib/notify';
+import { normalizePhoneToE164 } from '@/app/actions/auth';
 
 function generateTempPassword(length = 6) {
   const charset = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
@@ -102,7 +103,7 @@ export async function provisionAdmin(data: any) {
 
     // Upsert into users table for cross-table phone mapping
     if (data.phone) {
-      const cleanPhone = data.phone.startsWith('+') ? data.phone.trim() : `+251${data.phone.trim().replace(/^0+/, '').replace(/\s+/g, '')}`;
+      const cleanPhone = normalizePhoneToE164(data.phone);
       await supabaseAdmin.from('users').upsert({
         id: userId,
         phone_number: cleanPhone,

@@ -117,7 +117,7 @@ export default function FeedbackPage() {
     if (!f.category) return acc;
     const cat = f.category;
     if (!acc[cat]) {
-        acc[cat] = { name: cat, positive: 0, negative: 0, neutral: 0, total: 0 };
+      acc[cat] = { name: cat, positive: 0, negative: 0, neutral: 0, total: 0 };
     }
     acc[cat].total += 1;
     if (f.sentiment === 'positive') acc[cat].positive += 1;
@@ -167,11 +167,10 @@ export default function FeedbackPage() {
                 <button
                   key={filter.id}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`flex flex-col items-start gap-1 rounded-2xl border p-4 transition-all ${
-                    activeFilter === filter.id
+                  className={`flex flex-col items-start gap-1 rounded-2xl border p-4 transition-all ${activeFilter === filter.id
                       ? "border-brand-blue/30 bg-brand-blue/5 shadow-sm"
                       : "border-border/20 bg-surface-primary/30 hover:bg-surface-primary/50"
-                  }`}
+                    }`}
                 >
                   <span className="text-2xl font-light text-text-primary tabular-nums">
                     {counts[filter.id as keyof typeof counts] || 0}
@@ -205,11 +204,10 @@ export default function FeedbackPage() {
                               {RATING_LABELS[item.rating] || item.rating}
                             </span>
                             <RatingStars rating={item.rating} />
-                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                              item.sentiment === 'positive' ? 'bg-success/10 text-success' :
-                              item.sentiment === 'negative' ? 'bg-danger/10 text-danger' :
-                              'bg-brand-blue/10 text-brand-blue'
-                            }`}>
+                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${item.sentiment === 'positive' ? 'bg-success/10 text-success' :
+                                item.sentiment === 'negative' ? 'bg-danger/10 text-danger' :
+                                  'bg-brand-blue/10 text-brand-blue'
+                              }`}>
                               {item.sentiment === 'positive' ? 'አወንታዊ' : item.sentiment === 'negative' ? 'አሉታዊ' : 'መካከለኛ'}
                             </span>
                           </div>
@@ -218,14 +216,14 @@ export default function FeedbackPage() {
                           {formatECDateTime(item.created_at)}
                         </span>
                       </div>
-                      
+
                       {item.category && (
                         <div className="flex items-center gap-2 text-sm font-semibold text-text-secondary bg-surface-secondary/50 p-2 rounded-lg w-fit">
                           <IconTag size={14} className="text-brand-blue" />
                           {item.category}
                         </div>
                       )}
-                      
+
                       <p className="text-sm text-text-primary leading-relaxed border-l-2 border-border/30 pl-3">
                         {item.review}
                       </p>
@@ -259,40 +257,40 @@ export default function FeedbackPage() {
                     <div className="flex flex-col mb-4">
                       <h3 className="text-sm font-semibold text-text-secondary">የአገልግሎት ዘርፍ ግምገማዎች (Service Category Ratings)</h3>
                     </div>
-                    
+
                     <div className="flex-1 w-full min-h-0 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                       <div style={{ height: Math.max(220, categoryData.length * 48) }}>
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart 
-                            data={categoryData} 
-                            layout="vertical" 
+                          <BarChart
+                            data={categoryData}
+                            layout="vertical"
                             margin={{ top: 0, right: 10, left: -10, bottom: 0 }}
                             barGap={2}
                             barCategoryGap={12}
                           >
                             <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="var(--border)" strokeOpacity={0.4} />
                             <XAxis type="number" hide />
-                            <YAxis 
-                              dataKey="name" 
-                              type="category" 
-                              width={140} 
-                              axisLine={false} 
-                              tickLine={false} 
-                              tick={{ fill: 'var(--text-secondary)', fontSize: 11, fontWeight: 500 }} 
+                            <YAxis
+                              dataKey="name"
+                              type="category"
+                              width={140}
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: 'var(--text-secondary)', fontSize: 11, fontWeight: 500 }}
                             />
-                            <Tooltip 
-                              cursor={{ fill: 'var(--surface-secondary)', opacity: 0.5 }} 
-                              contentStyle={{ 
-                                borderRadius: '12px', 
-                                fontSize: '12px', 
-                                border: '1px solid var(--border)', 
-                                background: 'var(--surface-primary)', 
-                                color: 'var(--text-primary)', 
-                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' 
+                            <Tooltip
+                              cursor={{ fill: 'var(--surface-secondary)', opacity: 0.5 }}
+                              contentStyle={{
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                border: '1px solid var(--border)',
+                                background: 'var(--surface-primary)',
+                                color: 'var(--text-primary)',
+                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                               }}
                             />
-                            <Legend 
-                              wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} 
+                            <Legend
+                              wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
                               iconType="circle"
                               iconSize={8}
                             />

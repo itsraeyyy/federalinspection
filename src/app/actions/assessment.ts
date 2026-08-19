@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { notifyNewPeriodEnrollment, notifyFinalScoreApproved } from '@/lib/notify';
+import { normalizePhoneToE164 } from '@/app/actions/auth';
 
 export async function createAssessmentPeriodAction(periodName: string, year: string, periodHalf: string) {
   try {
@@ -159,7 +160,7 @@ export async function updateAssessmentUserAction(data: {
   partyResponsibility?: string;
 }) {
   try {
-    const cleanPhone = data.phone.startsWith('+') ? data.phone.trim() : `+251${data.phone.trim().replace(/^0+/, '').replace(/\s+/g, '')}`;
+    const cleanPhone = normalizePhoneToE164(data.phone);
 
     // Update public.users
     const { error: userErr } = await supabaseAdmin

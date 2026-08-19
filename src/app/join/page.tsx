@@ -47,8 +47,8 @@ function JoinPeriodContent() {
 
       // Registration successful, now log them in
       const { supabase } = await import('@/lib/supabaseClient');
-      const formattedPhone = phone.startsWith('+') ? phone : `+251${phone.replace(/^0+/, '').replace(/\s+/g, '')}`;
-      const syntheticEmail = `${formattedPhone}@federal.local`;
+      const { resolveLoginEmail } = await import('@/app/actions/auth');
+      const { email: syntheticEmail } = await resolveLoginEmail(phone.trim(), 'assessment');
       
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: syntheticEmail,

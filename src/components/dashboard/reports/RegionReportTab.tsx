@@ -76,10 +76,10 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
 
   const handleExportAllWord = () => {
     if (!selectedReport) return;
-    exportRegionToWord(selectedReport.region, selectedReport.year, selectedReport.period, selectedReport.forms_data, activeSchemas);
+    exportRegionToWord(selectedReport.region, selectedReport.year, selectedReport.period, selectedReport.forms_data, activeSchemas as any);
   };
 
-  const handleExportRegionPDF = async (targetSchemas: FormSchema[] = activeSchemas, customName?: string) => {
+  const handleExportRegionPDF = async (targetSchemas: FormSchema[] = activeSchemas as any, customName?: string) => {
     if (!selectedReport) return;
     setDownloadingPDF(true);
     try {
@@ -248,7 +248,7 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
             <div className="flex items-center gap-3">
               <div className="flex items-center bg-surface-secondary p-1 rounded-xl border border-border-light shadow-sm gap-1">
                 <button
-                  onClick={() => handleExportRegionPDF(activeSchemas)}
+                  onClick={() => handleExportRegionPDF(activeSchemas as any)}
                   disabled={downloadingPDF}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-blue text-white rounded-lg text-xs font-medium hover:bg-brand-blue/90 transition-colors shadow-sm disabled:opacity-50"
                   title="Export All to PDF"

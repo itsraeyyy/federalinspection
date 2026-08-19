@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
-import { verifyLoginAttempt } from '@/app/actions/auth';
+import { verifyLoginAttempt, resolveLoginEmail } from '@/app/actions/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -21,16 +21,14 @@ export default function AssessmentLoginPage() {
     setErrorMsg(null);
 
     try {
-      // Check rate limit
+      // Check rate limit (throws on failure)
       await verifyLoginAttempt();
 
       const cleanPhone = phone.trim();
       const cleanPassword = password.trim();
 
-      // Format phone to E.164
-      const formattedPhone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
-      // Strip '+' from phone for the synthetic email to match how users are created
-      const syntheticEmail = `${formattedPhone.replace(/\s+/g, '').replace('+', '')}@federal.local`;
+      // Use the shared server-side phone resolver for consistent normalization
+      const { email: syntheticEmail } = await resolveLoginEmail(cleanPhone, 'assessment');
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: syntheticEmail,
@@ -39,6 +37,29 @@ export default function AssessmentLoginPage() {
       
       if (error) {
         throw new Error(error.message === 'Invalid login credentials' ? 'የተሳሳተ ስልክ ቁጥር ወይም የይለፍ ቃል (Invalid credentials)' : error.message);
+      }
+
+      // Check if they are actually a regular assessment user, not a representative or admin
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('system_role')
+        .eq('user_id', data.user!.id)
+        .maybeSingle();
+
+      if (profile?.system_role === 'representative') {
+        await supabase.auth.signOut();
+        throw new Error("መዳረሻ አልተፈቀደም፡ እባክዎ በተወካይ መግቢያ ይጠቀሙ (Access Denied: Please use the Representative login).");
+      }
+
+      const { data: adminProfile } = await supabase
+        .from('admin_profiles')
+        .select('id')
+        .eq('id', data.user!.id)
+        .maybeSingle();
+
+      if (adminProfile) {
+        await supabase.auth.signOut();
+        throw new Error("መዳረሻ አልተፈቀደም፡ እባክዎ በአስተዳዳሪ መግቢያ ይጠቀሙ (Access Denied: Please use the Admin login).");
       }
       
       // Force change password on first login
@@ -54,6 +75,7 @@ export default function AssessmentLoginPage() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">

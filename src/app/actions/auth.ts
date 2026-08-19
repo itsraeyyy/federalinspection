@@ -7,6 +7,37 @@ import { sendSMS } from '@/lib/textbee';
 import { notifyRegistration, notifyPasswordReset } from '@/lib/notify';
 import crypto from 'crypto';
 
+/**
+ * Normalise any Ethiopian phone input to E.164 format (+251XXXXXXXXX).
+ * Handles: 09…, +2519…, 9…, 2519…, +251 9… (with spaces), etc.
+ */
+export function normalizePhoneToE164(raw: string): string {
+  // Strip all whitespace first
+  let phone = raw.trim().replace(/\s+/g, '');
+  // Strip leading + if present so we work with pure digits
+  const hadPlus = phone.startsWith('+');
+  if (hadPlus) phone = phone.slice(1);
+  // Remove any remaining non-digit characters (dashes, parens, etc.)
+  const digits = phone.replace(/\D/g, '');
+  // Extract the last 9 significant digits (Ethiopian local number)
+  // Ethiopian numbers are 9 digits after the country code
+  let local9: string;
+  if (digits.startsWith('251') && digits.length >= 12) {
+    // Full international format without +: 2519XXXXXXXX
+    local9 = digits.slice(3); // remove 251 prefix
+  } else if (digits.startsWith('0') && digits.length >= 10) {
+    // Local format: 09XXXXXXXX
+    local9 = digits.slice(1); // remove leading 0
+  } else if (digits.length === 9) {
+    // Bare 9 digits: 9XXXXXXXX
+    local9 = digits;
+  } else {
+    // Fallback: take last 9 digits
+    local9 = digits.slice(-9);
+  }
+  return `+251${local9}`;
+}
+
 export async function verifyLoginAttempt() {
   // Bypass rate limit in local development mode so developers aren't locked out during testing
   if (process.env.NODE_ENV !== 'production') {
@@ -21,7 +52,7 @@ export async function verifyLoginAttempt() {
   const { allowed } = await checkRateLimit(ip, 'login_attempt', 50, 15);
   
   if (!allowed) {
-    return { success: false, error: "Too many login attempts. Please try again later." };
+    throw new Error("በጣም ብዙ ጊዜ ሞክረዋል። እባክዎ ከጥቂት ደቂቃዎች በኋላ ይሞክሩ (Too many login attempts. Please try again later.)");
   }
   
   return { success: true };
@@ -41,8 +72,7 @@ export async function registerUserAction(formData: FormData) {
     }
 
     // Format phone number to E.164 standard (e.g. +251...)
-    const cleanPhone = rawPhone.trim();
-    const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+    const phone = normalizePhoneToE164(rawPhone);
 
     // Generate random password if not provided (Admin flow)
     const isAdminCreated = !password;
@@ -63,7 +93,7 @@ export async function registerUserAction(formData: FormData) {
     const { data: existingUsers } = await supabaseAdmin
       .from('users')
       .select('id')
-      .in('phone_number', [phone, phoneNoPlus, phoneWith0, cleanPhone]);
+      .in('phone_number', [phone, phoneNoPlus, phoneWith0, rawPhone.trim()]);
 
     if (existingUsers && existingUsers.length > 0) {
       userId = existingUsers[0].id;
@@ -217,32 +247,72 @@ export async function resolveLoginEmail(identifier: string, portalRole?: 'repres
   const digitsOnly = rawPhone.replace(/\D/g, '');
   const last9 = digitsOnly.slice(-9); // Key 9 digits e.g. 911123456
 
-  const e164Phone = rawPhone.startsWith('+') 
-    ? rawPhone 
-    : `+251${rawPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
-  const localPhone = rawPhone.startsWith('0') 
-    ? rawPhone 
-    : `0${rawPhone.replace(/^\+?251/, '').replace(/\s+/g, '')}`;
+  // Use the robust normalizer for E.164
+  const e164Phone = normalizePhoneToE164(rawPhone);
+  const localPhone = `0${e164Phone.replace(/^\+251/, '')}`;
 
   // 1. If portalRole is 'representative', prioritize representative lookup
   if (portalRole === 'representative') {
-    const { data: usersList } = await supabaseAdmin
-      .from('users')
-      .select('id, phone_number');
+    // Only fetch users who are actually representatives for precise matching
+    const { data: repUsers } = await supabaseAdmin
+      .from('user_profiles')
+      .select('user_id, users!inner(id, phone_number)')
+      .eq('system_role', 'representative');
 
-    const matchedUser = usersList?.find(u => {
+    // Flatten to array of {id, phone_number}
+    const usersList = repUsers?.map((r: any) => ({
+      id: r.users?.id || r.user_id,
+      phone_number: r.users?.phone_number,
+    })).filter((u: any) => u.phone_number) || [];
+
+    const matchedUser = usersList.find((u: any) => {
       if (!u.phone_number) return false;
       const uDigits = u.phone_number.replace(/\D/g, '');
-      return (last9.length >= 7 && uDigits.endsWith(last9)) || u.phone_number === rawPhone || u.phone_number === e164Phone || u.phone_number === localPhone;
+      const uLast9 = uDigits.slice(-9);
+      return (
+        (last9.length >= 7 && uLast9 === last9) ||
+        u.phone_number === rawPhone ||
+        u.phone_number === e164Phone ||
+        u.phone_number === localPhone
+      );
     });
 
     if (matchedUser) {
-      const cleanE164 = matchedUser.phone_number.startsWith('+') ? matchedUser.phone_number : `+251${matchedUser.phone_number.replace(/^0+/, '')}`;
-      return { email: `${cleanE164.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+      // Normalise the stored phone to build the correct synthetic email
+      const storedE164 = normalizePhoneToE164(matchedUser.phone_number);
+      const email = `${storedE164.replace('+', '')}@federal.local`;
+      console.log(`[resolveLoginEmail] representative matched: input='${rawPhone}' -> user=${matchedUser.id} -> email=${email}`);
+      return { email };
     }
 
-    // Direct fallback for representative portal using e164Phone
-    return { email: `${e164Phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+    // Fallback: also check all users (in case user_profiles join failed)
+    const { data: allUsers } = await supabaseAdmin
+      .from('users')
+      .select('id, phone_number');
+
+    const fallbackUser = allUsers?.find(u => {
+      if (!u.phone_number) return false;
+      const uDigits = u.phone_number.replace(/\D/g, '');
+      const uLast9 = uDigits.slice(-9);
+      return (
+        (last9.length >= 7 && uLast9 === last9) ||
+        u.phone_number === rawPhone ||
+        u.phone_number === e164Phone ||
+        u.phone_number === localPhone
+      );
+    });
+
+    if (fallbackUser) {
+      const storedE164 = normalizePhoneToE164(fallbackUser.phone_number);
+      const email = `${storedE164.replace('+', '')}@federal.local`;
+      console.log(`[resolveLoginEmail] representative fallback matched: input='${rawPhone}' -> user=${fallbackUser.id} -> email=${email}`);
+      return { email };
+    }
+
+    // Last resort: construct from normalised phone
+    const fallbackEmail = `${e164Phone.replace('+', '')}@federal.local`;
+    console.log(`[resolveLoginEmail] representative no DB match, using normalised: input='${rawPhone}' -> email=${fallbackEmail}`);
+    return { email: fallbackEmail };
   }
 
   // 2. Check admin_profiles table next by username, email prefix, first/last name, or phone matching
@@ -296,7 +366,8 @@ export async function resolveLoginEmail(identifier: string, portalRole?: 'repres
   const matchedUser = usersList?.find(u => {
     if (!u.phone_number) return false;
     const uDigits = u.phone_number.replace(/\D/g, '');
-    return (last9.length >= 7 && uDigits.endsWith(last9)) || u.phone_number === rawPhone || u.phone_number === e164Phone;
+    const uLast9 = uDigits.slice(-9);
+    return (last9.length >= 7 && uLast9 === last9) || u.phone_number === rawPhone || u.phone_number === e164Phone;
   });
 
   if (matchedUser) {
@@ -312,7 +383,7 @@ export async function resolveLoginEmail(identifier: string, portalRole?: 'repres
   }
 
   // 4. Fallback to synthetic email for regular assessment users
-  return { email: `${e164Phone.replace(/\s+/g, '').replace('+', '')}@federal.local` };
+  return { email: `${e164Phone.replace('+', '')}@federal.local` };
 }
 
 export async function resetPasswordAction(rawPhone: string, role: 'assessment' | 'representative' = 'assessment') {
@@ -320,8 +391,7 @@ export async function resetPasswordAction(rawPhone: string, role: 'assessment' |
     if (!rawPhone) return { error: 'Phone number is required' };
 
     // Format phone to E.164
-    const cleanPhone = rawPhone.trim();
-    const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+    const phone = normalizePhoneToE164(rawPhone);
 
     let userId;
     let userName;
@@ -403,8 +473,7 @@ export async function sendOtpAction(rawPhone: string) {
     if (!rawPhone) return { error: 'Phone number is required' };
 
     // Format phone
-    const cleanPhone = rawPhone.trim();
-    const phone = cleanPhone.startsWith('+') ? cleanPhone : `+251${cleanPhone.replace(/^0+/, '').replace(/\s+/g, '')}`;
+    const phone = normalizePhoneToE164(rawPhone);
 
     let userId;
     let userName;

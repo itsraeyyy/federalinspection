@@ -26,7 +26,13 @@ export default function FormsLoginPage() {
     try {
       await verifyLoginAttempt();
       const cleanPhone = phone.trim();
+      
+      if (!cleanPhone) {
+        throw new Error("እባክዎ ስልክ ቁጥርዎን ያስገቡ (Please enter your phone number).");
+      }
+
       const { email: authEmail } = await resolveLoginEmail(cleanPhone, 'representative');
+      console.log(`[RepLogin] Resolved email for '${cleanPhone}': ${authEmail}`);
 
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: authEmail,
@@ -34,6 +40,7 @@ export default function FormsLoginPage() {
       });
 
       if (signInError) {
+        console.error(`[RepLogin] signInWithPassword failed for email '${authEmail}':`, signInError.message);
         if (signInError.message.includes('Invalid login credentials')) {
           throw new Error("የተሳሳተ ስልክ ቁጥር ወይም የይለፍ ቃል (Invalid phone number or password).");
         }
@@ -59,11 +66,13 @@ export default function FormsLoginPage() {
         window.location.href = "/representative/dashboard";
       }
     } catch (err: any) {
+      console.error('[RepLogin] Login error:', err.message);
       setError(err.message || "መግባት አልተቻለም፡ እባክዎን መረጃዎን ያረጋግጡ።");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
