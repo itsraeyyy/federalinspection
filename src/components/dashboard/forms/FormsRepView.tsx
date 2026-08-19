@@ -7,6 +7,8 @@ import { IconSend, IconDeviceFloppy, IconLoader2, IconAlertCircle, IconDownload,
 import { saveReportFormAction, submitReportAction } from "@/app/actions/reports";
 import { ReportPeriod, canSubmitReport, getCurrentFiscalYear } from "@/lib/et-calendar";
 
+import { sortFormSchemas } from "@/utils/schemaSort";
+
 interface FormsRepViewProps {
   userProfile: any;
   initialReports: any[];
@@ -31,19 +33,20 @@ export function FormsRepView({ userProfile, initialReports, initialSchemas, defa
   // Initialize form data from active report or empty
   const [formData, setFormData] = useState<any>(activeReport?.forms_data || {});
   
-  // Determine schemas: Use snapshot if available, otherwise current latest schemas
-  const activeSchemas = (activeReport?.schema_snapshot && Array.isArray(activeReport.schema_snapshot) && activeReport.schema_snapshot.length > 0) 
+  // Determine schemas: Use snapshot if available, otherwise current latest schemas - always sorted 1 to 25
+  const rawActiveSchemas = (activeReport?.schema_snapshot && Array.isArray(activeReport.schema_snapshot) && activeReport.schema_snapshot.length > 0) 
     ? activeReport.schema_snapshot 
     : initialSchemas;
 
-  const [schemas, setSchemas] = useState<FormSchema[]>(activeSchemas);
+  const [schemas, setSchemas] = useState<FormSchema[]>(sortFormSchemas(rawActiveSchemas));
   
   // Reset form data and schemas when selection changes
   useEffect(() => {
     setFormData(activeReport?.forms_data || {});
-    setSchemas((activeReport?.schema_snapshot && Array.isArray(activeReport.schema_snapshot) && activeReport.schema_snapshot.length > 0) 
+    const raw = (activeReport?.schema_snapshot && Array.isArray(activeReport.schema_snapshot) && activeReport.schema_snapshot.length > 0) 
       ? activeReport.schema_snapshot 
-      : initialSchemas);
+      : initialSchemas;
+    setSchemas(sortFormSchemas(raw));
   }, [currentYear, currentPeriod, activeReport, initialSchemas]);
 
   const parsedFeedback = (() => {

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { RepLogoutButton } from "@/components/layout/rep-logout-button";
+import { sortFormSchemas } from "@/utils/schemaSort";
 
 export default async function RepDashboardPage() {
   const supabase = await createClient();
@@ -62,11 +63,10 @@ export default async function RepDashboardPage() {
   // Fetch dynamic schemas
   const { data: schemas } = await supabase
     .from('form_schemas')
-    .select('*')
-    .order('id');
+    .select('*');
     
-  // Sort them naturally if they have standard names like form_01, form_02, form_02_1
-  const sortedSchemas = (schemas || []).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  // Sort them sequentially 1 to 25
+  const sortedSchemas = sortFormSchemas(schemas || []);
 
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] p-4 sm:p-8">

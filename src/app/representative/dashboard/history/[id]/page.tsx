@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { ReportPeriod } from "@/lib/et-calendar";
-
 import { RepLogoutButton } from "@/components/layout/rep-logout-button";
+import { sortFormSchemas } from "@/utils/schemaSort";
 
 export default async function RepHistoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -71,10 +71,9 @@ export default async function RepHistoryDetailPage({ params }: { params: Promise
   // Fetch dynamic schemas (fallback)
   const { data: schemas } = await supabase
     .from('form_schemas')
-    .select('*')
-    .order('id');
+    .select('*');
     
-  const sortedSchemas = (schemas || []).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const sortedSchemas = sortFormSchemas(schemas || []);
 
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#0a0a0a] p-4 sm:p-8">

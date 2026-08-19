@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { redirect } from "next/navigation";
 import { verifyAdminUser } from "@/lib/adminAuth";
+import { sortFormSchemas } from "@/utils/schemaSort";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,9 @@ export default async function FormsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect('/auth/login');
+  if (!user) {
+    redirect('/auth/login');
+  }
 
   const isAdminAuthorized = await verifyAdminUser(user.id, user.email);
   if (!isAdminAuthorized) {
@@ -31,10 +34,9 @@ export default async function FormsPage() {
     
   const { data: fetchedSchemas } = await supabaseAdmin
     .from('form_schemas')
-    .select('*')
-    .order('id');
+    .select('*');
     
-  const sortedSchemas = (fetchedSchemas || []).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const sortedSchemas = sortFormSchemas(fetchedSchemas || []);
 
   return (
     <DashboardLayout>

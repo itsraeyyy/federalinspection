@@ -21,6 +21,7 @@ import { exportRegionToWord, exportNarrationToWord } from "@/utils/exportUtils";
 import { downloadPDFDocument } from "@/lib/exportToPDF";
 import { RegionReportPDF, NarrationReportPDF } from "./ReportsPDFComponents";
 import { RichTextEditor, RichTextValue } from "@/components/ui/RichTextEditor";
+import { sortFormSchemas } from "@/utils/schemaSort";
 
 interface RegionReportTabProps {
   initialReports: any[];
@@ -56,9 +57,11 @@ export function RegionReportTab({ initialReports, schemas, defaultRegion, defaul
 
   const selectedReport = reports.find(r => r.region === selectedRegion);
   
-  const activeSchemas = (selectedReport?.schema_snapshot && Array.isArray(selectedReport.schema_snapshot) && selectedReport.schema_snapshot.length > 0)
+  const rawActiveSchemas = (selectedReport?.schema_snapshot && Array.isArray(selectedReport.schema_snapshot) && selectedReport.schema_snapshot.length > 0)
     ? selectedReport.schema_snapshot
     : schemas;
+
+  const activeSchemas = sortFormSchemas(rawActiveSchemas);
 
   const parsedFeedback = (() => {
     if (!selectedReport?.admin_feedback) return {};

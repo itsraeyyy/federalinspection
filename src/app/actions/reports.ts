@@ -5,6 +5,7 @@ import { notifyRegistration, notifyPasswordReset, notifyReportUpdate } from '@/l
 import { canSubmitReport, ReportPeriod } from '@/lib/et-calendar';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createClient } from '@/utils/supabase/server';
+import { sortFormSchemas } from '@/utils/schemaSort';
 
 export async function createRepresentativeAction(formData: FormData) {
   try {
@@ -226,7 +227,7 @@ export async function saveReportFormAction(
       period,
       forms_data: formsData,
       numerical_data: formsData,
-      schema_snapshot: schemas || [],
+      schema_snapshot: sortFormSchemas(schemas || []),
       status: 'draft',
       updated_at: new Date().toISOString()
     };
@@ -290,7 +291,7 @@ export async function submitReportAction(
       period,
       forms_data: formsData,
       numerical_data: formsData,
-      schema_snapshot: schemas || [],
+      schema_snapshot: sortFormSchemas(schemas || []),
       status: 'submitted',
       submitted_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
